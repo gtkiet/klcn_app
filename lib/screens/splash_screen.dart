@@ -17,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _fadeCtrl;
   late final AnimationController _scaleCtrl;
   late final Animation<double> _fadeAnim;
-  late final Animation<double> _scaleAnim;
+  // late final Animation<double> _scaleAnim;
 
   @override
   void initState() {
@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-    _scaleAnim = CurvedAnimation(parent: _scaleCtrl, curve: Curves.elasticOut);
+    // _scaleAnim = CurvedAnimation(parent: _scaleCtrl, curve: Curves.elasticOut);
 
     _fadeCtrl.forward();
     _scaleCtrl.forward();
@@ -82,12 +82,12 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Brand logo card (animated)
-                  ScaleTransition(
-                    scale: _scaleAnim,
-                    child: _SplashLogoCard(size: size),
-                  ),
-                  const SizedBox(height: 28),
+                  // // Brand logo card (animated)
+                  // ScaleTransition(
+                  //   scale: _scaleAnim,
+                  //   child: _SplashLogoCard(size: size),
+                  // ),
+                  // const SizedBox(height: 28),
 
                   // App name
                   Text(
@@ -123,60 +123,60 @@ class _SplashScreenState extends State<SplashScreen>
 }
 
 // ── LOGO CARD ─────────────────────────────────
-class _SplashLogoCard extends StatelessWidget {
-  final Size size;
-  const _SplashLogoCard({required this.size});
+// class _SplashLogoCard extends StatelessWidget {
+//   final Size size;
+//   const _SplashLogoCard({required this.size});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 130,
-      height: 130,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.20),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.sports_soccer, color: AppColors.primary, size: 52),
-          const SizedBox(height: 6),
-          RichText(
-            text: const TextSpan(
-              children: [
-                TextSpan(
-                  text: 'SPORT',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                TextSpan(
-                  text: 'PLUS',
-                  style: TextStyle(
-                    color: AppColors.primaryLight,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       width: 130,
+//       height: 130,
+//       decoration: BoxDecoration(
+//         color: Colors.white,
+//         borderRadius: BorderRadius.circular(28),
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.black.withValues(alpha: 0.20),
+//             blurRadius: 24,
+//             offset: const Offset(0, 8),
+//           ),
+//         ],
+//       ),
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           const Icon(Icons.sports_soccer, color: AppColors.primary, size: 52),
+//           const SizedBox(height: 6),
+//           RichText(
+//             text: const TextSpan(
+//               children: [
+//                 TextSpan(
+//                   text: 'SPORT',
+//                   style: TextStyle(
+//                     color: AppColors.primary,
+//                     fontSize: 13,
+//                     fontWeight: FontWeight.w900,
+//                     letterSpacing: 0.8,
+//                   ),
+//                 ),
+//                 TextSpan(
+//                   text: 'PLUS',
+//                   style: TextStyle(
+//                     color: AppColors.primaryLight,
+//                     fontSize: 13,
+//                     fontWeight: FontWeight.w900,
+//                     letterSpacing: 0.8,
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 // ── SPACED LABEL ──────────────────────────────
 class _SpacedLabel extends StatelessWidget {

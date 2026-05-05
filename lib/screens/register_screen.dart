@@ -105,8 +105,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 12),
-                const Center(child: SpBrandLogo(size: 88)),
-                const SizedBox(height: 20),
+                // const Center(child: SpBrandLogo(size: 88)),
+                // const SizedBox(height: 20),
                 const Center(
                   child: Text(
                     'Gia nhập đội hình',
