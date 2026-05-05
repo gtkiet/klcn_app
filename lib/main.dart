@@ -6,19 +6,24 @@ import 'package:flutter/services.dart';
 import 'theme/app_theme.dart';
 
 import 'screens/splash/splash_screen.dart';
+
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/otp_verification_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
+
 import 'screens/home/home_screen.dart';
-import 'screens/field_list_screen.dart';
-import 'screens/field_detail_screen.dart';
-import 'screens/booking_confirmation_screen.dart';
-import 'screens/booking_success_screen.dart';
-import 'screens/booking_failure_screen.dart';
-import 'screens/booking_history_screen.dart';
-import 'screens/booking_detail_screen.dart';
+
+import 'screens/fields/field_list_screen.dart';
+import 'screens/fields/field_detail_screen.dart';
+
+import 'screens/booking/booking_confirmation_screen.dart';
+import 'screens/booking/booking_success_screen.dart';
+import 'screens/booking/booking_failure_screen.dart';
+import 'screens/booking/booking_history_screen.dart';
+import 'screens/booking/booking_detail_screen.dart';
+
 import 'screens/profile_screen.dart';
 import 'screens/edit_profile_screen.dart';
 import 'screens/change_password_screen.dart';
