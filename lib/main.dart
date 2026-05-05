@@ -5,13 +5,13 @@ import 'package:flutter/services.dart';
 
 import 'theme/app_theme.dart';
 
-import 'screens/splash_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/register_screen.dart';
-import 'screens/forgot_password_screen.dart';
-import 'screens/otp_verification_screen.dart';
-import 'screens/reset_password_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/splash/splash_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/register_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
+import 'screens/auth/otp_verification_screen.dart';
+import 'screens/auth/reset_password_screen.dart';
+import 'screens/home/home_screen.dart';
 import 'screens/field_list_screen.dart';
 import 'screens/field_detail_screen.dart';
 import 'screens/booking_confirmation_screen.dart';
