@@ -17,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _fadeCtrl;
   late final AnimationController _scaleCtrl;
   late final Animation<double> _fadeAnim;
-  late final Animation<double> _scaleAnim;
+  // late final Animation<double> _scaleAnim;
 
   @override
   void initState() {
@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-    _scaleAnim = CurvedAnimation(parent: _scaleCtrl, curve: Curves.elasticOut);
+    // _scaleAnim = CurvedAnimation(parent: _scaleCtrl, curve: Curves.elasticOut);
 
     _fadeCtrl.forward();
     _scaleCtrl.forward();
