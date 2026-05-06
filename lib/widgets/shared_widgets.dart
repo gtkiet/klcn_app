@@ -7,76 +7,76 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-// ════════════════════════════════════════════
-//  BRAND LOGO  (thay thế Image.asset logo)
-// ════════════════════════════════════════════
-class SpBrandLogo extends StatelessWidget {
-  final double size;
-  final Color bgColor;
-  final BorderRadius? borderRadius;
+// // ════════════════════════════════════════════
+// //  BRAND LOGO  (thay thế Image.asset logo)
+// // ════════════════════════════════════════════
+// class SpBrandLogo extends StatelessWidget {
+//   final double size;
+//   final Color bgColor;
+//   final BorderRadius? borderRadius;
 
-  const SpBrandLogo({
-    super.key,
-    this.size = 88,
-    this.bgColor = Colors.white,
-    this.borderRadius,
-  });
+//   const SpBrandLogo({
+//     super.key,
+//     this.size = 88,
+//     this.bgColor = Colors.white,
+//     this.borderRadius,
+//   });
 
-  @override
-  Widget build(BuildContext context) {
-    final br = borderRadius ?? BorderRadius.circular(size * 0.22);
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: br,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 18,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.sports_soccer,
-            color: AppColors.primary,
-            size: size * 0.36,
-          ),
-          const SizedBox(height: 4),
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: 'SPORT',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: size * 0.12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                TextSpan(
-                  text: 'PLUS',
-                  style: TextStyle(
-                    color: AppColors.primaryLight,
-                    fontSize: size * 0.12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     final br = borderRadius ?? BorderRadius.circular(size * 0.22);
+//     return Container(
+//       width: size,
+//       height: size,
+//       decoration: BoxDecoration(
+//         color: bgColor,
+//         borderRadius: br,
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.black.withValues(alpha: 0.10),
+//             blurRadius: 18,
+//             offset: const Offset(0, 5),
+//           ),
+//         ],
+//       ),
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           Icon(
+//             Icons.sports_soccer,
+//             color: AppColors.primary,
+//             size: size * 0.36,
+//           ),
+//           const SizedBox(height: 4),
+//           RichText(
+//             text: TextSpan(
+//               children: [
+//                 TextSpan(
+//                   text: 'SPORT',
+//                   style: TextStyle(
+//                     color: AppColors.primary,
+//                     fontSize: size * 0.12,
+//                     fontWeight: FontWeight.w900,
+//                     letterSpacing: 0.5,
+//                   ),
+//                 ),
+//                 TextSpan(
+//                   text: 'PLUS',
+//                   style: TextStyle(
+//                     color: AppColors.primaryLight,
+//                     fontSize: size * 0.12,
+//                     fontWeight: FontWeight.w900,
+//                     letterSpacing: 0.5,
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 // ════════════════════════════════════════════
 //  APP NAME TEXT  ("SportPlus" italic)
@@ -192,9 +192,7 @@ class SpTextField extends StatelessWidget {
             color: AppColors.fieldBg,
             borderRadius: BorderRadius.circular(AppSpacing.fieldRadius),
             border: Border.all(
-              color: errorText != null
-                  ? AppColors.errorRed
-                  : AppColors.fieldBorder,
+              color: errorText != null ? AppColors.errorRed : AppColors.fieldBorder,
               width: errorText != null ? 1.5 : 1,
             ),
           ),
@@ -220,17 +218,10 @@ class SpTextField extends StatelessWidget {
               prefixIcon: prefixIcon != null
                   ? Padding(
                       padding: const EdgeInsets.only(left: 14, right: 10),
-                      child: Icon(
-                        prefixIcon,
-                        color: AppColors.textHint,
-                        size: 20,
-                      ),
+                      child: Icon(prefixIcon, color: AppColors.textHint, size: 20),
                     )
                   : null,
-              prefixIconConstraints: const BoxConstraints(
-                minWidth: 0,
-                minHeight: 0,
-              ),
+              prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
               hintText: hintText,
               hintStyle: AppText.hintText,
             ),
@@ -273,9 +264,7 @@ class SpPasswordField extends StatelessWidget {
             color: AppColors.fieldBg,
             borderRadius: BorderRadius.circular(AppSpacing.fieldRadius),
             border: Border.all(
-              color: errorText != null
-                  ? AppColors.errorRed
-                  : AppColors.fieldBorder,
+              color: errorText != null ? AppColors.errorRed : AppColors.fieldBorder,
               width: errorText != null ? 1.5 : 1,
             ),
           ),
@@ -285,23 +274,15 @@ class SpPasswordField extends StatelessWidget {
             onChanged: onChanged,
             style: const TextStyle(color: AppColors.textDark, fontSize: 15),
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 17,
-              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
               border: InputBorder.none,
               prefixIcon: const Padding(
                 padding: EdgeInsets.only(left: 14, right: 10),
-                child: Icon(
-                  Icons.lock_outline,
-                  color: AppColors.textHint,
-                  size: 20,
-                ),
+                child: Icon(Icons.lock_outline, color: AppColors.textHint, size: 20),
               ),
-              prefixIconConstraints: const BoxConstraints(
-                minWidth: 0,
-                minHeight: 0,
-              ),
+              prefixIconConstraints:
+                  const BoxConstraints(minWidth: 0, minHeight: 0),
               hintText: hintText,
               hintStyle: TextStyle(
                 color: AppColors.textHint,
@@ -321,10 +302,8 @@ class SpPasswordField extends StatelessWidget {
                   ),
                 ),
               ),
-              suffixIconConstraints: const BoxConstraints(
-                minWidth: 0,
-                minHeight: 0,
-              ),
+              suffixIconConstraints:
+                  const BoxConstraints(minWidth: 0, minHeight: 0),
             ),
           ),
         ),
@@ -630,22 +609,10 @@ class SpBottomNav extends StatelessWidget {
       unselectedItemColor: AppColors.navUnselected,
       showUnselectedLabels: true,
       items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: 'Trang chủ',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.grid_view_outlined),
-          label: 'Sân',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.history_outlined),
-          label: 'Lịch sử',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline_rounded),
-          label: 'Hồ sơ',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Trang chủ'),
+        BottomNavigationBarItem(icon: Icon(Icons.grid_view_outlined), label: 'Sân'),
+        BottomNavigationBarItem(icon: Icon(Icons.history_outlined), label: 'Lịch sử'),
+        BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Hồ sơ'),
       ],
     );
   }
@@ -728,7 +695,12 @@ class SpCard extends StatelessWidget {
   final EdgeInsets? padding;
   final double? radius;
 
-  const SpCard({super.key, required this.child, this.padding, this.radius});
+  const SpCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.radius,
+  });
 
   @override
   Widget build(BuildContext context) {

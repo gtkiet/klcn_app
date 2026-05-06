@@ -1,4 +1,4 @@
-// lib/screens/booking/booking_failure_screen.dart
+// lib/screens/booking_failure_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,29 +23,21 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
   void initState() {
     super.initState();
     _shakeCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
+        vsync: this, duration: const Duration(milliseconds: 600));
 
     _shakeAnim = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0.0, end: -12.0), weight: 1),
       TweenSequenceItem(tween: Tween(begin: -12.0, end: 12.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 12.0, end: -8.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: -8.0, end: 8.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 8.0, end: 0.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 12.0, end: -8.0),  weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -8.0, end: 8.0),   weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 8.0, end: 0.0),    weight: 1),
     ]).animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeInOut));
 
     _fadeAnim = CurvedAnimation(
-      parent: _shakeCtrl,
-      curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
-    );
+        parent: _shakeCtrl, curve: const Interval(0.0, 0.4, curve: Curves.easeOut));
 
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => Future.delayed(
-        const Duration(milliseconds: 200),
-        () => _shakeCtrl.forward(),
-      ),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) =>
+        Future.delayed(const Duration(milliseconds: 200), () => _shakeCtrl.forward()));
   }
 
   @override
@@ -54,10 +46,9 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
     super.dispose();
   }
 
-  void _onRetry() =>
-      Navigator.pushReplacementNamed(context, '/booking_confirm');
+  void _onRetry()   => Navigator.pushReplacementNamed(context, '/booking_confirm');
   void _onSupport() => Navigator.pushNamed(context, '/support');
-  void _onClose() => Navigator.pop(context);
+  void _onClose()   => Navigator.pop(context);
 
   @override
   Widget build(BuildContext context) {
@@ -74,9 +65,7 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
         ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.pagePadH,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -178,15 +167,9 @@ class _ErrorCircle extends StatelessWidget {
             ],
           ),
           child: const Center(
-            child: Text(
-              '!',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 42,
-                fontWeight: FontWeight.w900,
-                height: 1,
-              ),
-            ),
+            child: Text('!',
+                style: TextStyle(
+                    color: Colors.white, fontSize: 42, fontWeight: FontWeight.w900, height: 1)),
           ),
         ),
       ),
@@ -209,43 +192,22 @@ class _FailureDetailCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
-                  Text(
-                    'CHI TIẾT SÂN',
-                    style: TextStyle(
-                      color: AppColors.textHint,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
+                  Text('CHI TIẾT SÂN',
+                      style: TextStyle(color: AppColors.textHint, fontSize: 10.5,
+                          fontWeight: FontWeight.w700, letterSpacing: 1.0)),
                   SizedBox(height: 5),
-                  Text(
-                    'Arena Santiago',
-                    style: TextStyle(
-                      color: AppColors.infoBlue,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  Text('Arena Santiago',
+                      style: TextStyle(color: AppColors.infoBlue, fontSize: 20, fontWeight: FontWeight.w800)),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: AppColors.badgeCancelBg,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  'THẤT BẠI',
-                  style: TextStyle(
-                    color: AppColors.badgeCancelText,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                child: const Text('THẤT BẠI',
+                    style: TextStyle(color: AppColors.badgeCancelText, fontSize: 11, fontWeight: FontWeight.w800)),
               ),
             ],
           ),
@@ -282,18 +244,9 @@ class _FailureDetailCard extends StatelessWidget {
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Tổng tiền',
-                style: TextStyle(color: AppColors.textMid, fontSize: 15),
-              ),
-              Text(
-                '520.000đ',
-                style: TextStyle(
-                  color: Color(0xFFE53935),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
+              Text('Tổng tiền', style: TextStyle(color: AppColors.textMid, fontSize: 15)),
+              Text('520.000đ',
+                  style: TextStyle(color: Color(0xFFE53935), fontSize: 22, fontWeight: FontWeight.w900)),
             ],
           ),
         ],
@@ -329,19 +282,12 @@ class _InfoCell extends StatelessWidget {
         children: [
           Icon(icon, color: iconColor, size: 18),
           const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(color: AppColors.textHint, fontSize: 11.5),
-          ),
+          Text(label,
+              style: const TextStyle(color: AppColors.textHint, fontSize: 11.5)),
           const SizedBox(height: 3),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppColors.textDark,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          Text(value,
+              style: const TextStyle(
+                  color: AppColors.textDark, fontSize: 14.5, fontWeight: FontWeight.w800)),
         ],
       ),
     );

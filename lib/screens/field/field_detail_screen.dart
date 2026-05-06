@@ -1,4 +1,4 @@
-// lib/screens/fields/field_detail_screen.dart
+// lib/screens/field_detail_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,21 +24,16 @@ class _TimeSlot {
   final String end;
   final bool booked;
   final int price;
-  const _TimeSlot({
-    required this.start,
-    required this.end,
-    this.booked = false,
-    this.price = 450000,
-  });
+  const _TimeSlot({required this.start, required this.end, this.booked = false, this.price = 450000});
   String get time => '$start - $end';
 }
 
 // ── MOCK DATA ─────────────────────────────────
 final _amenities = [
-  const _Amenity(Icons.lightbulb_outline, Colors.green, 'Đèn chiếu sáng'),
-  const _Amenity(Icons.checkroom, Colors.indigo, 'Phòng thay đồ'),
-  const _Amenity(Icons.local_parking, Colors.deepOrange, 'Bãi đỗ xe'),
-  const _Amenity(Icons.wifi, Colors.blue, 'Wifi miễn phí'),
+  const _Amenity(Icons.lightbulb_outline,   Colors.green,      'Đèn chiếu sáng'),
+  const _Amenity(Icons.checkroom,            Colors.indigo,     'Phòng thay đồ'),
+  const _Amenity(Icons.local_parking,        Colors.deepOrange, 'Bãi đỗ xe'),
+  const _Amenity(Icons.wifi,                 Colors.blue,       'Wifi miễn phí'),
 ];
 
 final _dates = List.generate(7, (i) => _DateItem('T${i + 2}', 20 + i));
@@ -67,19 +62,12 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
   int? _selectedSlot;
   bool _isFavorite = false;
 
-  int get _totalPrice =>
-      _selectedSlot != null ? _slots[_selectedSlot!].price : 0;
+  int get _totalPrice => _selectedSlot != null ? _slots[_selectedSlot!].price : 0;
 
   void _onBook() {
     if (_selectedSlot == null) return;
-    Navigator.pushNamed(
-      context,
-      '/booking_confirm',
-      arguments: {
-        'date': _dates[_selectedDate],
-        'slot': _slots[_selectedSlot!],
-      },
-    );
+    Navigator.pushNamed(context, '/booking_confirm',
+        arguments: {'date': _dates[_selectedDate], 'slot': _slots[_selectedSlot!]});
   }
 
   @override
@@ -92,10 +80,8 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
           title: const Text('Chi tiết sân'),
           actions: [
             IconButton(
-              icon: Icon(
-                _isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: _isFavorite ? Colors.red : AppColors.primary,
-              ),
+              icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: _isFavorite ? Colors.red : AppColors.primary),
               onPressed: () => setState(() => _isFavorite = !_isFavorite),
             ),
           ],
@@ -118,11 +104,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                 ),
               ),
               child: const Center(
-                child: Icon(
-                  Icons.sports_soccer,
-                  color: Colors.white24,
-                  size: 80,
-                ),
+                child: Icon(Icons.sports_soccer, color: Colors.white24, size: 80),
               ),
             ),
 
@@ -130,72 +112,38 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
 
             // Info card
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.pagePadH,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
               child: SpCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Arena Santiago',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textDark,
-                      ),
-                    ),
+                    const Text('Arena Santiago',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textDark)),
                     const SizedBox(height: 4),
                     Row(
                       children: const [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: AppColors.textLight,
-                        ),
+                        Icon(Icons.location_on_outlined, size: 14, color: AppColors.textLight),
                         SizedBox(width: 4),
-                        Text(
-                          'Phú Nhuận, TP.HCM',
-                          style: TextStyle(color: AppColors.textLight),
-                        ),
+                        Text('Phú Nhuận, TP.HCM', style: TextStyle(color: AppColors.textLight)),
                       ],
                     ),
                     const Divider(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          '450.000đ / giờ',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 18,
-                          ),
-                        ),
+                        const Text('450.000đ / giờ',
+                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 18)),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: AppColors.primaryUltraLight,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             children: const [
-                              Icon(
-                                Icons.star_rounded,
-                                size: 14,
-                                color: AppColors.ratingGold,
-                              ),
+                              Icon(Icons.star_rounded, size: 14, color: AppColors.ratingGold),
                               SizedBox(width: 3),
-                              Text(
-                                '4.8',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                ),
-                              ),
+                              Text('4.8', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                             ],
                           ),
                         ),
@@ -212,9 +160,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
             _SectionTitle('Tiện ích sân'),
             const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.pagePadH,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
               child: GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -239,13 +185,8 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                         Icon(item.icon, color: item.color, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            item.label,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
+                          child: Text(item.label,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                         ),
                       ],
                     ),
@@ -262,10 +203,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
               height: 74,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.pagePadH,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH, vertical: 6),
                 itemCount: _dates.length,
                 itemBuilder: (_, i) {
                   final selected = i == _selectedDate;
@@ -283,27 +221,16 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            _dates[i].label,
-                            style: TextStyle(
-                              color: selected
-                                  ? Colors.white
-                                  : AppColors.textMid,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          Text(_dates[i].label,
+                              style: TextStyle(
+                                  color: selected ? Colors.white : AppColors.textMid,
+                                  fontSize: 12, fontWeight: FontWeight.w600)),
                           const SizedBox(height: 2),
-                          Text(
-                            '${_dates[i].date}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
-                              color: selected
-                                  ? Colors.white
-                                  : AppColors.textDark,
-                            ),
-                          ),
+                          Text('${_dates[i].date}',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                  color: selected ? Colors.white : AppColors.textDark)),
                         ],
                       ),
                     ),
@@ -325,26 +252,19 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                   final slot = _slots[i];
                   final isSelected = _selectedSlot == i;
                   return GestureDetector(
-                    onTap: slot.booked
-                        ? null
-                        : () => setState(() => _selectedSlot = i),
+                    onTap: slot.booked ? null : () => setState(() => _selectedSlot = i),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppColors.primary
                             : slot.booked
-                            ? AppColors.fieldBg
-                            : Colors.white,
+                                ? AppColors.fieldBg
+                                : Colors.white,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.fieldBorder,
+                          color: isSelected ? AppColors.primary : AppColors.fieldBorder,
                           width: isSelected ? 2 : 1,
                         ),
                       ),
@@ -356,11 +276,9 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                           color: slot.booked
                               ? AppColors.textHint
                               : isSelected
-                              ? Colors.white
-                              : AppColors.textDark,
-                          decoration: slot.booked
-                              ? TextDecoration.lineThrough
-                              : null,
+                                  ? Colors.white
+                                  : AppColors.textDark,
+                          decoration: slot.booked ? TextDecoration.lineThrough : null,
                         ),
                       ),
                     ),
@@ -371,27 +289,14 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
 
             // Legend
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.pagePadH,
-                0,
-                AppSpacing.pagePadH,
-                16,
-              ),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 0, AppSpacing.pagePadH, 16),
               child: Row(
                 children: [
                   _LegendDot(color: AppColors.primary, label: 'Đã chọn'),
                   const SizedBox(width: 20),
-                  _LegendDot(
-                    color: AppColors.fieldBg,
-                    label: 'Đã đặt',
-                    border: true,
-                  ),
+                  _LegendDot(color: AppColors.fieldBg, label: 'Đã đặt', border: true),
                   const SizedBox(width: 20),
-                  _LegendDot(
-                    color: Colors.white,
-                    label: 'Còn trống',
-                    border: true,
-                  ),
+                  _LegendDot(color: Colors.white, label: 'Còn trống', border: true),
                 ],
               ),
             ),
@@ -428,11 +333,7 @@ class _LegendDot extends StatelessWidget {
   final Color color;
   final String label;
   final bool border;
-  const _LegendDot({
-    required this.color,
-    required this.label,
-    this.border = false,
-  });
+  const _LegendDot({required this.color, required this.label, this.border = false});
 
   @override
   Widget build(BuildContext context) {
@@ -448,10 +349,7 @@ class _LegendDot extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 5),
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.textLight, fontSize: 12),
-        ),
+        Text(label, style: const TextStyle(color: AppColors.textLight, fontSize: 12)),
       ],
     );
   }
@@ -463,11 +361,7 @@ class _BottomBar extends StatelessWidget {
   final bool enabled;
   final VoidCallback onTap;
 
-  const _BottomBar({
-    required this.price,
-    required this.enabled,
-    required this.onTap,
-  });
+  const _BottomBar({required this.price, required this.enabled, required this.onTap});
 
   String _fmt(int p) => p == 0 ? '--' : '${(p / 1000).toStringAsFixed(0)}k';
 
@@ -493,24 +387,13 @@ class _BottomBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'TỔNG',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textLight,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
+                  const Text('TỔNG',
+                      style: TextStyle(fontSize: 10, color: AppColors.textLight,
+                          fontWeight: FontWeight.w700, letterSpacing: 0.8)),
                   const SizedBox(height: 2),
-                  Text(
-                    _fmt(price),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  Text(_fmt(price),
+                      style: const TextStyle(
+                          fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primary)),
                 ],
               ),
               const SizedBox(width: 16),
@@ -529,21 +412,12 @@ class _BottomBar extends StatelessWidget {
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            'ĐẶT SÂN NGAY',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
+                          Text('ĐẶT SÂN NGAY',
+                              style: TextStyle(
+                                  color: Colors.white, fontSize: 15,
+                                  fontWeight: FontWeight.w900, letterSpacing: 1.2)),
                           SizedBox(width: 8),
-                          Icon(
-                            Icons.arrow_forward,
-                            color: Colors.white,
-                            size: 18,
-                          ),
+                          Icon(Icons.arrow_forward, color: Colors.white, size: 18),
                         ],
                       ),
                     ),

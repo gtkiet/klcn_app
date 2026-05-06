@@ -1,4 +1,4 @@
-// lib/screens/auth/reset_password_screen.dart
+// lib/screens/reset_password_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,16 +13,15 @@ class ResetPasswordScreen extends StatefulWidget {
 }
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
-  final _newPassCtrl = TextEditingController();
+  final _newPassCtrl    = TextEditingController();
   final _confirmPassCtrl = TextEditingController();
 
-  final ValueNotifier<_PasswordStrength> _strengthNotifier = ValueNotifier(
-    _PasswordStrength.weak,
-  );
+  final ValueNotifier<_PasswordStrength> _strengthNotifier =
+      ValueNotifier(_PasswordStrength.weak);
 
-  bool _obscureNew = true;
+  bool _obscureNew     = true;
   bool _obscureConfirm = true;
-  bool _isLoading = false;
+  bool _isLoading      = false;
 
   String? _newPassError;
   String? _confirmPassError;
@@ -192,16 +191,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(height: 24),
 
                 GestureDetector(
-                  onTap: () =>
-                      Navigator.pushReplacementNamed(context, '/login'),
+                  onTap: () => Navigator.pushReplacementNamed(context, '/login'),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.arrow_back,
-                        size: 16,
-                        color: AppColors.textMid,
-                      ),
+                      Icon(Icons.arrow_back, size: 16, color: AppColors.textMid),
                       SizedBox(width: 6),
                       Text(
                         'Quay lại đăng nhập',
@@ -246,25 +240,22 @@ class _PasswordStrengthBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color, filled) = switch (strength) {
-      _PasswordStrength.weak => ('Yếu', const Color(0xFFE53935), 1),
+      _PasswordStrength.weak   => ('Yếu', const Color(0xFFE53935), 1),
       _PasswordStrength.medium => ('Trung bình', const Color(0xFFFB8C00), 2),
       _PasswordStrength.strong => ('Mạnh', AppColors.primary, 3),
     };
     return Row(
       children: [
-        ...List.generate(
-          3,
-          (i) => Expanded(
-            child: Container(
-              height: 4,
-              margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
-              decoration: BoxDecoration(
-                color: i < filled ? color : AppColors.fieldBorder,
-                borderRadius: BorderRadius.circular(2),
-              ),
+        ...List.generate(3, (i) => Expanded(
+          child: Container(
+            height: 4,
+            margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
+            decoration: BoxDecoration(
+              color: i < filled ? color : AppColors.fieldBorder,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-        ),
+        )),
         const SizedBox(width: 8),
         Text(
           label,

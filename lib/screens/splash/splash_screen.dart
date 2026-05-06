@@ -1,4 +1,4 @@
-// lib/screens/splash/splash_screen.dart
+// lib/screens/splash_screen.dart
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -17,7 +17,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _fadeCtrl;
   late final AnimationController _scaleCtrl;
   late final Animation<double> _fadeAnim;
-  // late final Animation<double> _scaleAnim;
+  late final Animation<double> _scaleAnim;
 
   @override
   void initState() {
@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-    // _scaleAnim = CurvedAnimation(parent: _scaleCtrl, curve: Curves.elasticOut);
+    _scaleAnim = CurvedAnimation(parent: _scaleCtrl, curve: Curves.elasticOut);
 
     _fadeCtrl.forward();
     _scaleCtrl.forward();
@@ -82,7 +82,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // // Brand logo card (animated)
+                  // Brand logo card (animated)
                   // ScaleTransition(
                   //   scale: _scaleAnim,
                   //   child: _SplashLogoCard(size: size),
@@ -122,7 +122,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-// ── LOGO CARD ─────────────────────────────────
+// // ── LOGO CARD ─────────────────────────────────
 // class _SplashLogoCard extends StatelessWidget {
 //   final Size size;
 //   const _SplashLogoCard({required this.size});
@@ -256,19 +256,13 @@ class _DecorativeCircle extends StatelessWidget {
 
   const _DecorativeCircle({
     required this.diameter,
-    this.top,
-    this.left,
-    this.bottom,
-    this.right,
+    this.top, this.left, this.bottom, this.right,
   });
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: top,
-      left: left,
-      bottom: bottom,
-      right: right,
+      top: top, left: left, bottom: bottom, right: right,
       child: Container(
         width: diameter,
         height: diameter,

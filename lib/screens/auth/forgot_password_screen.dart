@@ -1,4 +1,4 @@
-// lib/screens/auth/forgot_password_screen.dart
+// lib/screens/forgot_password_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -91,10 +91,7 @@ class _UpperSection extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.pagePadH,
-        24,
-        AppSpacing.pagePadH,
-        36,
+        AppSpacing.pagePadH, 24, AppSpacing.pagePadH, 36,
       ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -221,11 +218,7 @@ class _LowerCard extends StatelessWidget {
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.arrow_back,
-                        size: 17,
-                        color: AppColors.textMid,
-                      ),
+                      Icon(Icons.arrow_back, size: 17, color: AppColors.textMid),
                       SizedBox(width: 8),
                       Text(
                         'Quay lại Đăng nhập',

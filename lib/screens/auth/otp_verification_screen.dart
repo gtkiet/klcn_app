@@ -1,4 +1,4 @@
-// lib/screens/auth/otp_verification_screen.dart
+// lib/screens/otp_verification_screen.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -14,22 +14,18 @@ class OtpVerificationScreen extends StatefulWidget {
 }
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  static const int _otpLength = 4;
-  static const int _countdownSec = 59;
+  static const int _otpLength     = 4;
+  static const int _countdownSec  = 59;
 
-  final List<TextEditingController> _controllers = List.generate(
-    _otpLength,
-    (_) => TextEditingController(),
-  );
-  final List<FocusNode> _focusNodes = List.generate(
-    _otpLength,
-    (_) => FocusNode(),
-  );
+  final List<TextEditingController> _controllers =
+      List.generate(_otpLength, (_) => TextEditingController());
+  final List<FocusNode> _focusNodes =
+      List.generate(_otpLength, (_) => FocusNode());
 
   final ValueNotifier<int> _secondsLeft = ValueNotifier(_countdownSec);
   Timer? _timer;
-  bool _canResend = false;
-  bool _isLoading = false;
+  bool _canResend   = false;
+  bool _isLoading   = false;
   String? _errorMsg;
 
   @override
@@ -71,7 +67,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   String get _countdownLabel =>
       '00:${_secondsLeft.value.toString().padLeft(2, '0')}';
 
-  double get _progress => (_countdownSec - _secondsLeft.value) / _countdownSec;
+  double get _progress =>
+      (_countdownSec - _secondsLeft.value) / _countdownSec;
 
   void _onDigitChanged(int index, String value) {
     setState(() => _errorMsg = null);
@@ -126,9 +123,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.pagePadH,
-            ),
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -251,19 +247,22 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   Widget _footerText(String t) => Text(
-    t,
-    style: const TextStyle(
-      color: Color(0xFFAAAFAA),
-      fontSize: 10,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 1.2,
-    ),
-  );
+        t,
+        style: const TextStyle(
+          color: Color(0xFFAAAFAA),
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.2,
+        ),
+      );
 
   Widget _dot() => const Padding(
-    padding: EdgeInsets.symmetric(horizontal: 8),
-    child: Text('•', style: TextStyle(color: Color(0xFFAAAFAA), fontSize: 10)),
-  );
+        padding: EdgeInsets.symmetric(horizontal: 8),
+        child: Text(
+          '•',
+          style: TextStyle(color: Color(0xFFAAAFAA), fontSize: 10),
+        ),
+      );
 }
 
 // ── OTP BOX ───────────────────────────────────
@@ -301,8 +300,8 @@ class _OtpBoxState extends State<_OtpBox> {
     final borderColor = widget.hasError
         ? AppColors.errorRed
         : _isFocused
-        ? AppColors.primary
-        : Colors.transparent;
+            ? AppColors.primary
+            : Colors.transparent;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),

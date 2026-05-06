@@ -1,4 +1,4 @@
-// lib/screens/auth/register_screen.dart
+// lib/screens/register_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,15 +13,15 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _nameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
+  final _nameCtrl     = TextEditingController();
+  final _emailCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  final _confirmCtrl = TextEditingController();
+  final _confirmCtrl  = TextEditingController();
 
   bool _obscurePassword = true;
-  bool _obscureConfirm = true;
-  bool _agreedToTerms = false;
-  bool _isLoading = false;
+  bool _obscureConfirm  = true;
+  bool _agreedToTerms   = false;
+  bool _isLoading       = false;
 
   String? _nameError;
   String? _emailError;
@@ -70,11 +70,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
-  void _onLogin() => Navigator.pushReplacementNamed(context, '/login');
-  void _onGoogleRegister() {} // TODO
+  void _onLogin()           => Navigator.pushReplacementNamed(context, '/login');
+  void _onGoogleRegister()  {}  // TODO
   void _onFacebookRegister() {} // TODO
-  void _onTermsTap() => Navigator.pushNamed(context, '/terms');
-  void _onPrivacyTap() => Navigator.pushNamed(context, '/privacy');
+  void _onTermsTap()        => Navigator.pushNamed(context, '/terms');
+  void _onPrivacyTap()      => Navigator.pushNamed(context, '/privacy');
 
   @override
   Widget build(BuildContext context) {
@@ -98,9 +98,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.pagePadH,
-            ),
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

@@ -1,4 +1,4 @@
-// lib/screens/booking/booking_confirmation_screen.dart
+// lib/screens/booking_confirmation_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -50,8 +50,7 @@ class BookingConfirmationScreen extends StatefulWidget {
   const BookingConfirmationScreen({super.key});
 
   @override
-  State<BookingConfirmationScreen> createState() =>
-      _BookingConfirmationScreenState();
+  State<BookingConfirmationScreen> createState() => _BookingConfirmationScreenState();
 }
 
 class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
@@ -130,37 +129,21 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
             const SizedBox(height: 20),
 
             // Add-ons
-            const Text(
-              'Dịch vụ đi kèm',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textDark,
-              ),
-            ),
+            const Text('Dịch vụ đi kèm',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark)),
             const SizedBox(height: 10),
-            ..._addons.asMap().entries.map(
-              (e) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _AddonTile(
-                  addon: e.value,
-                  onTap: () => setState(
-                    () => _addons[e.key].selected = !_addons[e.key].selected,
+            ..._addons.asMap().entries.map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _AddonTile(
+                    addon: e.value,
+                    onTap: () => setState(() => _addons[e.key].selected = !_addons[e.key].selected),
                   ),
-                ),
-              ),
-            ),
+                )),
 
             // Payment method
             const SizedBox(height: 6),
-            const Text(
-              'Phương thức thanh toán',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textDark,
-              ),
-            ),
+            const Text('Phương thức thanh toán',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark)),
             const SizedBox(height: 10),
             _PaymentMethodCard(
               selected: _paymentMethod,
@@ -204,21 +187,14 @@ class _StadiumHeroCard extends StatelessWidget {
                 ),
               ),
               child: const Center(
-                child: Icon(
-                  Icons.sports_soccer,
-                  size: 80,
-                  color: Colors.white12,
-                ),
+                child: Icon(Icons.sports_soccer, size: 80, color: Colors.white12),
               ),
             ),
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.65),
-                    ],
+                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.65)],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -233,32 +209,15 @@ class _StadiumHeroCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'SÂN CAO CẤP',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                        color: AppColors.primary, borderRadius: BorderRadius.circular(6)),
+                    child: const Text('SÂN CAO CẤP',
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Arena Santiago',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+                  const Text('Arena Santiago',
+                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
                 ],
               ),
             ),
@@ -286,26 +245,16 @@ class _LocationCard extends StatelessWidget {
               color: AppColors.primaryUltraLight,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.location_on_outlined,
-              color: AppColors.primary,
-            ),
+            child: const Icon(Icons.location_on_outlined, color: AppColors.primary),
           ),
           const SizedBox(width: 12),
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Phú Nhuận, TP.HCM',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                ),
-              ),
-              Text(
-                'Sân đạt chuẩn FIFA',
-                style: TextStyle(color: AppColors.textLight, fontSize: 13),
-              ),
+              Text('Phú Nhuận, TP.HCM',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              Text('Sân đạt chuẩn FIFA',
+                  style: TextStyle(color: AppColors.textLight, fontSize: 13)),
             ],
           ),
         ],
@@ -324,40 +273,22 @@ class _BookingDetailCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'CHI TIẾT ĐẶT SÂN',
-            style: TextStyle(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
-            ),
-          ),
+          const Text('CHI TIẾT ĐẶT SÂN',
+              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
           const SizedBox(height: 12),
           Row(
             children: const [
-              Expanded(
-                child: _DetailCell(label: 'NGÀY', value: '20/10/2026'),
-              ),
+              Expanded(child: _DetailCell(label: 'NGÀY', value: '20/10/2026')),
               SizedBox(width: 10),
-              Expanded(
-                child: _DetailCell(label: 'GIỜ', value: '18:00 - 19:00'),
-              ),
+              Expanded(child: _DetailCell(label: 'GIỜ', value: '18:00 - 19:00')),
             ],
           ),
           const SizedBox(height: 10),
           Row(
             children: const [
-              Expanded(
-                child: _DetailCell(label: 'THỜI LƯỢNG', value: '1 giờ'),
-              ),
+              Expanded(child: _DetailCell(label: 'THỜI LƯỢNG', value: '1 giờ')),
               SizedBox(width: 10),
-              Expanded(
-                child: _DetailCell(
-                  label: 'GIÁ',
-                  value: '450.000đ',
-                  valueColor: AppColors.primary,
-                ),
-              ),
+              Expanded(child: _DetailCell(label: 'GIÁ', value: '450.000đ', valueColor: AppColors.primary)),
             ],
           ),
         ],
@@ -370,11 +301,7 @@ class _DetailCell extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
-  const _DetailCell({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
+  const _DetailCell({required this.label, required this.value, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -388,24 +315,15 @@ class _DetailCell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textHint,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.6,
-            ),
-          ),
+          Text(label,
+              style: const TextStyle(color: AppColors.textHint, fontSize: 10,
+                  fontWeight: FontWeight.w600, letterSpacing: 0.6)),
           const SizedBox(height: 5),
-          Text(
-            value,
-            style: TextStyle(
-              color: valueColor ?? AppColors.textDark,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(value,
+              style: TextStyle(
+                  color: valueColor ?? AppColors.textDark,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -451,30 +369,15 @@ class _AddonTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    addon.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  Text(
-                    addon.description,
-                    style: const TextStyle(
-                      color: AppColors.textLight,
-                      fontSize: 13,
-                    ),
-                  ),
+                  Text(addon.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  Text(addon.description,
+                      style: const TextStyle(color: AppColors.textLight, fontSize: 13)),
                 ],
               ),
             ),
-            Text(
-              addon.priceDisplay,
-              style: const TextStyle(
-                color: AppColors.textMid,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            Text(addon.priceDisplay,
+                style: const TextStyle(color: AppColors.textMid, fontWeight: FontWeight.w600)),
             const SizedBox(width: 10),
             Icon(
               addon.selected ? Icons.check_box : Icons.check_box_outline_blank,
@@ -551,10 +454,7 @@ class _PaymentItem extends StatelessWidget {
             const SizedBox(width: 12),
             Icon(icon, color: AppColors.textMid, size: 20),
             const SizedBox(width: 10),
-            Text(
-              label,
-              style: const TextStyle(color: AppColors.textDark, fontSize: 15),
-            ),
+            Text(label, style: const TextStyle(color: AppColors.textDark, fontSize: 15)),
           ],
         ),
       ),
@@ -567,11 +467,7 @@ class _PriceSummaryCard extends StatelessWidget {
   final String base;
   final String addon;
   final String total;
-  const _PriceSummaryCard({
-    required this.base,
-    required this.addon,
-    required this.total,
-  });
+  const _PriceSummaryCard({required this.base, required this.addon, required this.total});
 
   @override
   Widget build(BuildContext context) {
@@ -596,33 +492,21 @@ class _PriceRow extends StatelessWidget {
   final String label;
   final String value;
   final bool isTotal;
-  const _PriceRow({
-    required this.label,
-    required this.value,
-    this.isTotal = false,
-  });
+  const _PriceRow({required this.label, required this.value, this.isTotal = false});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
+        Text(label, style: TextStyle(
             color: isTotal ? AppColors.textDark : AppColors.textMid,
             fontSize: isTotal ? 15 : 14,
-            fontWeight: isTotal ? FontWeight.w700 : FontWeight.normal,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
+            fontWeight: isTotal ? FontWeight.w700 : FontWeight.normal)),
+        Text(value, style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: isTotal ? 18 : 14,
-            color: isTotal ? AppColors.primary : AppColors.textDark,
-          ),
-        ),
+            color: isTotal ? AppColors.primary : AppColors.textDark)),
       ],
     );
   }

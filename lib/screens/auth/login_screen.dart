@@ -1,4 +1,4 @@
-// lib/screens/auth/login_screen.dart
+// lib/screens/login_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,10 +13,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _phoneController = TextEditingController();
+  final _phoneController    = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _isLoading = false;
+  bool _isLoading       = false;
 
   @override
   void dispose() {
@@ -36,9 +36,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onForgotPassword() => Navigator.pushNamed(context, '/forgot_password');
-  void _onRegister() => Navigator.pushNamed(context, '/register');
-  void _onGoogleLogin() {} // TODO: GoogleAuthService.signIn()
-  void _onFacebookLogin() {} // TODO: FacebookAuthService.signIn()
+  void _onRegister()        => Navigator.pushNamed(context, '/register');
+  void _onGoogleLogin()     {}   // TODO: GoogleAuthService.signIn()
+  void _onFacebookLogin()   {}   // TODO: FacebookAuthService.signIn()
 
   @override
   Widget build(BuildContext context) {
@@ -59,9 +59,8 @@ class _LoginScreenState extends State<LoginScreen> {
             child: LayoutBuilder(
               builder: (context, constraints) => SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.pagePadH,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: IntrinsicHeight(

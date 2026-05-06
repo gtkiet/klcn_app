@@ -1,4 +1,4 @@
-// lib/screens/booking/booking_success_screen.dart
+// lib/screens/booking_success_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,17 +23,11 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
+        vsync: this, duration: const Duration(milliseconds: 700));
     _scaleAnim = CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
-    );
+        parent: _ctrl, curve: const Interval(0.0, 0.6, curve: Curves.elasticOut));
     _slideAnim = CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.35, 1.0, curve: Curves.easeOutCubic),
-    );
+        parent: _ctrl, curve: const Interval(0.35, 1.0, curve: Curves.easeOutCubic));
     WidgetsBinding.instance.addPostFrameCallback((_) => _ctrl.forward());
   }
 
@@ -43,13 +37,8 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
     super.dispose();
   }
 
-  void _onGoHome() =>
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
-  void _onViewHistory() => Navigator.pushNamedAndRemoveUntil(
-    context,
-    '/booking_history',
-    (_) => false,
-  );
+  void _onGoHome()    => Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+  void _onViewHistory() => Navigator.pushNamedAndRemoveUntil(context, '/booking_history', (_) => false);
 
   @override
   Widget build(BuildContext context) {
@@ -59,9 +48,7 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
         backgroundColor: AppColors.bgPage,
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.pagePadH,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -92,10 +79,7 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                       Text(
                         'Cảm ơn bạn đã sử dụng Sport Plus',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.textLight,
-                          fontSize: 15,
-                        ),
+                        style: TextStyle(color: AppColors.textLight, fontSize: 15),
                       ),
                     ],
                   ),
@@ -213,34 +197,18 @@ class _ReceiptCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppColors.fieldBorder),
                   ),
-                  child: const Icon(
-                    Icons.sports_soccer,
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
+                  child: const Icon(Icons.sports_soccer, color: AppColors.primary, size: 24),
                 ),
                 const SizedBox(width: 14),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
-                    Text(
-                      'TÊN SÂN',
-                      style: TextStyle(
-                        color: AppColors.textHint,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
+                    Text('TÊN SÂN',
+                        style: TextStyle(color: AppColors.textHint, fontSize: 10,
+                            fontWeight: FontWeight.w700, letterSpacing: 0.8)),
                     SizedBox(height: 4),
-                    Text(
-                      'Arena Santiago',
-                      style: TextStyle(
-                        color: AppColors.textDark,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                    Text('Arena Santiago',
+                        style: TextStyle(color: AppColors.textDark, fontSize: 18, fontWeight: FontWeight.w800)),
                   ],
                 ),
               ],
@@ -258,10 +226,7 @@ class _ReceiptCard extends StatelessWidget {
                   child: _ReceiptInfo(label: 'NGÀY', value: '20/10/2026'),
                 ),
                 Expanded(
-                  child: _ReceiptInfo(
-                    label: 'KHUNG GIỜ',
-                    value: '18:00 - 19:00',
-                  ),
+                  child: _ReceiptInfo(label: 'KHUNG GIỜ', value: '18:00 - 19:00'),
                 ),
               ],
             ),
@@ -270,10 +235,7 @@ class _ReceiptCard extends StatelessWidget {
           // Dashed divider
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(
-              height: 1,
-              child: CustomPaint(painter: SpDashPainter()),
-            ),
+            child: SizedBox(height: 1, child: CustomPaint(painter: SpDashPainter())),
           ),
 
           // Total
@@ -282,18 +244,10 @@ class _ReceiptCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: const [
-                Text(
-                  'Tổng tiền',
-                  style: TextStyle(color: AppColors.textMid, fontSize: 15),
-                ),
-                Text(
-                  '520.000đ',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                Text('Tổng tiền', style: TextStyle(color: AppColors.textMid, fontSize: 15)),
+                Text('520.000đ',
+                    style: TextStyle(
+                        color: AppColors.primary, fontSize: 24, fontWeight: FontWeight.w900)),
               ],
             ),
           ),
@@ -313,24 +267,12 @@ class _ReceiptInfo extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textHint,
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
-          ),
-        ),
+        Text(label,
+            style: const TextStyle(color: AppColors.textHint, fontSize: 10,
+                fontWeight: FontWeight.w700, letterSpacing: 0.8)),
         const SizedBox(height: 6),
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.textDark,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        Text(value,
+            style: const TextStyle(color: AppColors.textDark, fontSize: 15, fontWeight: FontWeight.w700)),
       ],
     );
   }

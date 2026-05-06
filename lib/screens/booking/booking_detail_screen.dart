@@ -1,4 +1,4 @@
-// lib/screens/booking/booking_detail_screen.dart
+// lib/screens/booking_detail_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,28 +19,10 @@ class _TimelineEvent {
 const _mockStatus = _BookingStatus.booked;
 
 final _timeline = [
-  const _TimelineEvent(
-    '20/10 08:12',
-    'Đặt sân thành công',
-    'Đơn đặt #AS-9821 đã được xác nhận',
-    done: true,
-  ),
-  const _TimelineEvent(
-    '20/10 08:13',
-    'Chờ thanh toán',
-    'Vui lòng thanh toán trước khi đến sân',
-    done: true,
-  ),
-  const _TimelineEvent(
-    '20/10 18:00',
-    'Đến sân',
-    'Xuất trình mã đặt sân tại quầy check-in',
-  ),
-  const _TimelineEvent(
-    '20/10 19:00',
-    'Hoàn thành',
-    'Kết thúc khung giờ thi đấu',
-  ),
+  const _TimelineEvent('20/10 08:12', 'Đặt sân thành công',  'Đơn đặt #AS-9821 đã được xác nhận', done: true),
+  const _TimelineEvent('20/10 08:13', 'Chờ thanh toán',      'Vui lòng thanh toán trước khi đến sân', done: true),
+  const _TimelineEvent('20/10 18:00', 'Đến sân',             'Xuất trình mã đặt sân tại quầy check-in'),
+  const _TimelineEvent('20/10 19:00', 'Hoàn thành',          'Kết thúc khung giờ thi đấu'),
 ];
 
 // ─────────────────────────────────────────────
@@ -55,7 +37,8 @@ class BookingDetailScreen extends StatefulWidget {
 
 class _BookingDetailScreenState extends State<BookingDetailScreen> {
   final _status = _mockStatus;
-  bool _isLoadingPay = false;
+  bool _isLoadingPay    = false;
+  // bool _isLoadingCancel = false;
   bool isLoadingCancel = false;
 
   void _onPay() {
@@ -68,8 +51,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     });
   }
 
-  void _onReview() => Navigator.pushNamed(context, '/review');
-  void _onRebook() => Navigator.pushNamed(context, '/booking_confirm');
+  void _onReview()  => Navigator.pushNamed(context, '/review');
+  void _onRebook()  => Navigator.pushNamed(context, '/booking_confirm');
   void _onSupport() => Navigator.pushNamed(context, '/support');
 
   void _onCancel() {
@@ -77,33 +60,20 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Xác nhận hủy',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-        content: const Text(
-          'Bạn có chắc muốn hủy đơn đặt sân này không?\nSẽ được hoàn tiền 100%.',
-        ),
+        title: const Text('Xác nhận hủy', style: TextStyle(fontWeight: FontWeight.w700)),
+        content: const Text('Bạn có chắc muốn hủy đơn đặt sân này không?\nSẽ được hoàn tiền 100%.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Không',
-              style: TextStyle(color: AppColors.textMid),
-            ),
+            child: const Text('Không', style: TextStyle(color: AppColors.textMid)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               // TODO: BookingService.cancel(bookingId)
             },
-            child: const Text(
-              'Hủy đặt sân',
-              style: TextStyle(
-                color: AppColors.badgeCancelText,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: const Text('Hủy đặt sân',
+                style: TextStyle(color: AppColors.badgeCancelText, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -144,12 +114,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             // Hero
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.pagePadH,
-                  16,
-                  AppSpacing.pagePadH,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 16, AppSpacing.pagePadH, 0),
                 child: _HeroCard(),
               ),
             ),
@@ -157,12 +122,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             // Booking code + status
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.pagePadH,
-                  14,
-                  AppSpacing.pagePadH,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
                 child: _BookingCodeRow(status: _status),
               ),
             ),
@@ -170,12 +130,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             // Detail info
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.pagePadH,
-                  14,
-                  AppSpacing.pagePadH,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
                 child: _DetailInfoCard(),
               ),
             ),
@@ -183,12 +138,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             // Add-ons
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.pagePadH,
-                  14,
-                  AppSpacing.pagePadH,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
                 child: _AddonsCard(),
               ),
             ),
@@ -196,12 +146,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             // Payment summary
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.pagePadH,
-                  14,
-                  AppSpacing.pagePadH,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
                 child: _PaymentSummaryCard(status: _status),
               ),
             ),
@@ -209,12 +154,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             // Timeline
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.pagePadH,
-                  14,
-                  AppSpacing.pagePadH,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
                 child: _TimelineCard(),
               ),
             ),
@@ -222,12 +162,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             // Support
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.pagePadH,
-                  14,
-                  AppSpacing.pagePadH,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
                 child: _SupportRow(onTap: _onSupport),
               ),
             ),
@@ -260,21 +195,14 @@ class _HeroCard extends StatelessWidget {
                 ),
               ),
               child: const Center(
-                child: Icon(
-                  Icons.sports_soccer,
-                  color: Colors.white12,
-                  size: 64,
-                ),
+                child: Icon(Icons.sports_soccer, color: Colors.white12, size: 64),
               ),
             ),
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.6),
-                    ],
+                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.6)],
                     stops: const [0.4, 1.0],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -290,45 +218,22 @@ class _HeroCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: const Text(
-                      'SÂN CAO CẤP',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                        color: AppColors.primary, borderRadius: BorderRadius.circular(5)),
+                    child: const Text('SÂN CAO CẤP',
+                        style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800)),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Arena Santiago',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+                  const Text('Arena Santiago',
+                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 3),
                   Row(
                     children: const [
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 13,
-                        color: Colors.white70,
-                      ),
+                      Icon(Icons.location_on_outlined, size: 13, color: Colors.white70),
                       SizedBox(width: 3),
-                      Text(
-                        'Phú Nhuận, TP.HCM',
-                        style: TextStyle(color: Colors.white70, fontSize: 12.5),
-                      ),
+                      Text('Phú Nhuận, TP.HCM',
+                          style: TextStyle(color: Colors.white70, fontSize: 12.5)),
                     ],
                   ),
                 ],
@@ -347,25 +252,13 @@ class _BookingCodeRow extends StatelessWidget {
   const _BookingCodeRow({required this.status});
 
   (String, Color, Color) get _badge => switch (status) {
-    _BookingStatus.booked => (
-      'ĐÃ ĐẶT',
-      AppColors.badgeBookedText,
-      AppColors.badgeBookedBg,
-    ),
-    _BookingStatus.completed => (
-      'HOÀN THÀNH',
-      AppColors.badgeDoneText,
-      AppColors.badgeDoneBg,
-    ),
-    _BookingStatus.cancelled => (
-      'ĐÃ HỦY',
-      AppColors.badgeCancelText,
-      AppColors.badgeCancelBg,
-    ),
+    _BookingStatus.booked    => ('ĐÃ ĐẶT',    AppColors.badgeBookedText, AppColors.badgeBookedBg),
+    _BookingStatus.completed => ('HOÀN THÀNH', AppColors.badgeDoneText,  AppColors.badgeDoneBg),
+    _BookingStatus.cancelled => ('ĐÃ HỦY',    AppColors.badgeCancelText, AppColors.badgeCancelBg),
   };
 
   Color get _codeColor => switch (status) {
-    _BookingStatus.booked => AppColors.primary,
+    _BookingStatus.booked    => AppColors.primary,
     _BookingStatus.completed => AppColors.textDark,
     _BookingStatus.cancelled => AppColors.badgeCancelText,
   };
@@ -380,25 +273,13 @@ class _BookingCodeRow extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'MÃ ĐẶT SÂN',
-                style: TextStyle(
-                  color: AppColors.textHint,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                ),
-              ),
+              const Text('MÃ ĐẶT SÂN',
+                  style: TextStyle(color: AppColors.textHint, fontSize: 10,
+                      fontWeight: FontWeight.w700, letterSpacing: 0.8)),
               const SizedBox(height: 4),
-              Text(
-                '#AS-9821',
-                style: TextStyle(
-                  color: _codeColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.3,
-                ),
-              ),
+              Text('#AS-9821',
+                  style: TextStyle(color: _codeColor, fontSize: 20,
+                      fontWeight: FontWeight.w900, letterSpacing: 0.3)),
             ],
           ),
           SpStatusBadge(label: label, textColor: txtColor, bgColor: bgColor),
@@ -418,49 +299,28 @@ class _DetailInfoCard extends StatelessWidget {
         children: [
           Row(
             children: const [
-              Icon(
-                Icons.calendar_month_outlined,
-                color: AppColors.primary,
-                size: 16,
-              ),
+              Icon(Icons.calendar_month_outlined, color: AppColors.primary, size: 16),
               SizedBox(width: 6),
-              Text(
-                'THÔNG TIN ĐẶT SÂN',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                ),
-              ),
+              Text('THÔNG TIN ĐẶT SÂN',
+                  style: TextStyle(color: AppColors.primary, fontSize: 11.5,
+                      fontWeight: FontWeight.w800, letterSpacing: 0.8)),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                child: _InfoCell(label: 'NGÀY', value: '20/10/2026'),
-              ),
+              Expanded(child: _InfoCell(label: 'NGÀY', value: '20/10/2026')),
               const SizedBox(width: 10),
-              Expanded(
-                child: _InfoCell(label: 'KHUNG GIỜ', value: '18:00 – 19:00'),
-              ),
+              Expanded(child: _InfoCell(label: 'KHUNG GIỜ', value: '18:00 – 19:00')),
             ],
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(
-                child: _InfoCell(label: 'THỜI LƯỢNG', value: '1 giờ'),
-              ),
+              Expanded(child: _InfoCell(label: 'THỜI LƯỢNG', value: '1 giờ')),
               const SizedBox(width: 10),
-              Expanded(
-                child: _InfoCell(
-                  label: 'PHƯƠNG THỨC',
-                  value: 'Online',
-                  icon: Icons.account_balance_wallet_outlined,
-                ),
-              ),
+              Expanded(child: _InfoCell(label: 'PHƯƠNG THỨC', value: 'Online',
+                  icon: Icons.account_balance_wallet_outlined)),
             ],
           ),
         ],
@@ -487,15 +347,9 @@ class _InfoCell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textHint,
-              fontSize: 9.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-            ),
-          ),
+          Text(label,
+              style: const TextStyle(color: AppColors.textHint, fontSize: 9.5,
+                  fontWeight: FontWeight.w700, letterSpacing: 0.6)),
           const SizedBox(height: 6),
           Row(
             children: [
@@ -503,14 +357,9 @@ class _InfoCell extends StatelessWidget {
                 Icon(icon, size: 13, color: AppColors.primary),
                 const SizedBox(width: 4),
               ],
-              Text(
-                value,
-                style: const TextStyle(
-                  color: AppColors.textDark,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Text(value,
+                  style: const TextStyle(
+                      color: AppColors.textDark, fontSize: 13.5, fontWeight: FontWeight.w700)),
             ],
           ),
         ],
@@ -529,21 +378,11 @@ class _AddonsCard extends StatelessWidget {
         children: [
           Row(
             children: const [
-              Icon(
-                Icons.add_shopping_cart_outlined,
-                color: AppColors.primary,
-                size: 16,
-              ),
+              Icon(Icons.add_shopping_cart_outlined, color: AppColors.primary, size: 16),
               SizedBox(width: 6),
-              Text(
-                'DỊCH VỤ ĐI KÈM',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                ),
-              ),
+              Text('DỊCH VỤ ĐI KÈM',
+                  style: TextStyle(color: AppColors.primary, fontSize: 11.5,
+                      fontWeight: FontWeight.w800, letterSpacing: 0.8)),
             ],
           ),
           const SizedBox(height: 12),
@@ -551,16 +390,8 @@ class _AddonsCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _AddonChip(
-                icon: Icons.water_drop_outlined,
-                label: 'Nước uống × 1',
-                price: '20.000đ',
-              ),
-              _AddonChip(
-                icon: Icons.sports_soccer,
-                label: 'Thuê bóng × 1',
-                price: '50.000đ',
-              ),
+              _AddonChip(icon: Icons.water_drop_outlined, label: 'Nước uống × 1', price: '20.000đ'),
+              _AddonChip(icon: Icons.sports_soccer,       label: 'Thuê bóng × 1', price: '50.000đ'),
             ],
           ),
         ],
@@ -573,11 +404,7 @@ class _AddonChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final String price;
-  const _AddonChip({
-    required this.icon,
-    required this.label,
-    required this.price,
-  });
+  const _AddonChip({required this.icon, required this.label, required this.price});
 
   @override
   Widget build(BuildContext context) {
@@ -593,23 +420,9 @@ class _AddonChip extends StatelessWidget {
         children: [
           Icon(icon, color: AppColors.primary, size: 15),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Text(label, style: const TextStyle(color: AppColors.primary, fontSize: 12.5, fontWeight: FontWeight.w600)),
           const SizedBox(width: 6),
-          Text(
-            price,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(price, style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -623,7 +436,7 @@ class _PaymentSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPaid = status == _BookingStatus.completed;
+    final isPaid      = status == _BookingStatus.completed;
     final isCancelled = status == _BookingStatus.cancelled;
 
     return SpCard(
@@ -631,43 +444,23 @@ class _PaymentSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.receipt_long_outlined,
-                color: AppColors.primary,
-                size: 16,
-              ),
+              const Icon(Icons.receipt_long_outlined, color: AppColors.primary, size: 16),
               const SizedBox(width: 6),
-              const Text(
-                'THANH TOÁN',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                ),
-              ),
+              const Text('THANH TOÁN',
+                  style: TextStyle(color: AppColors.primary, fontSize: 11.5,
+                      fontWeight: FontWeight.w800, letterSpacing: 0.8)),
               const Spacer(),
               SpStatusBadge(
-                label: isCancelled
-                    ? 'Đã hoàn tiền'
-                    : isPaid
-                    ? 'Đã thanh toán'
-                    : 'Chưa thanh toán',
-                textColor: isCancelled
-                    ? AppColors.badgeCancelText
-                    : isPaid
-                    ? AppColors.badgeBookedText
-                    : const Color(0xFFF57F17),
-                bgColor: isCancelled
-                    ? AppColors.badgeCancelBg
-                    : isPaid
-                    ? AppColors.badgeBookedBg
-                    : const Color(0xFFFFF8E1),
+                label: isCancelled ? 'Đã hoàn tiền' : isPaid ? 'Đã thanh toán' : 'Chưa thanh toán',
+                textColor: isCancelled ? AppColors.badgeCancelText
+                    : isPaid ? AppColors.badgeBookedText : const Color(0xFFF57F17),
+                bgColor: isCancelled ? AppColors.badgeCancelBg
+                    : isPaid ? AppColors.badgeBookedBg : const Color(0xFFFFF8E1),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          _PriceRow(label: 'Tiền thuê sân', value: '450.000đ'),
+          _PriceRow(label: 'Tiền thuê sân',  value: '450.000đ'),
           const SizedBox(height: 8),
           _PriceRow(label: 'Dịch vụ đi kèm', value: '70.000đ'),
           const SizedBox(height: 14),
@@ -677,34 +470,19 @@ class _PaymentSummaryCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text(
-                'Tổng cộng',
-                style: TextStyle(
-                  color: AppColors.textDark,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              const Text('Tổng cộng',
+                  style: TextStyle(color: AppColors.textDark, fontSize: 15, fontWeight: FontWeight.w700)),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    '520.000đ',
-                    style: TextStyle(
-                      color: isCancelled
-                          ? AppColors.textHint
-                          : AppColors.primary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      decoration: isCancelled
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                  ),
-                  const Text(
-                    'Đã bao gồm VAT',
-                    style: TextStyle(color: AppColors.textLight, fontSize: 10),
-                  ),
+                  Text('520.000đ',
+                      style: TextStyle(
+                          color: isCancelled ? AppColors.textHint : AppColors.primary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          decoration: isCancelled ? TextDecoration.lineThrough : null)),
+                  const Text('Đã bao gồm VAT',
+                      style: TextStyle(color: AppColors.textLight, fontSize: 10)),
                 ],
               ),
             ],
@@ -725,18 +503,8 @@ class _PriceRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.textLight, fontSize: 13.5),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.textDark,
-            fontSize: 13.5,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text(label, style: const TextStyle(color: AppColors.textLight, fontSize: 13.5)),
+        Text(value, style: const TextStyle(color: AppColors.textDark, fontSize: 13.5, fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -754,24 +522,14 @@ class _TimelineCard extends StatelessWidget {
             children: const [
               Icon(Icons.timeline_outlined, color: AppColors.primary, size: 16),
               SizedBox(width: 6),
-              Text(
-                'TIẾN TRÌNH ĐẶT SÂN',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                ),
-              ),
+              Text('TIẾN TRÌNH ĐẶT SÂN',
+                  style: TextStyle(color: AppColors.primary, fontSize: 11.5,
+                      fontWeight: FontWeight.w800, letterSpacing: 0.8)),
             ],
           ),
           const SizedBox(height: 16),
-          ..._timeline.asMap().entries.map(
-            (e) => _TimelineItem(
-              event: e.value,
-              isLast: e.key == _timeline.length - 1,
-            ),
-          ),
+          ..._timeline.asMap().entries.map((e) =>
+              _TimelineItem(event: e.value, isLast: e.key == _timeline.length - 1)),
         ],
       ),
     );
@@ -821,32 +579,19 @@ class _TimelineItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  event.label,
-                  style: TextStyle(
-                    color: event.done
-                        ? AppColors.textDark
-                        : AppColors.textLight,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                Text(event.label,
+                    style: TextStyle(
+                        color: event.done ? AppColors.textDark : AppColors.textLight,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700)),
                 const SizedBox(height: 2),
-                Text(
-                  event.desc,
-                  style: TextStyle(
-                    color: event.done ? AppColors.textMid : AppColors.textLight,
-                    fontSize: 12,
-                  ),
-                ),
+                Text(event.desc,
+                    style: TextStyle(
+                        color: event.done ? AppColors.textMid : AppColors.textLight,
+                        fontSize: 12)),
                 const SizedBox(height: 3),
-                Text(
-                  event.time,
-                  style: const TextStyle(
-                    color: AppColors.textLight,
-                    fontSize: 11,
-                  ),
-                ),
+                Text(event.time,
+                    style: const TextStyle(color: AppColors.textLight, fontSize: 11)),
               ],
             ),
           ),
@@ -875,38 +620,22 @@ class _SupportRow extends StatelessWidget {
                 color: AppColors.primaryUltraLight,
                 borderRadius: BorderRadius.circular(9),
               ),
-              child: const Icon(
-                Icons.headset_mic_outlined,
-                color: AppColors.primary,
-                size: 20,
-              ),
+              child: const Icon(Icons.headset_mic_outlined, color: AppColors.primary, size: 20),
             ),
             const SizedBox(width: 12),
             const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Cần hỗ trợ về đơn đặt này?',
-                    style: TextStyle(
-                      color: AppColors.textDark,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  Text('Cần hỗ trợ về đơn đặt này?',
+                      style: TextStyle(color: AppColors.textDark, fontSize: 13.5, fontWeight: FontWeight.w700)),
                   SizedBox(height: 2),
-                  Text(
-                    'Liên hệ hỗ trợ 24/7',
-                    style: TextStyle(color: AppColors.primary, fontSize: 12),
-                  ),
+                  Text('Liên hệ hỗ trợ 24/7',
+                      style: TextStyle(color: AppColors.primary, fontSize: 12)),
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: AppColors.textHint,
-              size: 22,
-            ),
+            const Icon(Icons.chevron_right, color: AppColors.textHint, size: 22),
           ],
         ),
       ),
@@ -937,77 +666,47 @@ class _ActionBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -3)),
         ],
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.pagePadH,
-            vertical: 12,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH, vertical: 12),
           child: switch (status) {
             _BookingStatus.booked => Row(
               children: [
                 Expanded(
                   flex: 2,
-                  child: _ActionBtn(
-                    label: 'Thanh toán',
-                    icon: Icons.payment_outlined,
-                    isLoading: isLoadingPay,
-                    onTap: onPay,
-                    color: AppColors.primary,
-                    textColor: Colors.white,
-                  ),
+                  child: _ActionBtn(label: 'Thanh toán', icon: Icons.payment_outlined,
+                      isLoading: isLoadingPay, onTap: onPay,
+                      color: AppColors.primary, textColor: Colors.white),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _ActionBtn(
-                    label: 'Hủy đặt',
-                    icon: Icons.cancel_outlined,
-                    isLoading: isLoadingCancel,
-                    onTap: onCancel,
-                    color: AppColors.badgeCancelBg,
-                    textColor: AppColors.badgeCancelText,
-                    borderColor: const Color(0xFFFFCDD2),
-                  ),
+                  child: _ActionBtn(label: 'Hủy đặt', icon: Icons.cancel_outlined,
+                      isLoading: isLoadingCancel, onTap: onCancel,
+                      color: AppColors.badgeCancelBg, textColor: AppColors.badgeCancelText,
+                      borderColor: const Color(0xFFFFCDD2)),
                 ),
               ],
             ),
             _BookingStatus.completed => Row(
               children: [
                 Expanded(
-                  child: _ActionBtn(
-                    label: 'Đánh giá',
-                    icon: Icons.star_outline_rounded,
-                    onTap: onReview,
-                    color: Colors.white,
-                    textColor: AppColors.textDark,
-                    borderColor: AppColors.fieldBorder,
-                  ),
+                  child: _ActionBtn(label: 'Đánh giá', icon: Icons.star_outline_rounded,
+                      onTap: onReview, color: Colors.white, textColor: AppColors.textDark,
+                      borderColor: AppColors.fieldBorder),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _ActionBtn(
-                    label: 'Đặt lại',
-                    icon: Icons.refresh_rounded,
-                    onTap: onRebook,
-                    color: AppColors.primary,
-                    textColor: Colors.white,
-                  ),
+                  child: _ActionBtn(label: 'Đặt lại', icon: Icons.refresh_rounded,
+                      onTap: onRebook, color: AppColors.primary, textColor: Colors.white),
                 ),
               ],
             ),
             _BookingStatus.cancelled => _ActionBtn(
-              label: 'Liên hệ hỗ trợ',
-              icon: Icons.headset_mic_outlined,
-              onTap: onSupport,
-              color: Colors.white,
-              textColor: AppColors.textDark,
+              label: 'Liên hệ hỗ trợ', icon: Icons.headset_mic_outlined,
+              onTap: onSupport, color: Colors.white, textColor: AppColors.textDark,
               borderColor: AppColors.fieldBorder,
             ),
           },
@@ -1045,35 +744,19 @@ class _ActionBtn extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(12),
-          border: borderColor != null
-              ? Border.all(color: borderColor!, width: 1.5)
-              : null,
+          border: borderColor != null ? Border.all(color: borderColor!, width: 1.5) : null,
           boxShadow: color == AppColors.primary ? AppShadow.btn : [],
         ),
         child: isLoading
-            ? Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: textColor,
-                    strokeWidth: 2,
-                  ),
-                ),
-              )
+            ? Center(child: SizedBox(width: 20, height: 20,
+                child: CircularProgressIndicator(color: textColor, strokeWidth: 2)))
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(icon, color: textColor, size: 17),
                   const SizedBox(width: 6),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  Text(label,
+                      style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w700)),
                 ],
               ),
       ),
