@@ -1,4 +1,4 @@
-// lib/screens/forgot_password_screen.dart
+// lib/screens/auth/forgot_password_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -102,8 +102,8 @@ class _UpperSection extends StatelessWidget {
       ),
       child: Column(
         children: const [
-          // SpBrandLogo(size: 108),
-          // SizedBox(height: 24),
+          SpBrandLogo(size: 108),
+          SizedBox(height: 24),
           Text(
             'Quên mật khẩu?',
             style: TextStyle(

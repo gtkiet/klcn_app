@@ -1,4 +1,4 @@
-// lib/screens/home_screen.dart
+// lib/screens/home/home_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

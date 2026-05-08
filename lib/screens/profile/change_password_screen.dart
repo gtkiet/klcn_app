@@ -1,4 +1,4 @@
-// lib/screens/change_password_screen.dart
+// lib/screens/profile/change_password_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

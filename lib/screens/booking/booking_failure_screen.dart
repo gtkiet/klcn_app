@@ -1,4 +1,4 @@
-// lib/screens/booking_failure_screen.dart
+// lib/screens/booking/booking_failure_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

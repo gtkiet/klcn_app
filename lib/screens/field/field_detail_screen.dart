@@ -1,4 +1,4 @@
-// lib/screens/field_detail_screen.dart
+// lib/screens/field/field_detail_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

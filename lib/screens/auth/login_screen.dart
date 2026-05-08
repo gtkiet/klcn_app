@@ -1,4 +1,4 @@
-// lib/screens/login_screen.dart
+// lib/screens/auth/login_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -70,8 +70,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 52),
 
                         // Brand logo
-                        // const Center(child: SpBrandLogo(size: 108)),
-                        // const SizedBox(height: 24),
+                        const Center(child: SpBrandLogo(size: 108)),
+                        const SizedBox(height: 24),
 
                         // App name
                         const Center(child: SpAppNameText(fontSize: 34)),

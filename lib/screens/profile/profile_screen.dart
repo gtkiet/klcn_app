@@ -1,4 +1,4 @@
-// lib/screens/profile_screen.dart
+// lib/screens/profile/profile_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -149,24 +149,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 28),
 
               // Footer
-              // Column(
-              //   children: [
-              //     Icon(Icons.sports_soccer, size: 20,
-              //         color: AppColors.textHint.withValues(alpha: 0.5)),
-              //     const SizedBox(height: 6),
-              //     const Text(
-              //       'SPORT PLUS V2.4.0  •  PITCH PRECISION ENGINE',
-              //       textAlign: TextAlign.center,
-              //       style: TextStyle(
-              //         color: AppColors.textHint,
-              //         fontSize: 10,
-              //         fontWeight: FontWeight.w600,
-              //         letterSpacing: 1.2,
-              //       ),
-              //     ),
-              //   ],
-              // ),
-              // const SizedBox(height: 32),
+              Column(
+                children: [
+                  Icon(Icons.sports_soccer, size: 20,
+                      color: AppColors.textHint.withValues(alpha: 0.5)),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'SPORT PLUS V2.4.0  •  PITCH PRECISION ENGINE',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.textHint,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
             ],
           ),
         ),

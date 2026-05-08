@@ -1,4 +1,4 @@
-// lib/screens/booking_detail_screen.dart
+// lib/screens/booking/booking_detail_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -38,7 +38,6 @@ class BookingDetailScreen extends StatefulWidget {
 class _BookingDetailScreenState extends State<BookingDetailScreen> {
   final _status = _mockStatus;
   bool _isLoadingPay    = false;
-  // bool _isLoadingCancel = false;
   bool isLoadingCancel = false;
 
   void _onPay() {

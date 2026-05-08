@@ -1,4 +1,4 @@
-// lib/screens/booking_confirmation_screen.dart
+// lib/screens/booking/booking_confirmation_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

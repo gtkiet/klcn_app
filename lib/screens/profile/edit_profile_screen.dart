@@ -1,4 +1,4 @@
-// lib/screens/edit_profile_screen.dart
+// lib/screens/profile/edit_profile_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

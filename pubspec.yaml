@@ -11,6 +11,22 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
 
+  # HTTP client
+  http: ^1.2.1
+
+  # Local storage (bỏ comment khi tích hợp)
+  # shared_preferences: ^2.3.2
+  # flutter_secure_storage: ^9.2.2
+
+  # Image picker (upload avatar)
+  # image_picker: ^1.1.2
+
+  # Navigation
+  # go_router: ^14.2.7
+
+  # Deep link (VNPay / MoMo callback)
+  # app_links: ^6.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -18,5 +34,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/images/
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/

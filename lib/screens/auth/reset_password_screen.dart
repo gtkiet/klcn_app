@@ -1,4 +1,4 @@
-// lib/screens/reset_password_screen.dart
+// lib/screens/auth/reset_password_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -123,8 +123,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 28),
-                // const Center(child: SpBrandLogo(size: 108)),
-                // const SizedBox(height: 24),
+                const Center(child: SpBrandLogo(size: 108)),
+                const SizedBox(height: 24),
                 const Center(
                   child: Text(
                     'Tạo mật khẩu mới',
