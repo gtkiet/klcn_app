@@ -20,7 +20,13 @@ class _NearbyField {
   final String district;
   final String price;
   final Color color;
-  const _NearbyField(this.name, this.distance, this.district, this.price, this.color);
+  const _NearbyField(
+    this.name,
+    this.distance,
+    this.district,
+    this.price,
+    this.color,
+  );
 }
 
 const _featuredFields = [
@@ -31,8 +37,20 @@ const _featuredFields = [
 
 const _nearbyFields = [
   _NearbyField('Sân Hoa Lư', '2.4 km', 'Quận 1', '350k/h', Color(0xFF43A047)),
-  _NearbyField('Sân Phú Nhuận', '1.1 km', 'Phú Nhuận', '420k/h', Color(0xFF2E7D32)),
-  _NearbyField('Sân Bình Thạnh', '3.2 km', 'Bình Thạnh', '380k/h', Color(0xFF00695C)),
+  _NearbyField(
+    'Sân Phú Nhuận',
+    '1.1 km',
+    'Phú Nhuận',
+    '420k/h',
+    Color(0xFF2E7D32),
+  ),
+  _NearbyField(
+    'Sân Bình Thạnh',
+    '3.2 km',
+    'Bình Thạnh',
+    '380k/h',
+    Color(0xFF00695C),
+  ),
 ];
 
 // ─────────────────────────────────────────────
@@ -52,9 +70,15 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_tab == i) return;
     setState(() => _tab = i);
     switch (i) {
-      case 1: Navigator.pushReplacementNamed(context, '/fields'); break;
-      case 2: Navigator.pushReplacementNamed(context, '/booking_history'); break;
-      case 3: Navigator.pushReplacementNamed(context, '/profile'); break;
+      case 1:
+        Navigator.pushReplacementNamed(context, '/fields');
+        break;
+      case 2:
+        Navigator.pushReplacementNamed(context, '/booking_history');
+        break;
+      case 3:
+        Navigator.pushReplacementNamed(context, '/profile');
+        break;
     }
   }
 
@@ -125,10 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
-        bottomNavigationBar: SpBottomNav(
-          currentIndex: _tab,
-          onTap: _onNavTap,
-        ),
+        bottomNavigationBar: SpBottomNav(currentIndex: _tab, onTap: _onNavTap),
       ),
     );
   }
@@ -143,30 +164,25 @@ class _HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: AppColors.primary,
-      titleSpacing: 16,
+      automaticallyImplyLeading: false,
+      titleSpacing: 12,
       title: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Colors.white24,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.person, color: Colors.white, size: 20),
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: Colors.white24,
+            child: const Icon(Icons.person, size: 20, color: Colors.white),
           ),
           const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: const [
               Text(
                 'Xin chào 👋',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 11,
-                ),
+                style: TextStyle(color: Colors.white70, fontSize: 11),
               ),
-              const Text(
+              Text(
                 'Tuấn Kiệt',
                 style: TextStyle(
                   color: Colors.white,
@@ -193,8 +209,7 @@ class _SearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
       child: GestureDetector(
         onTap: () {}, // TODO: navigate to search
         child: Container(
@@ -487,7 +502,11 @@ class _NearbyCard extends StatelessWidget {
               height: 88,
               color: field.color,
               child: const Center(
-                child: Icon(Icons.sports_soccer, color: Colors.white30, size: 30),
+                child: Icon(
+                  Icons.sports_soccer,
+                  color: Colors.white30,
+                  size: 30,
+                ),
               ),
             ),
           ),

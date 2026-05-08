@@ -1,6 +1,6 @@
 # Sport Plus — Flutter App
 
-Ứng dụng đặt sân bóng đá trực tuyến, xây dựng bằng Flutter + Laravel + Supabase.
+Ứng dụng đặt sân bóng đá trực tuyến, xây dựng bằng Flutter + Web Api.
 
 ---
 
@@ -9,24 +9,39 @@
 ```
 lib/
 ├── main.dart
-├── theme/
-│   └── app_theme.dart
-├── widgets/
-│   └── shared_widgets.dart
+├── errors/
+│   ├── app_error_widget.dart
+│   ├── app_exception.dart
+│   ├── error_parser.dart
+│   ├── error_type.dart
+│   └── errors.dart
+├── guards/
+│   └── auth_guard.dart
+├── navigation/
+│   ├── app_navigation.dart
+│   ├── app_router.dart
+│   └── main_screen.dart
 ├── models/
 │   ├── user.dart                 # Users + Profiles
 │   ├── field.dart                # Fields + FieldSlots + TimeSlots
 │   ├── booking.dart              # Bookings + Details + Payments + Deposits
 │   ├── review.dart               # Reviews
 │   └── notification.dart        # Notifications
+├── session/
+│   └── user_session.dart
+├── network/
+│   ├── api_client.dart
+│   └── api_interceptor.dart
 ├── services/
-│   ├── api_client.dart           # Base HTTP client
-│   ├── user_session.dart         # Session local (token, user)
 │   ├── auth_service.dart         # Đăng ký, đăng nhập, OTP, reset password
 │   ├── field_service.dart        # Danh sách sân, lịch slot
 │   ├── booking_service.dart      # Đặt sân, hủy, đổi lịch, voucher
 │   ├── payment_service.dart      # Thanh toán, đặt cọc, VNPay/MoMo
 │   └── user_service.dart         # Hồ sơ, thông báo, đánh giá
+├── theme/
+│   └── app_theme.dart
+├── widgets/
+│   └── shared_widgets.dart
 └── screens/
     ├── splash/splash_screen.dart
     ├── auth/
@@ -100,6 +115,6 @@ lib/
 ## Stack
 
 - Flutter SDK ≥ 3.3.0 / Dart ≥ 3.3.0
-- Backend: Laravel 11 + Supabase
+- Backend: ASP.NET core Web Api (.net10.0)
 - Database: SQL Server 2019 (SportPlusDB)
 - Thanh toán: VNPay, MoMo

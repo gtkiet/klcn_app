@@ -1,83 +1,118 @@
 // lib/services/user_service.dart
-// Kết nối API người dùng: hồ sơ, cập nhật, avatar
-// Bảng: Users, Profiles, Notifications, Reviews
 
-import '../models/user.dart';
-import '../models/review.dart';
 import '../models/notification.dart';
-import 'api_client.dart';
-import 'user_session.dart';
+import '../models/review.dart';
+import '../models/user.dart';
+import '../network/api_client.dart';
+import '../session/user_session.dart';
 
 class UserService {
-  // ── LẤY THÔNG TIN HỒ SƠ ──────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // LẤY PROFILE
   // GET /users/me
+  // ─────────────────────────────────────────────────────────────
+
   static Future<UserModel> getProfile() async {
     final data = await ApiClient.get('/users/me');
+
     final user = UserModel.fromJson(data['data'] as Map<String, dynamic>);
-    await UserSession.updateUser(user);
+
+    await UserSession().updateUser(user);
+
     return user;
   }
 
-  // ── CẬP NHẬT HỒ SƠ ───────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // UPDATE PROFILE
   // PUT /users/me
+  // ─────────────────────────────────────────────────────────────
+
   static Future<UserModel> updateProfile({
     required String fullName,
     required String email,
     required String phone,
     String? address,
-    String? dateOfBirth,  // 'yyyy-MM-dd'
+    String? dateOfBirth,
   }) async {
-    final data = await ApiClient.put('/users/me', {
-      'full_name':    fullName,
-      'email':        email,
-      'phone':        phone,
-      'address':       ?address,
-      'date_of_birth': ?dateOfBirth,
-    });
+    final body = <String, dynamic>{
+      'full_name': fullName,
+
+      'email': email,
+
+      'phone': phone,
+
+      if (address != null && address.isNotEmpty) 'address': address,
+
+      if (dateOfBirth != null && dateOfBirth.isNotEmpty)
+        'date_of_birth': dateOfBirth,
+    };
+
+    final data = await ApiClient.put('/users/me', body);
+
     final user = UserModel.fromJson(data['data'] as Map<String, dynamic>);
-    await UserSession.updateUser(user);
+
+    await UserSession().updateUser(user);
+
     return user;
   }
 
-  // ── CẬP NHẬT AVATAR ──────────────────────────────────────────
-  // POST /users/me/avatar (multipart/form-data)
-  // TODO: Implement với http.MultipartRequest
-  // static Future<UserModel> updateAvatar(File imageFile) async { ... }
+  // ─────────────────────────────────────────────────────────────
+  // UPDATE AVATAR
+  // POST /users/me/avatar
+  // ─────────────────────────────────────────────────────────────
+  // TODO:
+  // multipart/form-data upload
 
-  // ── THÔNG BÁO ─────────────────────────────────────────────────
-  // GET /notifications?page=&per_page=
+  // ─────────────────────────────────────────────────────────────
+  // DANH SÁCH THÔNG BÁO
+  // GET /notifications
+  // ─────────────────────────────────────────────────────────────
+
   static Future<List<NotificationModel>> getNotifications({
-    int page    = 1,
+    int page = 1,
     int perPage = 20,
     bool? unreadOnly,
   }) async {
-    final params = <String, String>{
-      'page':     page.toString(),
+    final params = <String, dynamic>{
+      'page': page.toString(),
+
       'per_page': perPage.toString(),
+
       if (unreadOnly == true) 'unread_only': '1',
     };
+
     final data = await ApiClient.get('/notifications', params: params);
+
     final list = data['data'] as List<dynamic>;
+
     return list
         .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
-  // ── ĐỌC THÔNG BÁO ─────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // ĐỌC THÔNG BÁO
   // PUT /notifications/{id}/read
+  // ─────────────────────────────────────────────────────────────
+
   static Future<void> markAsRead(int notificationId) async {
     await ApiClient.put('/notifications/$notificationId/read', {});
   }
 
-  // ── ĐỌC TẤT CẢ THÔNG BÁO ─────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // ĐỌC TẤT CẢ THÔNG BÁO
   // PUT /notifications/read-all
+  // ─────────────────────────────────────────────────────────────
+
   static Future<void> markAllAsRead() async {
     await ApiClient.put('/notifications/read-all', {});
   }
 
-  // ── ĐÁNH GIÁ SÂN ─────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // ĐÁNH GIÁ SÂN
   // POST /reviews
-  // Chỉ cho phép sau khi booking StatusId=4 (Đã hoàn thành)
+  // ─────────────────────────────────────────────────────────────
+
   static Future<ReviewModel> submitReview({
     required int bookingId,
     required int fieldId,
@@ -85,31 +120,48 @@ class UserService {
     String? comment,
     String? imageUrl,
   }) async {
-    final data = await ApiClient.post('/reviews', {
+    final body = <String, dynamic>{
       'booking_id': bookingId,
-      'field_id':   fieldId,
-      'rating':     rating,
-      'comment':   ?comment,
-      'image_url': ?imageUrl,
-    });
+
+      'field_id': fieldId,
+
+      'rating': rating,
+
+      if (comment != null && comment.isNotEmpty) 'comment': comment,
+
+      if (imageUrl != null && imageUrl.isNotEmpty) 'image_url': imageUrl,
+    };
+
+    final data = await ApiClient.post('/reviews', body);
+
     return ReviewModel.fromJson(data['data'] as Map<String, dynamic>);
   }
 
-  // ── ĐÁNH GIÁ CỦA USER ─────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // REVIEW CỦA USER
   // GET /reviews/me
+  // ─────────────────────────────────────────────────────────────
+
   static Future<List<ReviewModel>> getMyReviews() async {
     final data = await ApiClient.get('/reviews/me');
+
     final list = data['data'] as List<dynamic>;
+
     return list
         .map((e) => ReviewModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
-  // ── ĐÁNH GIÁ THEO SÂN ─────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // REVIEW THEO SÂN
   // GET /fields/{id}/reviews
+  // ─────────────────────────────────────────────────────────────
+
   static Future<List<ReviewModel>> getFieldReviews(int fieldId) async {
     final data = await ApiClient.get('/fields/$fieldId/reviews');
+
     final list = data['data'] as List<dynamic>;
+
     return list
         .map((e) => ReviewModel.fromJson(e as Map<String, dynamic>))
         .toList();
