@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'guards/auth_guard.dart';
 import 'theme/app_theme.dart';
 
 import 'screens/splash/splash_screen.dart';
@@ -25,13 +26,18 @@ import 'screens/profile/change_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
     ),
   );
+
+  await AuthGuard.instance.init();
+
   runApp(const SportPlusApp());
 }
 
@@ -46,23 +52,23 @@ class SportPlusApp extends StatelessWidget {
       theme: buildAppTheme(),
       initialRoute: '/splash',
       routes: {
-        '/splash':           (context) => const SplashScreen(),
-        '/login':            (context) => const LoginScreen(),
-        '/register':         (context) => const RegisterScreen(),
-        '/forgot_password':  (context) => const ForgotPasswordScreen(),
+        '/splash': (context) => const SplashScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+        '/forgot_password': (context) => const ForgotPasswordScreen(),
         '/otp_verification': (context) => const OtpVerificationScreen(),
-        '/reset_password':   (context) => const ResetPasswordScreen(),
-        '/home':             (context) => const HomeScreen(),
-        '/fields':           (context) => const FieldListScreen(),
-        '/field_detail':     (context) => const FieldDetailScreen(),
-        '/booking_confirm':  (context) => const BookingConfirmationScreen(),
-        '/booking_success':  (context) => const BookingSuccessScreen(),
-        '/booking_failure':  (context) => const BookingFailureScreen(),
-        '/booking_history':  (context) => const BookingHistoryScreen(),
-        '/booking_detail':   (context) => const BookingDetailScreen(),
-        '/profile':          (context) => const ProfileScreen(),
-        '/edit_profile':     (context) => const EditProfileScreen(),
-        '/change_password':  (context) => const ChangePasswordScreen(),
+        '/reset_password': (context) => const ResetPasswordScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/fields': (context) => const FieldListScreen(),
+        '/field_detail': (context) => const FieldDetailScreen(),
+        '/booking_confirm': (context) => const BookingConfirmationScreen(),
+        '/booking_success': (context) => const BookingSuccessScreen(),
+        '/booking_failure': (context) => const BookingFailureScreen(),
+        '/booking_history': (context) => const BookingHistoryScreen(),
+        '/booking_detail': (context) => const BookingDetailScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/edit_profile': (context) => const EditProfileScreen(),
+        '/change_password': (context) => const ChangePasswordScreen(),
       },
     );
   }

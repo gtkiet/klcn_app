@@ -7,13 +7,16 @@ import '../network/api_client.dart';
 import '../session/user_session.dart';
 
 class UserService {
+  UserService._();
+  static final instance = UserService._();
+  final _api = ApiClient.instance;
   // ─────────────────────────────────────────────────────────────
   // LẤY PROFILE
   // GET /users/me
   // ─────────────────────────────────────────────────────────────
 
-  static Future<UserModel> getProfile() async {
-    final data = await ApiClient.get('/users/me');
+  Future<UserModel> getProfile() async {
+    final data = await _api.get('/users/me');
 
     final user = UserModel.fromJson(data['data'] as Map<String, dynamic>);
 
@@ -27,7 +30,7 @@ class UserService {
   // PUT /users/me
   // ─────────────────────────────────────────────────────────────
 
-  static Future<UserModel> updateProfile({
+  Future<UserModel> updateProfile({
     required String fullName,
     required String email,
     required String phone,
@@ -47,7 +50,7 @@ class UserService {
         'date_of_birth': dateOfBirth,
     };
 
-    final data = await ApiClient.put('/users/me', body);
+    final data = await _api.put('/users/me', body);
 
     final user = UserModel.fromJson(data['data'] as Map<String, dynamic>);
 
@@ -68,7 +71,7 @@ class UserService {
   // GET /notifications
   // ─────────────────────────────────────────────────────────────
 
-  static Future<List<NotificationModel>> getNotifications({
+  Future<List<NotificationModel>> getNotifications({
     int page = 1,
     int perPage = 20,
     bool? unreadOnly,
@@ -81,7 +84,7 @@ class UserService {
       if (unreadOnly == true) 'unread_only': '1',
     };
 
-    final data = await ApiClient.get('/notifications', params: params);
+    final data = await _api.get('/notifications', params: params);
 
     final list = data['data'] as List<dynamic>;
 
@@ -95,8 +98,8 @@ class UserService {
   // PUT /notifications/{id}/read
   // ─────────────────────────────────────────────────────────────
 
-  static Future<void> markAsRead(int notificationId) async {
-    await ApiClient.put('/notifications/$notificationId/read', {});
+  Future<void> markAsRead(int notificationId) async {
+    await _api.put('/notifications/$notificationId/read', {});
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -104,8 +107,8 @@ class UserService {
   // PUT /notifications/read-all
   // ─────────────────────────────────────────────────────────────
 
-  static Future<void> markAllAsRead() async {
-    await ApiClient.put('/notifications/read-all', {});
+  Future<void> markAllAsRead() async {
+    await _api.put('/notifications/read-all', {});
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -113,7 +116,7 @@ class UserService {
   // POST /reviews
   // ─────────────────────────────────────────────────────────────
 
-  static Future<ReviewModel> submitReview({
+  Future<ReviewModel> submitReview({
     required int bookingId,
     required int fieldId,
     required int rating,
@@ -132,7 +135,7 @@ class UserService {
       if (imageUrl != null && imageUrl.isNotEmpty) 'image_url': imageUrl,
     };
 
-    final data = await ApiClient.post('/reviews', body);
+    final data = await _api.post('/reviews', body);
 
     return ReviewModel.fromJson(data['data'] as Map<String, dynamic>);
   }
@@ -142,8 +145,8 @@ class UserService {
   // GET /reviews/me
   // ─────────────────────────────────────────────────────────────
 
-  static Future<List<ReviewModel>> getMyReviews() async {
-    final data = await ApiClient.get('/reviews/me');
+  Future<List<ReviewModel>> getMyReviews() async {
+    final data = await _api.get('/reviews/me');
 
     final list = data['data'] as List<dynamic>;
 
@@ -157,8 +160,8 @@ class UserService {
   // GET /fields/{id}/reviews
   // ─────────────────────────────────────────────────────────────
 
-  static Future<List<ReviewModel>> getFieldReviews(int fieldId) async {
-    final data = await ApiClient.get('/fields/$fieldId/reviews');
+  Future<List<ReviewModel>> getFieldReviews(int fieldId) async {
+    final data = await _api.get('/fields/$fieldId/reviews');
 
     final list = data['data'] as List<dynamic>;
 

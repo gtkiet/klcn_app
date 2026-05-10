@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+// import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -13,10 +14,13 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _nameCtrl     = TextEditingController();
+  // final _service = AuthService.instance;
+
   final _emailCtrl    = TextEditingController();
+  final _phoneCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl  = TextEditingController();
+  final _nameCtrl     = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirm  = true;
@@ -25,6 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   String? _nameError;
   String? _emailError;
+  String? _phoneError;
   String? _passwordError;
   String? _confirmError;
 
@@ -43,7 +48,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ? 'Vui lòng nhập họ và tên'
           : null;
       _emailError = _emailCtrl.text.trim().isEmpty
-          ? 'Vui lòng nhập email hoặc SĐT'
+          ? 'Vui lòng nhập email'
+          : null;
+      _phoneError = _phoneCtrl.text.trim().isEmpty
+          ? 'Vui lòng nhập số điện thoại'
           : null;
       _passwordError = _passwordCtrl.text.length < 6
           ? 'Mật khẩu tối thiểu 6 ký tự'
@@ -54,6 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
     return _nameError == null &&
         _emailError == null &&
+        _phoneError == null &&
         _passwordError == null &&
         _confirmError == null &&
         _agreedToTerms;

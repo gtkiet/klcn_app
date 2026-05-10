@@ -4,12 +4,15 @@ import '../models/field.dart';
 import '../network/api_client.dart';
 
 class FieldService {
+  FieldService._();
+  static final instance = FieldService._();
+  final _api = ApiClient.instance;
   // ─────────────────────────────────────────────────────────────
   // DANH SÁCH SÂN
   // GET /fields
   // ─────────────────────────────────────────────────────────────
 
-  static Future<List<FieldModel>> getFields({
+  Future<List<FieldModel>> getFields({
     int? typeId,
     String? keyword,
 
@@ -24,7 +27,7 @@ class FieldService {
       if (sortBy != null && sortBy.isNotEmpty) 'sort_by': sortBy,
     };
 
-    final data = await ApiClient.get('/fields', params: params);
+    final data = await _api.get('/fields', params: params);
 
     final list = data['data'] as List<dynamic>;
 
@@ -38,8 +41,8 @@ class FieldService {
   // GET /fields/{id}
   // ─────────────────────────────────────────────────────────────
 
-  static Future<FieldModel> getFieldDetail(int fieldId) async {
-    final data = await ApiClient.get('/fields/$fieldId');
+  Future<FieldModel> getFieldDetail(int fieldId) async {
+    final data = await _api.get('/fields/$fieldId');
 
     return FieldModel.fromJson(data['data'] as Map<String, dynamic>);
   }
@@ -49,7 +52,7 @@ class FieldService {
   // GET /fields/{id}/slots
   // ─────────────────────────────────────────────────────────────
 
-  static Future<List<FieldSlotModel>> getSlots({
+  Future<List<FieldSlotModel>> getSlots({
     required int fieldId,
     required DateTime date,
   }) async {
@@ -58,7 +61,7 @@ class FieldService {
         '${date.month.toString().padLeft(2, '0')}-'
         '${date.day.toString().padLeft(2, '0')}';
 
-    final data = await ApiClient.get(
+    final data = await _api.get(
       '/fields/$fieldId/slots',
       params: {'date': dateStr},
     );
@@ -75,7 +78,7 @@ class FieldService {
   // GET /slots/available
   // ─────────────────────────────────────────────────────────────
 
-  static Future<List<FieldSlotModel>> getAvailableSlots({
+  Future<List<FieldSlotModel>> getAvailableSlots({
     required DateTime date,
     int? typeId,
     int? fieldId,
@@ -93,7 +96,7 @@ class FieldService {
       if (fieldId != null) 'field_id': fieldId.toString(),
     };
 
-    final data = await ApiClient.get('/slots/available', params: params);
+    final data = await _api.get('/slots/available', params: params);
 
     final list = data['data'] as List<dynamic>;
 

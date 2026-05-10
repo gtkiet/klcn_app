@@ -4,12 +4,15 @@ import '../models/booking.dart';
 import '../network/api_client.dart';
 
 class PaymentService {
+  PaymentService._();
+  static final instance = PaymentService._();
+  final _api = ApiClient.instance;
   // ─────────────────────────────────────────────────────────────
   // THANH TOÁN ONLINE
   // POST /payments/online
   // ─────────────────────────────────────────────────────────────
 
-  static Future<String> createOnlinePayment({
+  Future<String> createOnlinePayment({
     required int bookingId,
     required PaymentMethod method,
     required double amount,
@@ -24,7 +27,7 @@ class PaymentService {
       PaymentMethod.cash => 'cash',
     };
 
-    final data = await ApiClient.post('/payments/online', {
+    final data = await _api.post('/payments/online', {
       'booking_id': bookingId,
       'method': methodStr,
       'amount': amount,
@@ -38,7 +41,7 @@ class PaymentService {
   // POST /payments/deposit
   // ─────────────────────────────────────────────────────────────
 
-  static Future<BookingModel> recordDeposit({
+  Future<BookingModel> recordDeposit({
     required int bookingId,
     required double amount,
     required PaymentMethod method,
@@ -55,7 +58,7 @@ class PaymentService {
         'transaction_code': transactionCode,
     };
 
-    final data = await ApiClient.post('/payments/deposit', body);
+    final data = await _api.post('/payments/deposit', body);
 
     return BookingModel.fromJson(data['data'] as Map<String, dynamic>);
   }
@@ -65,7 +68,7 @@ class PaymentService {
   // POST /payments/full
   // ─────────────────────────────────────────────────────────────
 
-  static Future<BookingModel> recordFullPayment({
+  Future<BookingModel> recordFullPayment({
     required int bookingId,
     required PaymentMethod method,
     String? transactionCode,
@@ -79,7 +82,7 @@ class PaymentService {
         'transaction_code': transactionCode,
     };
 
-    final data = await ApiClient.post('/payments/full', body);
+    final data = await _api.post('/payments/full', body);
 
     return BookingModel.fromJson(data['data'] as Map<String, dynamic>);
   }
@@ -89,11 +92,11 @@ class PaymentService {
   // POST /payments/callback/verify
   // ─────────────────────────────────────────────────────────────
 
-  static Future<Map<String, dynamic>> verifyCallback({
+  Future<Map<String, dynamic>> verifyCallback({
     required String provider,
     required Map<String, String> params,
   }) async {
-    final data = await ApiClient.post('/payments/callback/verify', {
+    final data = await _api.post('/payments/callback/verify', {
       'provider': provider,
       'params': params,
     });
@@ -106,8 +109,8 @@ class PaymentService {
   // GET /payments
   // ─────────────────────────────────────────────────────────────
 
-  static Future<List<PaymentModel>> getPayments(int bookingId) async {
-    final data = await ApiClient.get(
+  Future<List<PaymentModel>> getPayments(int bookingId) async {
+    final data = await _api.get(
       '/payments',
       params: {'booking_id': bookingId.toString()},
     );

@@ -5,27 +5,30 @@ import '../network/api_client.dart';
 import '../session/user_session.dart';
 
 class AuthService {
+  AuthService._();
+  static final instance = AuthService._();
+
   // ─────────────────────────────────────────────────────────────
   // LOGIN
   // POST /auth/login
   // ─────────────────────────────────────────────────────────────
 
-  static Future<UserModel> login({
-    required String phone,
+  Future<UserModel> login({
+    required String email,
     required String password,
   }) async {
-    final data = await ApiClient.post('/auth/login', {
-      'phone': phone,
-      'password': password,
+    final data = await ApiClient.instance.post('/auth/login', {
+      'email': email.trim(),
+      'password': password.trim(),
     });
 
-    final token = data['token'] as String;
+    final token = data['accessToken'] as String;
 
-    final refresh = data['refresh_token'] as String;
+    final refresh = data['refreshToken'] as String;
 
     final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
 
-    ApiClient.setToken(token);
+    ApiClient.instance.setToken(token);
 
     await UserSession().save(user: user, token: token, refreshToken: refresh);
 
@@ -37,100 +40,85 @@ class AuthService {
   // POST /auth/register
   // ─────────────────────────────────────────────────────────────
 
-  static Future<UserModel> register({
-    required String fullName,
-    required String phone,
+  Future<UserModel> register({
     required String email,
+    required String phone,
     required String password,
+    required String fullName,
   }) async {
-    final data = await ApiClient.post('/auth/register', {
-      'full_name': fullName,
-      'phone': phone,
-      'email': email,
-      'password': password,
+    final data = await ApiClient.instance.post('/auth/register', {
+      'email': email.trim(),
+      'phone': phone.trim(),
+      'password': password.trim(),
+      'fullName': fullName.trim(),
     });
 
-    final token = data['token'] as String;
+    final token = data['accessToken'] as String;
 
-    final refresh = data['refresh_token'] as String;
+    final refresh = data['refreshToken'] as String;
 
     final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
 
-    ApiClient.setToken(token);
+    ApiClient.instance.setToken(token);
 
     await UserSession().save(user: user, token: token, refreshToken: refresh);
 
     return user;
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // SEND OTP
-  // POST /auth/forgot-password
-  // ─────────────────────────────────────────────────────────────
+  // // ─────────────────────────────────────────────────────────────
+  // // SEND OTP
+  // // POST /auth/forgot-password
+  // // ─────────────────────────────────────────────────────────────
 
-  static Future<void> sendOtp(String emailOrPhone) async {
-    await ApiClient.post('/auth/forgot-password', {'contact': emailOrPhone});
-  }
+  // static Future<void> sendOtp(String emailOrPhone) async {
+  //   await ApiClient.post('/auth/forgot-password', {'contact': emailOrPhone});
+  // }
 
-  // ─────────────────────────────────────────────────────────────
-  // VERIFY OTP
-  // POST /auth/verify-otp
-  // ─────────────────────────────────────────────────────────────
+  // // ─────────────────────────────────────────────────────────────
+  // // VERIFY OTP
+  // // POST /auth/verify-otp
+  // // ─────────────────────────────────────────────────────────────
 
-  static Future<String> verifyOtp({
-    required String emailOrPhone,
-    required String otp,
-  }) async {
-    final data = await ApiClient.post('/auth/verify-otp', {
-      'contact': emailOrPhone,
-      'otp': otp,
-    });
+  // static Future<String> verifyOtp({
+  //   required String emailOrPhone,
+  //   required String otp,
+  // }) async {
+  //   final data = await ApiClient.post('/auth/verify-otp', {
+  //     'contact': emailOrPhone,
+  //     'otp': otp,
+  //   });
 
-    return data['reset_token'] as String;
-  }
+  //   return data['reset_token'] as String;
+  // }
 
-  // ─────────────────────────────────────────────────────────────
-  // RESET PASSWORD
-  // POST /auth/reset-password
-  // ─────────────────────────────────────────────────────────────
+  // // ─────────────────────────────────────────────────────────────
+  // // RESET PASSWORD
+  // // POST /auth/reset-password
+  // // ─────────────────────────────────────────────────────────────
 
-  static Future<void> resetPassword({
-    required String resetToken,
-    required String newPassword,
-  }) async {
-    await ApiClient.post('/auth/reset-password', {
-      'reset_token': resetToken,
-      'new_password': newPassword,
-    });
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // CHANGE PASSWORD
-  // POST /auth/change-password
-  // ─────────────────────────────────────────────────────────────
-
-  static Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    await ApiClient.post('/auth/change-password', {
-      'current_password': currentPassword,
-      'new_password': newPassword,
-    });
-  }
+  // static Future<void> resetPassword({
+  //   required String resetToken,
+  //   required String newPassword,
+  // }) async {
+  //   await ApiClient.post('/auth/reset-password', {
+  //     'reset_token': resetToken,
+  //     'new_password': newPassword,
+  //   });
+  // }
 
   // ─────────────────────────────────────────────────────────────
   // LOGOUT
   // POST /auth/logout
   // ─────────────────────────────────────────────────────────────
 
-  static Future<void> logout() async {
+  Future<void> logout() async {
     try {
-      await ApiClient.post('/auth/logout', {});
+      await ApiClient.instance.post('/auth/logout', {});
     } catch (_) {
       // logout local dù API fail
     } finally {
-      ApiClient.clearToken();
+      ApiClient.instance.clearToken();
 
       await UserSession().clear();
     }
@@ -141,29 +129,28 @@ class AuthService {
   // POST /auth/refresh
   // ─────────────────────────────────────────────────────────────
 
-  static Future<void> refreshToken() async {
+  Future<void> refreshToken() async {
     final session = UserSession();
 
+    final access = session.accessToken;
     final refresh = session.refreshToken;
 
     if (refresh == null || refresh.isEmpty) {
-      throw ApiClient.unauthorized('Không có refresh token');
+      throw ApiClient.instance.unauthorized('Không có refresh token');
     }
 
     // dùng plainDio để tránh loop interceptor
-    final data = await ApiClient.post('/auth/refresh', {
-      'refresh_token': refresh,
+    final data = await ApiClient.instance.post('/auth/refresh', {
+      'accessToken': access,
+      'refreshToken': refresh,
     }, usePlainDio: true);
 
-    final newToken = data['token'] as String;
+    final newToken = data['accessToken'] as String;
 
-    ApiClient.setToken(newToken);
+    ApiClient.instance.setToken(newToken);
 
-    await session.updateToken(newToken);
+    await session.updateAccessToken(newToken);
 
-    // backend trả refresh token mới
-    if (data['refresh_token'] != null) {
-      await session.updateRefreshToken(data['refresh_token'] as String);
-    }
+    await session.updateRefreshToken(data['refreshToken'] as String);
   }
 }

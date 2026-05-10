@@ -2,6 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../../services/auth_service.dart';
+// import '../../guards/auth_guard.dart';
+import '../../models/user.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -13,32 +17,64 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _phoneController    = TextEditingController();
+  final _service = AuthService.instance;
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _isLoading       = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _onLogin() {
-    // TODO: Validate → AuthService.login(phone, password) → lưu token
+  Future<void> _onLogin() async {
     setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      Navigator.pushReplacementNamed(context, '/home');
-    });
+
+    try {
+      final email = _emailController.text;
+      final password = _passwordController.text;
+
+      if (email.isEmpty || password.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin.')),
+        );
+        return;
+      }
+
+      UserModel user = await _service.login(email: email, password: password);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login success: ${user.fullName}')),
+        );
+        // AuthGuard.instance.setAuthenticated();
+        // context.go('/home');
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+
+    // Future.delayed(const Duration(seconds: 1), () {
+    //   if (!mounted) return;
+    //   setState(() => _isLoading = false);
+    //   Navigator.pushReplacementNamed(context, '/home');
+    // });
   }
 
   void _onForgotPassword() => Navigator.pushNamed(context, '/forgot_password');
-  void _onRegister()        => Navigator.pushNamed(context, '/register');
-  void _onGoogleLogin()     {}   // TODO: GoogleAuthService.signIn()
-  void _onFacebookLogin()   {}   // TODO: FacebookAuthService.signIn()
+  void _onRegister() => Navigator.pushNamed(context, '/register');
+  void _onGoogleLogin() {} // TODO: GoogleAuthService.signIn()
+  void _onFacebookLogin() {} // TODO: FacebookAuthService.signIn()
 
   @override
   Widget build(BuildContext context) {
@@ -59,8 +95,9 @@ class _LoginScreenState extends State<LoginScreen> {
             child: LayoutBuilder(
               builder: (context, constraints) => SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.pagePadH,
+                ),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: IntrinsicHeight(
@@ -88,14 +125,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 40),
 
-                        // Phone
-                        const SpFieldLabel('SỐ ĐIỆN THOẠI'),
+                        // Email
+                        const SpFieldLabel('EMAIL'),
                         const SizedBox(height: 8),
                         SpTextField(
-                          controller: _phoneController,
-                          hintText: '+84 (___) ___ ____',
-                          keyboardType: TextInputType.phone,
-                          prefixIcon: Icons.phone_android,
+                          controller: _emailController,
+                          hintText: 'example@gmail.com',
+                          keyboardType: TextInputType.emailAddress,
+                          prefixIcon: Icons.email,
                         ),
                         const SizedBox(height: 20),
 

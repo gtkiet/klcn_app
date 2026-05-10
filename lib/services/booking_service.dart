@@ -4,15 +4,18 @@ import '../models/booking.dart';
 import '../network/api_client.dart';
 
 class BookingService {
+  BookingService._();
+  static final instance = BookingService._();
+  final _api = ApiClient.instance;
   // ─────────────────────────────────────────────────────────────
   // GIỮ SLOT
   // POST /bookings/hold
   // ─────────────────────────────────────────────────────────────
 
-  static Future<int> holdSlots({
+  Future<int> holdSlots({
     required List<int> fieldSlotIds,
   }) async {
-    final data = await ApiClient.post(
+    final data = await _api.post(
       '/bookings/hold',
       {
         'field_slot_ids':
@@ -28,7 +31,7 @@ class BookingService {
   // POST /bookings/{id}/confirm
   // ─────────────────────────────────────────────────────────────
 
-  static Future<BookingModel>
+  Future<BookingModel>
       confirmBooking({
     required int bookingId,
     required List<int> fieldSlotIds,
@@ -55,7 +58,7 @@ class BookingService {
             promotionCode,
     };
 
-    final data = await ApiClient.post(
+    final data = await _api.post(
       '/bookings/$bookingId/confirm',
       body,
     );
@@ -71,12 +74,12 @@ class BookingService {
   // POST /bookings/{id}/apply-promotion
   // ─────────────────────────────────────────────────────────────
 
-  static Future<BookingModel>
+  Future<BookingModel>
       applyPromotion({
     required int bookingId,
     required String code,
   }) async {
-    final data = await ApiClient.post(
+    final data = await _api.post(
       '/bookings/$bookingId/apply-promotion',
       {
         'code': code,
@@ -94,7 +97,7 @@ class BookingService {
   // GET /bookings
   // ─────────────────────────────────────────────────────────────
 
-  static Future<List<BookingModel>>
+  Future<List<BookingModel>>
       getBookingHistory({
     int? statusId,
     int page = 1,
@@ -111,7 +114,7 @@ class BookingService {
             statusId.toString(),
     };
 
-    final data = await ApiClient.get(
+    final data = await _api.get(
       '/bookings',
       params: params,
     );
@@ -133,11 +136,11 @@ class BookingService {
   // GET /bookings/{id}
   // ─────────────────────────────────────────────────────────────
 
-  static Future<BookingModel>
+  Future<BookingModel>
       getBookingDetail(
     int bookingId,
   ) async {
-    final data = await ApiClient.get(
+    final data = await _api.get(
       '/bookings/$bookingId',
     );
 
@@ -152,7 +155,7 @@ class BookingService {
   // POST /bookings/{id}/cancel
   // ─────────────────────────────────────────────────────────────
 
-  static Future<BookingModel>
+  Future<BookingModel>
       cancelBooking({
     required int bookingId,
     String? reason,
@@ -161,7 +164,7 @@ class BookingService {
       'reason': ?reason,
     };
 
-    final data = await ApiClient.post(
+    final data = await _api.post(
       '/bookings/$bookingId/cancel',
       body,
     );
@@ -177,12 +180,12 @@ class BookingService {
   // POST /bookings/details/{detailId}/reschedule
   // ─────────────────────────────────────────────────────────────
 
-  static Future<BookingModel>
+  Future<BookingModel>
       reschedule({
     required int bookingDetailId,
     required int newFieldSlotId,
   }) async {
-    final data = await ApiClient.post(
+    final data = await _api.post(
       '/bookings/details/$bookingDetailId/reschedule',
       {
         'new_field_slot_id':
@@ -201,9 +204,9 @@ class BookingService {
   // GET /services
   // ─────────────────────────────────────────────────────────────
 
-  static Future<List<ServiceModel>>
+  Future<List<ServiceModel>>
       getServices() async {
-    final data = await ApiClient.get(
+    final data = await _api.get(
       '/services',
     );
 

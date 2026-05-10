@@ -3,14 +3,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
-import '../errors/errors.dart';
 import 'api_interceptor.dart';
 
 // ───────────────────────────────────────────────────────────────
 // CONFIG
 // ───────────────────────────────────────────────────────────────
 
-const String _baseUrl = 'http://klcnhost-001-site1.ntempurl.com';
+const String _baseUrl = 'http://klcnhost-001-site1.ntempurl.com/api';
 
 // ───────────────────────────────────────────────────────────────
 // API CLIENT
@@ -22,27 +21,27 @@ class ApiClient {
   static final ApiClient instance = ApiClient._internal();
 
   // cache token
-  static String? _token;
+  String? _token;
 
-  static void setToken(String token) {
+  void setToken(String token) {
     _token = token;
   }
 
-  static void clearToken() {
+  void clearToken() {
     _token = null;
   }
 
-  static bool get hasToken => _token != null;
+  bool get hasToken => _token != null;
 
   // ───────────────────────────────────────────────────────────
   // COMMON EXCEPTIONS
   // ───────────────────────────────────────────────────────────
 
-  static Exception unauthorized(String message) {
+  Exception unauthorized(String message) {
     return AppException(message, type: ErrorType.unauthorized, code: 401);
   }
 
-  static Exception network(String message) {
+  Exception network(String message) {
     return AppException(message, type: ErrorType.network);
   }
 
@@ -102,7 +101,7 @@ class ApiClient {
   // GET
   // ───────────────────────────────────────────────────────────
 
-  static Future<dynamic> get(
+  Future<dynamic> get(
     String path, {
     Map<String, dynamic>? params,
     bool usePlainDio = false,
@@ -126,7 +125,7 @@ class ApiClient {
   // POST
   // ───────────────────────────────────────────────────────────
 
-  static Future<dynamic> post(
+  Future<dynamic> post(
     String path,
     Map<String, dynamic> body, {
     bool usePlainDio = false,
@@ -150,7 +149,7 @@ class ApiClient {
   // PUT
   // ───────────────────────────────────────────────────────────
 
-  static Future<dynamic> put(
+  Future<dynamic> put(
     String path,
     Map<String, dynamic> body, {
     bool usePlainDio = false,
@@ -174,7 +173,7 @@ class ApiClient {
   // DELETE
   // ───────────────────────────────────────────────────────────
 
-  static Future<dynamic> delete(String path, {bool usePlainDio = false}) async {
+  Future<dynamic> delete(String path, {bool usePlainDio = false}) async {
     try {
       final dio = usePlainDio
           ? ApiClient.instance.plainDio
@@ -194,7 +193,7 @@ class ApiClient {
   // HANDLE DIO ERROR
   // ───────────────────────────────────────────────────────────
 
-  static AppException _handleDioError(DioException e) {
+  AppException _handleDioError(DioException e) {
     // timeout
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout ||
@@ -215,5 +214,118 @@ class ApiClient {
     final data = e.response?.data;
 
     return ErrorParser.parse(data, statusCode: statusCode);
+  }
+}
+
+enum ErrorType { network, unauthorized, validation, server, unknown }
+
+class AppException implements Exception {
+  /// Message gộp để show nhanh (dùng trong Text / SnackBar).
+  final String message;
+
+  /// Danh sách lỗi chi tiết – có khi server trả về nhiều lỗi cùng lúc.
+  final List<String>? messages;
+
+  final ErrorType type;
+
+  /// HTTP status code gốc (nếu có).
+  final int? code;
+
+  /// Giữ response body gốc để debug.
+  final dynamic raw;
+
+  const AppException(
+    this.message, {
+    this.messages,
+    this.type = ErrorType.unknown,
+    this.code,
+    this.raw,
+  });
+
+  @override
+  String toString() => message;
+}
+
+class ErrorParser {
+  ErrorParser._();
+  static AppException parse(dynamic data, {int? statusCode}) {
+    try {
+      if (data == null) {
+        return AppException(
+          'Có lỗi xảy ra',
+          type: _mapType(statusCode),
+          code: statusCode,
+        );
+      }
+
+      if (data is Map<String, dynamic>) {
+        // ── 1. errors[] ───────────────────────────────────────────────────
+        final errors = data['errors'];
+        if (errors is List && errors.isNotEmpty) {
+          final msgs = errors
+              .map<String>((e) => e['description']?.toString() ?? '')
+              .where((s) => s.isNotEmpty)
+              .toList();
+
+          if (msgs.isNotEmpty) {
+            return AppException(
+              msgs.join('\n'),
+              messages: msgs,
+              type: ErrorType.validation,
+              code: statusCode,
+              raw: data,
+            );
+          }
+        }
+
+        // ── 2. warningMessages[] ──────────────────────────────────────────
+        final warnings = data['warningMessages'];
+        if (warnings is List && warnings.isNotEmpty) {
+          final msgs = warnings.map((e) => e.toString()).toList();
+          return AppException(
+            msgs.join('\n'),
+            messages: msgs,
+            type: ErrorType.validation,
+            code: statusCode,
+            raw: data,
+          );
+        }
+
+        // ── 3. message field ──────────────────────────────────────────────
+        final msg = data['message'];
+        if (msg != null) {
+          return AppException(
+            msg.toString(),
+            type: _mapType(statusCode),
+            code: statusCode,
+            raw: data,
+          );
+        }
+      }
+
+      // ── 4. generic fallback ───────────────────────────────────────────────
+      return AppException(
+        'Có lỗi xảy ra',
+        type: _mapType(statusCode),
+        code: statusCode,
+        raw: data,
+      );
+    } catch (_) {
+      return AppException(
+        'Có lỗi xảy ra',
+        type: ErrorType.unknown,
+        code: statusCode,
+        raw: data,
+      );
+    }
+  }
+
+  /// Map HTTP status code → [ErrorType].
+  static ErrorType _mapType(int? statusCode) {
+    if (statusCode == null) return ErrorType.unknown;
+    if (statusCode == 401) return ErrorType.unauthorized;
+    if (statusCode >= 400 && statusCode < 500) return ErrorType.validation;
+    if (statusCode >= 500) return ErrorType.server;
+    return ErrorType.unknown;
   }
 }

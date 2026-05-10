@@ -10,6 +10,8 @@ class AuthGuard extends ChangeNotifier {
 
   static final AuthGuard instance = AuthGuard._();
 
+  final AuthService _authService = AuthService.instance;
+
   final UserSession _session = UserSession();
 
   AuthStatus _status = AuthStatus.unknown;
@@ -59,7 +61,7 @@ class AuthGuard extends ChangeNotifier {
       }
 
       // Có access token
-      final accessToken = _session.token;
+      final accessToken = _session.accessToken;
 
       if (accessToken != null && accessToken.isNotEmpty) {
         return true;
@@ -69,7 +71,7 @@ class AuthGuard extends ChangeNotifier {
       final refreshToken = _session.refreshToken;
 
       if (refreshToken != null && refreshToken.isNotEmpty) {
-        await AuthService.refreshToken();
+        await _authService.refreshToken();
 
         return true;
       }
@@ -87,7 +89,7 @@ class AuthGuard extends ChangeNotifier {
   // ─────────────────────────────────────────────────────────────
 
   Future<void> logout() async {
-    await AuthService.logout();
+    await _authService.logout();
 
     _setStatus(AuthStatus.unauthenticated);
   }

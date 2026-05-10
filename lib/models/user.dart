@@ -15,7 +15,7 @@ class UserModel {
   final UserRole role;
   final UserStatus status;
   final DateTime createdAt;
-  final DateTime updatedAt;
+  // final DateTime updatedAt;
 
   // Từ bảng Profiles (join)
   final String? avatarUrl;
@@ -30,47 +30,47 @@ class UserModel {
     required this.role,
     required this.status,
     required this.createdAt,
-    required this.updatedAt,
+    // required this.updatedAt,
     this.avatarUrl,
     this.dateOfBirth,
     this.address,
   });
 
-  bool get isActive   => status == UserStatus.active;
-  bool get isAdmin    => role == UserRole.admin;
-  bool get isStaff    => role == UserRole.staff;
+  bool get isActive => status == UserStatus.active;
+  bool get isAdmin => role == UserRole.admin;
+  bool get isStaff => role == UserRole.staff;
   bool get isCustomer => role == UserRole.customer;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      userId:      json['UserId']    as int,
-      email:       json['Email']     as String,
-      phone:       json['Phone']     as String,
-      fullName:    json['FullName']  as String,
-      role:        UserRole.values[(json['RoleId'] as int) - 1],
-      status:      UserStatus.values[(json['StatusId'] as int) - 1],
-      createdAt:   DateTime.parse(json['CreatedAt'] as String),
-      updatedAt:   DateTime.parse(json['UpdatedAt'] as String),
-      avatarUrl:   json['AvatarUrl']   as String?,
-      dateOfBirth: json['DateOfBirth'] != null
-          ? DateTime.parse(json['DateOfBirth'] as String)
+      userId: json['userId'] as int,
+      email: json['email'] as String,
+      phone: json['phone'] as String,
+      fullName: json['fullName'] as String,
+      role: UserRole.values[(json['roleId'] as int) - 1],
+      status: UserStatus.values[(json['statusId'] as int) - 1],
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      // updatedAt:   DateTime.parse(json['updatedAt'] as String),
+      avatarUrl: json['avatarUrl'] as String?,
+      dateOfBirth: json['dateOfBirth'] != null
+          ? DateTime.parse(json['dateOfBirth'] as String)
           : null,
-      address:     json['Address'] as String?,
+      address: json['address'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'UserId':      userId,
-    'Email':       email,
-    'Phone':       phone,
-    'FullName':    fullName,
-    'RoleId':      role.index + 1,
-    'StatusId':    status.index + 1,
-    'CreatedAt':   createdAt.toIso8601String(),
-    'UpdatedAt':   updatedAt.toIso8601String(),
-    'AvatarUrl':   avatarUrl,
-    'DateOfBirth': dateOfBirth?.toIso8601String(),
-    'Address':     address,
+    'userId': userId,
+    'email': email,
+    'phone': phone,
+    'fullName': fullName,
+    'roleId': role.index + 1,
+    'statusId': status.index + 1,
+    'createdAt': createdAt.toIso8601String(),
+    // 'updatedAt':   updatedAt.toIso8601String(),
+    'avatarUrl': avatarUrl,
+    'dateOfBirth': dateOfBirth?.toIso8601String(),
+    'address': address,
   };
 
   UserModel copyWith({
@@ -83,17 +83,17 @@ class UserModel {
     UserStatus? status,
   }) {
     return UserModel(
-      userId:      userId,
-      email:       email      ?? this.email,
-      phone:       phone      ?? this.phone,
-      fullName:    fullName   ?? this.fullName,
-      role:        role,
-      status:      status     ?? this.status,
-      createdAt:   createdAt,
-      updatedAt:   DateTime.now(),
-      avatarUrl:   avatarUrl  ?? this.avatarUrl,
+      userId: userId,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      fullName: fullName ?? this.fullName,
+      role: role,
+      status: status ?? this.status,
+      createdAt: createdAt,
+      // updatedAt:   DateTime.now(),
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
-      address:     address    ?? this.address,
+      address: address ?? this.address,
     );
   }
 }

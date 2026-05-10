@@ -9,8 +9,8 @@ import '../models/user.dart';
 class _SessionKeys {
   static const user = 'user';
 
-  static const accessToken = 'access_token';
-  static const refreshToken = 'refresh_token';
+  static const accessToken = 'accessToken';
+  static const refreshToken = 'refreshToken';
 }
 
 class UserSession {
@@ -25,7 +25,7 @@ class UserSession {
 
   // Cache memory
   UserModel? _user;
-  String? _token;
+  String? _accessToken;
   String? _refreshToken;
 
   // ─────────────────────────────────────────────────────────────
@@ -34,14 +34,12 @@ class UserSession {
 
   UserModel? get currentUser => _user;
 
-  String? get token => _token;
+  String? get accessToken => _accessToken;
 
   String? get refreshToken => _refreshToken;
 
   bool get isLoggedIn =>
-      _user != null &&
-      _token != null &&
-      _token!.isNotEmpty;
+      _user != null && _accessToken != null && _accessToken!.isNotEmpty;
 
   bool get isAdmin => _user?.isAdmin ?? false;
 
@@ -59,24 +57,15 @@ class UserSession {
     required String refreshToken,
   }) async {
     _user = user;
-    _token = token;
+    _accessToken = token;
     _refreshToken = refreshToken;
 
     await Future.wait([
-      _storage.write(
-        key: _SessionKeys.user,
-        value: jsonEncode(user.toJson()),
-      ),
+      _storage.write(key: _SessionKeys.user, value: jsonEncode(user.toJson())),
 
-      _storage.write(
-        key: _SessionKeys.accessToken,
-        value: token,
-      ),
+      _storage.write(key: _SessionKeys.accessToken, value: token),
 
-      _storage.write(
-        key: _SessionKeys.refreshToken,
-        value: refreshToken,
-      ),
+      _storage.write(key: _SessionKeys.refreshToken, value: refreshToken),
     ]);
   }
 
@@ -96,17 +85,13 @@ class UserSession {
       final accessToken = results[1];
       final refreshToken = results[2];
 
-      if (userJson == null ||
-          accessToken == null ||
-          accessToken.isEmpty) {
+      if (userJson == null || accessToken == null || accessToken.isEmpty) {
         return false;
       }
 
-      _user = UserModel.fromJson(
-        jsonDecode(userJson),
-      );
+      _user = UserModel.fromJson(jsonDecode(userJson));
 
-      _token = accessToken;
+      _accessToken = accessToken;
       _refreshToken = refreshToken;
 
       return true;
@@ -120,13 +105,10 @@ class UserSession {
   // Update access token
   // ─────────────────────────────────────────────────────────────
 
-  Future<void> updateToken(String newToken) async {
-    _token = newToken;
+  Future<void> updateAccessToken(String newAccessToken) async {
+    _accessToken = newAccessToken;
 
-    await _storage.write(
-      key: _SessionKeys.accessToken,
-      value: newToken,
-    );
+    await _storage.write(key: _SessionKeys.accessToken, value: newAccessToken);
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -161,7 +143,7 @@ class UserSession {
 
   Future<void> clear() async {
     _user = null;
-    _token = null;
+    _accessToken = null;
     _refreshToken = null;
 
     await Future.wait([
@@ -176,9 +158,7 @@ class UserSession {
   // ─────────────────────────────────────────────────────────────
 
   Future<bool> hasSession() async {
-    final token = await _storage.read(
-      key: _SessionKeys.accessToken,
-    );
+    final token = await _storage.read(key: _SessionKeys.accessToken);
 
     return token != null && token.isNotEmpty;
   }
