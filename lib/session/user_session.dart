@@ -1,165 +1,142 @@
-// lib/services/user_session.dart
+// lib/core/storage/user_session.dart
 
-import 'dart:convert';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import '../models/user.dart';
+import 'package:klcn_app/models/user.dart';
 
-class _SessionKeys {
-  static const user = 'user';
-
+abstract class _K {
   static const accessToken = 'accessToken';
   static const refreshToken = 'refreshToken';
+  static const userId = 'userId';
+  static const accountId = 'accountId';
+  static const username = 'username';
+  static const email = 'email';
+  static const fullName = 'fullName';
+  static const role = 'role';
+  static const anhDaiDienUrl = 'anhDaiDienUrl';
 }
 
 class UserSession {
-  UserSession._internal();
+  UserSession._();
+  static final UserSession instance = UserSession._();
 
-  static final UserSession _instance = UserSession._internal();
+  final _storage = const FlutterSecureStorage();
 
-  factory UserSession() => _instance;
+  // ── Reactive field ────────────────────────────────────────────────────────
+  //
+  // Chỉ avatar cần reactive vì có chức năng đổi ảnh từ ProfileScreen.
+  // Các field khác đọc thẳng (sync) sau khi load().
 
-  // Secure storage
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  /// Lắng nghe thay đổi avatar:
+  ///   ValueListenableBuilder(
+  ///     valueListenable: UserSession.instance.anhDaiDienUrlNotifier,
+  ///     builder: (context, url, _) => ...,
+  ///   )
+  final anhDaiDienUrlNotifier = ValueNotifier<String?>(null);
 
-  // Cache memory
-  UserModel? _user;
-  String? _accessToken;
-  String? _refreshToken;
+  String? get anhDaiDienUrl => anhDaiDienUrlNotifier.value;
 
-  // ─────────────────────────────────────────────────────────────
-  // Getters
-  // ─────────────────────────────────────────────────────────────
+  // ── Các field sync (đọc sau khi load()) ──────────────────────────────────
 
-  UserModel? get currentUser => _user;
+  String? accessToken;
+  String? refreshToken;
+  String? userId;
+  String? accountId;
+  String? username;
+  String? email;
+  String? fullName;
+  String? role;
 
-  String? get accessToken => _accessToken;
+  bool get isLoggedIn => accessToken?.isNotEmpty == true;
 
-  String? get refreshToken => _refreshToken;
+  // ── Khởi động app ─────────────────────────────────────────────────────────
 
-  bool get isLoggedIn =>
-      _user != null && _accessToken != null && _accessToken!.isNotEmpty;
+  /// Gọi một lần trong main() trước runApp().
+  Future<void> load() async {
+    final values = await Future.wait([
+      _storage.read(key: _K.accessToken), // [0]
+      _storage.read(key: _K.refreshToken), // [1]
+      _storage.read(key: _K.userId), // [2]
+      _storage.read(key: _K.accountId), // [3]
+      _storage.read(key: _K.username), // [4]
+      _storage.read(key: _K.email), // [5]
+      _storage.read(key: _K.fullName), // [6]
+      _storage.read(key: _K.role), // [7]
+      _storage.read(key: _K.anhDaiDienUrl), // [8]
+    ]);
 
-  bool get isAdmin => _user?.isAdmin ?? false;
+    accessToken = values[0];
+    refreshToken = values[1];
+    userId = values[2];
+    accountId = values[3];
+    username = values[4];
+    email = values[5];
+    fullName = values[6];
+    role = values[7];
 
-  bool get isStaff => _user?.isStaff ?? false;
+    // Gán thẳng vào .value — không trigger notify vì chưa có widget lắng nghe
+    anhDaiDienUrlNotifier.value = values[8];
+  }
 
-  bool get isCustomer => _user?.isCustomer ?? false;
+  // ── Đăng nhập ─────────────────────────────────────────────────────────────
 
-  // ─────────────────────────────────────────────────────────────
-  // Save full session
-  // ─────────────────────────────────────────────────────────────
+  Future<void> save(UserModel user) async {
+    userId = user.userId.toString();
+    email = user.email;
+    fullName = user.fullName;
+    role = user.role.name;
 
-  Future<void> save({
-    required UserModel user,
-    required String token,
+    anhDaiDienUrlNotifier.value = user.avatarUrl;
+
+    await Future.wait([
+      _storage.write(key: _K.userId, value: user.userId.toString()),
+      _storage.write(key: _K.email, value: user.email),
+      _storage.write(key: _K.fullName, value: user.fullName),
+      _storage.write(key: _K.role, value: user.role.name),
+      _storage.write(key: _K.anhDaiDienUrl, value: user.avatarUrl),
+    ]);
+  }
+
+  // ── Refresh token ─────────────────────────────────────────────────────────
+
+  Future<void> updateTokens({
+    required String accessToken,
     required String refreshToken,
   }) async {
-    _user = user;
-    _accessToken = token;
-    _refreshToken = refreshToken;
-
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
     await Future.wait([
-      _storage.write(key: _SessionKeys.user, value: jsonEncode(user.toJson())),
-
-      _storage.write(key: _SessionKeys.accessToken, value: token),
-
-      _storage.write(key: _SessionKeys.refreshToken, value: refreshToken),
+      _storage.write(key: _K.accessToken, value: accessToken),
+      _storage.write(key: _K.refreshToken, value: refreshToken),
     ]);
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Load session khi app start
-  // ─────────────────────────────────────────────────────────────
+  // ── Đổi avatar ────────────────────────────────────────────────────────────
+  //
+  // Gọi từ ProfileScreen sau khi upload thành công:
+  //   await UserSession.instance.updateAvatar(newUrl);
+  //   → HomeScreen và mọi widget đang lắng nghe tự rebuild
 
-  Future<bool> load() async {
-    try {
-      final results = await Future.wait([
-        _storage.read(key: _SessionKeys.user),
-        _storage.read(key: _SessionKeys.accessToken),
-        _storage.read(key: _SessionKeys.refreshToken),
-      ]);
-
-      final userJson = results[0];
-      final accessToken = results[1];
-      final refreshToken = results[2];
-
-      if (userJson == null || accessToken == null || accessToken.isEmpty) {
-        return false;
-      }
-
-      _user = UserModel.fromJson(jsonDecode(userJson));
-
-      _accessToken = accessToken;
-      _refreshToken = refreshToken;
-
-      return true;
-    } catch (e) {
-      await clear();
-      return false;
-    }
+  Future<void> updateAvatar(String newUrl) async {
+    anhDaiDienUrlNotifier.value = newUrl;
+    await _storage.write(key: _K.anhDaiDienUrl, value: newUrl);
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Update access token
-  // ─────────────────────────────────────────────────────────────
-
-  Future<void> updateAccessToken(String newAccessToken) async {
-    _accessToken = newAccessToken;
-
-    await _storage.write(key: _SessionKeys.accessToken, value: newAccessToken);
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Update refresh token
-  // ─────────────────────────────────────────────────────────────
-
-  Future<void> updateRefreshToken(String newRefreshToken) async {
-    _refreshToken = newRefreshToken;
-
-    await _storage.write(
-      key: _SessionKeys.refreshToken,
-      value: newRefreshToken,
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Update user profile
-  // ─────────────────────────────────────────────────────────────
-
-  Future<void> updateUser(UserModel user) async {
-    _user = user;
-
-    await _storage.write(
-      key: _SessionKeys.user,
-      value: jsonEncode(user.toJson()),
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Clear session / logout
-  // ─────────────────────────────────────────────────────────────
+  // ── Đăng xuất ─────────────────────────────────────────────────────────────
 
   Future<void> clear() async {
-    _user = null;
-    _accessToken = null;
-    _refreshToken = null;
+    accessToken = null;
+    refreshToken = null;
+    userId = null;
+    accountId = null;
+    username = null;
+    email = null;
+    fullName = null;
+    role = null;
 
-    await Future.wait([
-      _storage.delete(key: _SessionKeys.user),
-      _storage.delete(key: _SessionKeys.accessToken),
-      _storage.delete(key: _SessionKeys.refreshToken),
-    ]);
-  }
+    anhDaiDienUrlNotifier.value = null;
 
-  // ─────────────────────────────────────────────────────────────
-  // Check session
-  // ─────────────────────────────────────────────────────────────
-
-  Future<bool> hasSession() async {
-    final token = await _storage.read(key: _SessionKeys.accessToken);
-
-    return token != null && token.isNotEmpty;
+    await _storage.deleteAll();
   }
 }

@@ -34,18 +34,7 @@ class AppRouter {
     /// ================= REDIRECT =================
     redirect: (context, state) {
       final status = AuthGuard.instance.status;
-      final location = state.matchedLocation;
-
-      // final publicRoutes = <String>[
-      //   '/login',
-      //   '/register',
-      //   '/forgot-password',
-      //   '/otp-verification',
-      //   '/reset-password',
-      //   '/splash',
-      // ];
-
-      // final isPublic = publicRoutes.contains(location);
+      final location = state.uri.path;
 
       final isAuthRoute = location.startsWith('/auth');
 

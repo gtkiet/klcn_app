@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/auth_service.dart';
-// import '../../guards/auth_guard.dart';
+import '../../guards/auth_guard.dart';
 import '../../models/user.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
@@ -44,16 +44,16 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      UserModel user = await _service.login(email: email, password: password);
+      // UserModel user = await _service.login(email: email, password: password);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login success: ${user.fullName}')),
-        );
-        // AuthGuard.instance.setAuthenticated();
-        // context.go('/home');
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(content: Text('Login success: ${user.fullName}')),
+      //   );
+      //   AuthGuard.instance.setAuthenticated();
+      //   context.go('/home');
+      //   Navigator.pushReplacementNamed(context, '/home');
+      // }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

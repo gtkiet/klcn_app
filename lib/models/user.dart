@@ -15,8 +15,7 @@ class UserModel {
   final UserRole role;
   final UserStatus status;
   final DateTime createdAt;
-  // final DateTime updatedAt;
-
+  
   // Từ bảng Profiles (join)
   final String? avatarUrl;
   final DateTime? dateOfBirth;
@@ -30,7 +29,6 @@ class UserModel {
     required this.role,
     required this.status,
     required this.createdAt,
-    // required this.updatedAt,
     this.avatarUrl,
     this.dateOfBirth,
     this.address,
@@ -90,7 +88,6 @@ class UserModel {
       role: role,
       status: status ?? this.status,
       createdAt: createdAt,
-      // updatedAt:   DateTime.now(),
       avatarUrl: avatarUrl ?? this.avatarUrl,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       address: address ?? this.address,

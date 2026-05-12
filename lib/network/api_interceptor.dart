@@ -11,7 +11,7 @@ import '../session/user_session.dart';
 class ApiInterceptor extends Interceptor {
   final Dio dio;
 
-  final UserSession _session = UserSession();
+  final UserSession _session = UserSession.instance;
 
   ApiInterceptor(this.dio);
 
