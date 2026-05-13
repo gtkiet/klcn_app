@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
-import '../guards/auth_guard.dart';
 import '../services/auth_service.dart';
 import '../session/user_session.dart';
 

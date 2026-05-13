@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/auth_service.dart';
-import '../../guards/auth_guard.dart';
-import '../../models/user.dart';
+
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -17,7 +16,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _service = AuthService.instance;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
@@ -32,43 +30,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _onLogin() async {
     setState(() => _isLoading = true);
-
     try {
-      final email = _emailController.text;
-      final password = _passwordController.text;
-
-      if (email.isEmpty || password.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin.')),
-        );
-        return;
+      await AuthService.instance.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+      if (mounted) {
+        AuthGuard.instance.setAuthenticated();
+        // GoRouter tự redirect về /home nhờ refreshListenable
       }
-
-      // UserModel user = await _service.login(email: email, password: password);
-
-      // if (mounted) {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(content: Text('Login success: ${user.fullName}')),
-      //   );
-      //   AuthGuard.instance.setAuthenticated();
-      //   context.go('/home');
-      //   Navigator.pushReplacementNamed(context, '/home');
-      // }
-    } catch (e) {
+    } on AppException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        ).showSnackBar(SnackBar(content: Text(e.message)));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-
-    // Future.delayed(const Duration(seconds: 1), () {
-    //   if (!mounted) return;
-    //   setState(() => _isLoading = false);
-    //   Navigator.pushReplacementNamed(context, '/home');
-    // });
   }
 
   void _onForgotPassword() => Navigator.pushNamed(context, '/forgot_password');

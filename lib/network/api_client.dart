@@ -60,11 +60,11 @@ class ErrorParser {
       }
 
       if (data is Map<String, dynamic>) {
-        // 1. errors[]
+        // 1. errors[] — giờ là List<String> thay vì List<{description}>
         final errors = data['errors'];
         if (errors is List && errors.isNotEmpty) {
           final msgs = errors
-              .map<String>((e) => e['description']?.toString() ?? '')
+              .map((e) => e.toString())
               .where((s) => s.isNotEmpty)
               .toList();
           if (msgs.isNotEmpty) {
@@ -78,20 +78,7 @@ class ErrorParser {
           }
         }
 
-        // 2. warningMessages[]
-        final warnings = data['warningMessages'];
-        if (warnings is List && warnings.isNotEmpty) {
-          final msgs = warnings.map((e) => e.toString()).toList();
-          return AppException(
-            msgs.join('\n'),
-            messages: msgs,
-            type: ErrorType.validation,
-            code: statusCode,
-            raw: data,
-          );
-        }
-
-        // 3. message field
+        // 2. message field
         final msg = data['message'];
         if (msg != null) {
           return AppException(
@@ -181,8 +168,7 @@ class ApiResponse {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ApiClient {
-  static const String baseUrl =
-      'https://chungcu-webapi-fwf7cva4c7c6ajae.eastasia-01.azurewebsites.net';
+  static const String baseUrl = 'http://klcnhost-001-site1.ntempurl.com/api';
 
   ApiClient._internal();
   static final ApiClient instance = ApiClient._internal();
@@ -264,12 +250,9 @@ class ApiClient {
     }
   }
 
-  /// Kiểm tra envelope `{isOk, result, errors[]}` và trả về [ApiResponse].
-  /// Ném [AppException] nếu `isOk == false` hoặc body null.
   ApiResponse _unwrap(Response<dynamic> response) {
     final data = response.data;
 
-    // Một số endpoint (ví dụ upload) trả về list trực tiếp không có envelope
     if (data is List) {
       return ApiResponse(data, statusCode: response.statusCode);
     }
@@ -282,13 +265,16 @@ class ApiClient {
     }
 
     final map = data as Map<String, dynamic>;
-    final isOk = map['isOk'] as bool? ?? true;
+    final success = map['success'] as bool? ?? true; // ← đổi isOk → success
 
-    if (!isOk) {
+    if (!success) {
       throw ErrorParser.parse(map, statusCode: response.statusCode);
     }
 
-    return ApiResponse(map['result'], statusCode: response.statusCode);
+    return ApiResponse(
+      map['data'],
+      statusCode: response.statusCode,
+    ); // ← result → data
   }
 
   AppException _fromDio(DioException e) {

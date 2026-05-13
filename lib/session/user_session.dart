@@ -8,13 +8,17 @@ import 'package:klcn_app/models/user.dart';
 abstract class _K {
   static const accessToken = 'accessToken';
   static const refreshToken = 'refreshToken';
+  static const expiresAt = 'expiresAt';
   static const userId = 'userId';
-  static const accountId = 'accountId';
-  static const username = 'username';
-  static const email = 'email';
   static const fullName = 'fullName';
+  static const email = 'email';
+  static const phone = 'phone';
   static const role = 'role';
-  static const anhDaiDienUrl = 'anhDaiDienUrl';
+  static const roleId = 'roleId';
+  static const status = 'status';
+  static const statusId = 'statusId';
+  static const avatarUrl = 'avatarUrl';
+  static const createdAt = 'createdAt';
 }
 
 class UserSession {
@@ -30,23 +34,27 @@ class UserSession {
 
   /// Lắng nghe thay đổi avatar:
   ///   ValueListenableBuilder(
-  ///     valueListenable: UserSession.instance.anhDaiDienUrlNotifier,
+  ///     valueListenable: UserSession.instance.avatarUrlNotifier,
   ///     builder: (context, url, _) => ...,
   ///   )
-  final anhDaiDienUrlNotifier = ValueNotifier<String?>(null);
+  final avatarUrlNotifier = ValueNotifier<String?>(null);
 
-  String? get anhDaiDienUrl => anhDaiDienUrlNotifier.value;
+  String? get avatarUrl => avatarUrlNotifier.value;
 
   // ── Các field sync (đọc sau khi load()) ──────────────────────────────────
 
   String? accessToken;
   String? refreshToken;
+  String? expiresAt;
   String? userId;
-  String? accountId;
-  String? username;
-  String? email;
   String? fullName;
+  String? email;
+  String? phone;
   String? role;
+  String? roleId;
+  String? status;
+  String? statusId;
+  String? createdAt;
 
   bool get isLoggedIn => accessToken?.isNotEmpty == true;
 
@@ -55,46 +63,70 @@ class UserSession {
   /// Gọi một lần trong main() trước runApp().
   Future<void> load() async {
     final values = await Future.wait([
-      _storage.read(key: _K.accessToken), // [0]
-      _storage.read(key: _K.refreshToken), // [1]
-      _storage.read(key: _K.userId), // [2]
-      _storage.read(key: _K.accountId), // [3]
-      _storage.read(key: _K.username), // [4]
-      _storage.read(key: _K.email), // [5]
-      _storage.read(key: _K.fullName), // [6]
-      _storage.read(key: _K.role), // [7]
-      _storage.read(key: _K.anhDaiDienUrl), // [8]
+      _storage.read(key: _K.accessToken),
+      _storage.read(key: _K.refreshToken),
+      _storage.read(key: _K.expiresAt),
+      _storage.read(key: _K.userId),
+      _storage.read(key: _K.fullName),
+      _storage.read(key: _K.email),
+      _storage.read(key: _K.phone),
+      _storage.read(key: _K.role),
+      _storage.read(key: _K.roleId),
+      _storage.read(key: _K.status),
+      _storage.read(key: _K.statusId),
+      _storage.read(key: _K.avatarUrl),
+      _storage.read(key: _K.createdAt),
     ]);
 
     accessToken = values[0];
     refreshToken = values[1];
-    userId = values[2];
-    accountId = values[3];
-    username = values[4];
+    expiresAt = values[2];
+    userId = values[3];
+    fullName = values[4];
     email = values[5];
-    fullName = values[6];
+    phone = values[6];
     role = values[7];
+    roleId = values[8];
+    status = values[9];
+    statusId = values[10];
+    createdAt = values[12];
 
     // Gán thẳng vào .value — không trigger notify vì chưa có widget lắng nghe
-    anhDaiDienUrlNotifier.value = values[8];
+    avatarUrlNotifier.value = values[11];
   }
 
   // ── Đăng nhập ─────────────────────────────────────────────────────────────
 
-  Future<void> save(UserModel user) async {
+  Future<void> save(AuthResponse auth) async {
+    accessToken = auth.accessToken;
+    refreshToken = auth.refreshToken;
+    expiresAt = auth.expiresAt.toIso8601String();
+    var user = auth.user;
     userId = user.userId.toString();
-    email = user.email;
     fullName = user.fullName;
-    role = user.role.name;
+    email = user.email;
+    phone = user.phone;
+    role = user.role;
+    roleId = user.roleId.toString();
+    status = user.status;
+    statusId = user.statusId.toString();
+    createdAt = user.createdAt.toIso8601String();
 
-    anhDaiDienUrlNotifier.value = user.avatarUrl;
+    avatarUrlNotifier.value = user.avatarUrl;
 
     await Future.wait([
-      _storage.write(key: _K.userId, value: user.userId.toString()),
-      _storage.write(key: _K.email, value: user.email),
-      _storage.write(key: _K.fullName, value: user.fullName),
-      _storage.write(key: _K.role, value: user.role.name),
-      _storage.write(key: _K.anhDaiDienUrl, value: user.avatarUrl),
+      _storage.write(key: _K.accessToken, value: accessToken),
+      _storage.write(key: _K.refreshToken, value: refreshToken),
+      _storage.write(key: _K.expiresAt, value: expiresAt),
+      _storage.write(key: _K.userId, value:userId),
+      _storage.write(key: _K.fullName, value: fullName),
+      _storage.write(key: _K.email, value: email),
+      _storage.write(key: _K.phone, value: phone),
+      _storage.write(key: _K.role, value: role),
+      _storage.write(key: _K.roleId, value: roleId),
+      _storage.write(key: _K.status, value: status),
+      _storage.write(key: _K.statusId, value: statusId),
+      _storage.write(key: _K.avatarUrl, value: avatarUrlNotifier.value),
     ]);
   }
 
@@ -119,8 +151,8 @@ class UserSession {
   //   → HomeScreen và mọi widget đang lắng nghe tự rebuild
 
   Future<void> updateAvatar(String newUrl) async {
-    anhDaiDienUrlNotifier.value = newUrl;
-    await _storage.write(key: _K.anhDaiDienUrl, value: newUrl);
+    avatarUrlNotifier.value = newUrl;
+    await _storage.write(key: _K.avatarUrl, value: newUrl);
   }
 
   // ── Đăng xuất ─────────────────────────────────────────────────────────────
@@ -128,14 +160,18 @@ class UserSession {
   Future<void> clear() async {
     accessToken = null;
     refreshToken = null;
+    expiresAt = null;
     userId = null;
-    accountId = null;
-    username = null;
-    email = null;
     fullName = null;
+    email = null;
+    phone = null;
     role = null;
+    roleId = null;
+    status = null;
+    statusId = null;
+    createdAt = null;
 
-    anhDaiDienUrlNotifier.value = null;
+    avatarUrlNotifier.value = null;
 
     await _storage.deleteAll();
   }

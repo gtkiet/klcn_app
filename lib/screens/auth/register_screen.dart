@@ -2,7 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// import '../../services/auth_service.dart';
+
+import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -14,18 +15,16 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  // final _service = AuthService.instance;
-
-  final _emailCtrl    = TextEditingController();
-  final _phoneCtrl    = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  final _confirmCtrl  = TextEditingController();
-  final _nameCtrl     = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
 
   bool _obscurePassword = true;
-  bool _obscureConfirm  = true;
-  bool _agreedToTerms   = false;
-  bool _isLoading       = false;
+  bool _obscureConfirm = true;
+  bool _agreedToTerms = false;
+  bool _isLoading = false;
 
   String? _nameError;
   String? _emailError;
@@ -68,22 +67,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _agreedToTerms;
   }
 
-  void _onRegister() {
+  Future<void> _onRegister() async {
     if (!_validate()) return;
     setState(() => _isLoading = true);
-    // TODO: RegisterService.register(name, email, password)
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      Navigator.pushReplacementNamed(context, '/home');
-    });
+    try {
+      await AuthService.instance.register(
+        email: _emailCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
+        password: _passwordCtrl.text.trim(),
+        fullName: _nameCtrl.text.trim(),
+      );
+      if (mounted) {
+        AuthGuard.instance.setAuthenticated();
+        // GoRouter redirect → /home
+      }
+    } on AppException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
-  void _onLogin()           => Navigator.pushReplacementNamed(context, '/login');
-  void _onGoogleRegister()  {}  // TODO
+  void _onLogin() => Navigator.pushReplacementNamed(context, '/login');
+  void _onGoogleRegister() {} // TODO
   void _onFacebookRegister() {} // TODO
-  void _onTermsTap()        => Navigator.pushNamed(context, '/terms');
-  void _onPrivacyTap()      => Navigator.pushNamed(context, '/privacy');
+  void _onTermsTap() => Navigator.pushNamed(context, '/terms');
+  void _onPrivacyTap() => Navigator.pushNamed(context, '/privacy');
 
   @override
   Widget build(BuildContext context) {
@@ -107,8 +120,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
           child: SingleChildScrollView(
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.pagePadH,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -151,14 +165,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 18),
 
-                const SpFieldLabel('EMAIL / SĐT'),
+                const SpFieldLabel('EMAIL'),
                 const SizedBox(height: 8),
                 SpTextField(
                   controller: _emailCtrl,
-                  hintText: 'name@example.com hoặc 0xx...',
+                  hintText: 'name@example.com',
                   keyboardType: TextInputType.emailAddress,
                   errorText: _emailError,
                   onChanged: (_) => setState(() => _emailError = null),
+                ),
+                const SizedBox(height: 18),
+
+                const SpFieldLabel('SỐ ĐIỆN THOẠI'),
+                const SizedBox(height: 8),
+                SpTextField(
+                  controller: _phoneCtrl,
+                  hintText: '0xxxxxxxxx',
+                  keyboardType: TextInputType.phone,
+                  errorText: _phoneError,
+                  onChanged: (_) => setState(() => _phoneError = null),
                 ),
                 const SizedBox(height: 18),
 
