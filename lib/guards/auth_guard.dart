@@ -47,9 +47,7 @@ class AuthGuard extends ChangeNotifier {
 
       final refreshToken = _session.refreshToken;
       if (refreshToken != null && refreshToken.isNotEmpty) {
-        final newAccess = await AuthService.instance.refreshToken(
-          refreshToken: refreshToken,
-        );
+        final newAccess = await AuthService.instance.refreshToken();
         return newAccess != null;
       }
       return false;

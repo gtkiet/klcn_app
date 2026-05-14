@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../models/user.dart';
 import '../network/api_client.dart';
+import '../network/media_url.dart';
 import '../session/user_session.dart';
 
 class ProfileService {
@@ -14,37 +15,13 @@ class ProfileService {
   final _session = UserSession.instance;
 
   // ─────────────────────────────────────────────────────────────
-  // HELPER: prefix base URL cho avatar path từ server
-  // Server trả "/Uploads/avatar/..." — ghép thành full URL
-  // trước khi lưu vào session để mọi nơi đọc ra dùng được luôn.
-  // ─────────────────────────────────────────────────────────────
-
-  static String? _fullAvatarUrl(String? path) {
-    if (path == null || path.isEmpty) return null;
-    if (path.startsWith('http')) return path;
-    return '${ApiClient.baseUrl}$path';
-  }
-
-  /// Trả về UserModel với avatarUrl đã được prefix đầy đủ.
-  static UserModel _withFullAvatar(UserModel user) {
-    final raw = user.profile?.avatarUrl;
-    final full = _fullAvatarUrl(raw);
-    if (full == raw) return user;
-    return user.copyWith(
-      profile:
-          user.profile?.copyWith(avatarUrl: full) ??
-          ProfileModel(avatarUrl: full),
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
   // LẤY PROFILE
   // GET /api/profile
   // ─────────────────────────────────────────────────────────────
 
   Future<UserModel> getProfile() async {
     final res = await _api.get('/api/profile');
-    final user = _withFullAvatar(res.item(UserModel.fromJson));
+    final user = res.item(UserModel.fromJson).withFullAvatarUrl;
     await _session.updateUser(user);
     return user;
   }
@@ -75,7 +52,7 @@ class ProfileService {
     };
 
     final res = await _api.put('/api/profile', body: body);
-    final user = _withFullAvatar(res.item(UserModel.fromJson));
+    final user = res.item(UserModel.fromJson).withFullAvatarUrl;
     await _session.updateUser(user);
     return user;
   }
@@ -113,9 +90,8 @@ class ProfileService {
       'file': await MultipartFile.fromFile(filePath),
     });
 
-    final res = await _api.postForm('/api/profile/avatar', formData);
-    final rawPath = res.raw<String>();
-    final fullUrl = _fullAvatarUrl(rawPath) ?? rawPath;
+    final res = await _api.putForm('/api/profile/avatar', formData);
+    final fullUrl = res.raw<String>().toFullMediaUrl ?? res.raw<String>();
 
     await _session.updateAvatar(fullUrl);
     return fullUrl;

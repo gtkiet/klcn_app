@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'session/user_session.dart';
-// import 'guards/auth_guard.dart';
 import 'navigation/app_router.dart';
 
 import 'theme/app_theme.dart';
@@ -22,9 +21,7 @@ Future<void> main() async {
   );
 
   await UserSession.instance.load();
-
-  // await AuthGuard.instance.init();
-
+  
   runApp(const App());
 }
 

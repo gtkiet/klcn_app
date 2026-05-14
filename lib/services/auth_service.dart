@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import 'package:klcn_app/guards/auth_guard.dart';
 import 'package:klcn_app/network/api_client.dart';
+import 'package:klcn_app/network/media_url.dart';
 import 'package:klcn_app/session/user_session.dart';
 import 'package:klcn_app/models/user.dart';
 
@@ -14,35 +15,6 @@ class AuthService {
   final _client = ApiClient.instance;
   final _session = UserSession.instance;
   final _guard = AuthGuard.instance;
-
-  // ─────────────────────────────────────────────────────────────
-  // HELPER: prefix base URL cho avatar path từ server
-  // Dùng chung với ProfileService — server trả "/Uploads/..."
-  // ─────────────────────────────────────────────────────────────
-
-  static String? _fullAvatarUrl(String? path) {
-    if (path == null || path.isEmpty) return null;
-    if (path.startsWith('http')) return path;
-    return '${ApiClient.baseUrl}$path';
-  }
-
-  /// Patch AuthResponse để avatarUrl trong user có full URL trước khi save.
-  static AuthResponse _withFullAvatar(AuthResponse auth) {
-    final raw = auth.user.profile?.avatarUrl;
-    final full = _fullAvatarUrl(raw);
-    if (full == raw) return auth;
-    final patchedUser = auth.user.copyWith(
-      profile:
-          auth.user.profile?.copyWith(avatarUrl: full) ??
-          ProfileModel(avatarUrl: full),
-    );
-    return AuthResponse(
-      accessToken: auth.accessToken,
-      refreshToken: auth.refreshToken,
-      expiresAt: auth.expiresAt,
-      user: patchedUser,
-    );
-  }
 
   // ── LOGIN ──────────────────────────────────────────────────────────────
   /// POST /api/auth/login
@@ -63,7 +35,7 @@ class AuthService {
       body: {'email': email.trim(), 'password': password.trim()},
     );
 
-    final auth = _withFullAvatar(res.item(AuthResponse.fromJson));
+    final auth = res.item(AuthResponse.fromJson).withFullAvatarUrl;
     await _session.save(auth);
     _guard.setAuthenticated();
     return auth;
@@ -88,7 +60,7 @@ class AuthService {
       },
     );
 
-    final auth = _withFullAvatar(res.item(AuthResponse.fromJson));
+    final auth = res.item(AuthResponse.fromJson).withFullAvatarUrl;
     await _session.save(auth);
     _guard.setAuthenticated();
     return auth;
@@ -115,10 +87,10 @@ class AuthService {
   // ── REFRESH TOKEN ──────────────────────────────────────────────────────
   /// POST /api/auth/refresh-token
   /// Body: { accessToken, refreshToken }
-  /// Trả về access token mới, hoặc null nếu thất bại.
-  Future<String?> refreshToken({String? refreshToken}) async {
+  /// Luôn lấy token từ session — trả về access token mới, hoặc null nếu thất bại.
+  Future<String?> refreshToken() async {
     try {
-      final rToken = refreshToken ?? _session.refreshToken;
+      final rToken = _session.refreshToken;
       final aToken = _session.accessToken;
 
       if (rToken == null || rToken.isEmpty) return null;
