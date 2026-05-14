@@ -4,13 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-// import '../../guards/auth_guard.dart';
-import '../../services/auth_service.dart';
-import '../../services/user_service.dart';
+import '../../guards/auth_guard.dart';
+import '../../services/profile_service.dart';
 import '../../session/user_session.dart';
+import '../../network/api_client.dart';
 import '../../models/user.dart';
 import '../../theme/app_theme.dart';
-// import '../../widgets/shared_widgets.dart';
+
+// ── HELPER ────────────────────────────────────
+String? _buildAvatarUrl(String? path) {
+  if (path == null || path.isEmpty) return null;
+  if (path.startsWith('http')) return path;
+  return '${ApiClient.baseUrl}$path';
+}
 
 class _MenuItem {
   final IconData icon;
@@ -30,7 +36,11 @@ final _accountItems = [
     'Đổi mật khẩu',
     'change_password',
   ),
-  const _MenuItem(Icons.history_rounded, 'Lịch sử đặt sân', '/booking_history'),
+  const _MenuItem(
+    Icons.history_rounded,
+    'Lịch sử đặt sân',
+    '/booking_history',
+  ),
 ];
 
 final _supportItems = [
@@ -53,7 +63,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  
   final _session = UserSession.instance;
 
   UserModel? _user;
@@ -75,7 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     // Fetch fresh data từ API ở background
     try {
-      final user = await UserService.instance.getProfile();
+      final user = await ProfileService.instance.getProfile();
       if (mounted) setState(() => _user = user);
     } catch (_) {
       // Giữ dữ liệu session nếu API lỗi
@@ -93,7 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _onLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Đăng xuất',
@@ -102,14 +111,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         content: const Text('Bạn có chắc muốn đăng xuất không?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(ctx, false),
             child: const Text(
               'Hủy',
               style: TextStyle(color: AppColors.textMid),
             ),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
               'Đăng xuất',
               style: TextStyle(
@@ -126,10 +135,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     setState(() => _isLoggingOut = true);
     try {
-      await AuthService.instance.logout();
-      if (mounted) {
-        // AuthGuard notifyListeners → GoRouter redirect → /auth/login
-      }
+      // FIX: gọi AuthGuard.logout() — nó gọi AuthService.logout() rồi
+      // tự set unauthenticated → GoRouter redirect về /auth/login
+      await AuthGuard.instance.logout();
     } finally {
       if (mounted) setState(() => _isLoggingOut = false);
     }
@@ -147,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.settings_outlined),
-              onPressed: () {},
+              onPressed: () {}, // TODO: settings
             ),
           ],
         ),
@@ -168,7 +176,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       const SizedBox(height: 16),
 
-                      // Hero card
                       _ProfileHeroCard(
                         user: _user,
                         onEditAvatar: () =>
@@ -176,26 +183,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Account menu
                       _SectionLabel('TÀI KHOẢN & THIẾT LẬP'),
                       const SizedBox(height: 8),
                       _MenuGroup(items: _accountItems, onTap: _onMenuItem),
                       const SizedBox(height: 20),
 
-                      // Support menu
                       _SectionLabel('THÔNG TIN HỖ TRỢ'),
                       const SizedBox(height: 8),
                       _MenuGroup(items: _supportItems, onTap: _onMenuItem),
                       const SizedBox(height: 24),
 
-                      // Logout
                       _LogoutButton(
                         onTap: _isLoggingOut ? () {} : _onLogout,
                         isLoading: _isLoggingOut,
                       ),
                       const SizedBox(height: 28),
 
-                      // Footer
                       Column(
                         children: [
                           Icon(
@@ -263,30 +266,35 @@ class _ProfileHeroCard extends StatelessWidget {
               children: [
                 ValueListenableBuilder<String?>(
                   valueListenable: session.avatarUrlNotifier,
-                  builder: (_, url, _) => Container(
-                    width: 96,
-                    height: 96,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.20),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: url != null && url.isNotEmpty
-                          ? Image.network(
-                              url,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => _avatarFallback(),
-                            )
-                          : _avatarFallback(),
-                    ),
-                  ),
+                  builder: (_, rawUrl, _) {
+                    // FIX: prefix base URL vì session lưu path "/Uploads/..."
+                    final url = _buildAvatarUrl(rawUrl);
+                    return Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.20),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: url != null
+                            ? Image.network(
+                                url,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) =>
+                                    _avatarFallback(),
+                              )
+                            : _avatarFallback(),
+                      ),
+                    );
+                  },
                 ),
                 Positioned(
                   bottom: 0,
@@ -339,7 +347,6 @@ class _ProfileHeroCard extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Stats row
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
@@ -377,9 +384,9 @@ class _ProfileHeroCard extends StatelessWidget {
   }
 
   Widget _avatarFallback() => Container(
-    color: const Color(0xFF8D6E63),
-    child: const Icon(Icons.person, color: Colors.white54, size: 52),
-  );
+        color: const Color(0xFF8D6E63),
+        child: const Icon(Icons.person, color: Colors.white54, size: 52),
+      );
 }
 
 class _StatItem extends StatelessWidget {

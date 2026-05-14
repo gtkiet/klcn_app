@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../services/user_service.dart';
-import '../../network/api_client.dart';
+import '../../services/profile_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -76,9 +75,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // PUT /api/profile/change-password
-      // Body: { currentPassword, newPassword, confirmPassword }
-      await UserService.instance.changePassword(
+      // FIX: đổi UserService → ProfileService
+      await ProfileService.instance.changePassword(
         currentPassword: _currentCtrl.text,
         newPassword:     _newCtrl.text,
         confirmPassword: _confirmCtrl.text,
@@ -92,11 +90,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         );
         context.pop();
       }
-    } on AppException catch (e) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.message),
+            content: Text(e.toString()),
             backgroundColor: AppColors.errorRed,
           ),
         );
@@ -155,12 +153,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // Card 3 fields
                 SpCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Mật khẩu hiện tại
                       const Text(
                         'Mật khẩu hiện tại',
                         style: TextStyle(
@@ -179,13 +175,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         showText:   _showCurrent,
                         onToggle:   () =>
                             setState(() => _showCurrent = !_showCurrent),
-                        onChanged: (_) =>
+                        onChanged:  (_) =>
                             setState(() => _currentError = null),
                         errorText:  _currentError,
                       ),
                       const SizedBox(height: 20),
 
-                      // Mật khẩu mới
                       const Text(
                         'Mật khẩu mới',
                         style: TextStyle(
@@ -204,13 +199,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         showText:   _showNew,
                         onToggle:   () =>
                             setState(() => _showNew = !_showNew),
-                        onChanged: (_) =>
+                        onChanged:  (_) =>
                             setState(() => _newError = null),
                         errorText:  _newError,
                       ),
                       const SizedBox(height: 20),
 
-                      // Xác nhận mật khẩu
                       const Text(
                         'Xác nhận mật khẩu mới',
                         style: TextStyle(
@@ -228,13 +222,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         showText:   _showConfirm,
                         onToggle:   () =>
                             setState(() => _showConfirm = !_showConfirm),
-                        onChanged: (_) =>
+                        onChanged:  (_) =>
                             setState(() => _confirmError = null),
                         errorText:  _confirmError,
                       ),
                       const SizedBox(height: 20),
 
-                      // Rule box
                       const _PasswordRuleBox(),
                     ],
                   ),
@@ -273,6 +266,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 }
 
 // ── PASSWORD FIELD ─────────────────────────────────────────────────────────
+// Dùng widget riêng thay vì SpPasswordField vì cần focus animation
+// (đổi màu border + icon khi focused) mà SpPasswordField không hỗ trợ.
 class _PassField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -344,10 +339,10 @@ class _PassFieldState extends State<_PassField> {
               ),
               Expanded(
                 child: TextField(
-                  controller:  widget.controller,
-                  focusNode:   widget.focusNode,
-                  obscureText: !widget.showText,
-                  onChanged:   widget.onChanged,
+                  controller:      widget.controller,
+                  focusNode:       widget.focusNode,
+                  obscureText:     !widget.showText,
+                  onChanged:       widget.onChanged,
                   textInputAction: widget.nextFocus != null
                       ? TextInputAction.next
                       : TextInputAction.done,
@@ -417,8 +412,8 @@ class _PasswordRuleBox extends StatelessWidget {
               decoration: const BoxDecoration(
                 color: AppColors.primary,
                 borderRadius: BorderRadius.only(
-                  topLeft:     Radius.circular(10),
-                  bottomLeft:  Radius.circular(10),
+                  topLeft:    Radius.circular(10),
+                  bottomLeft: Radius.circular(10),
                 ),
               ),
             ),

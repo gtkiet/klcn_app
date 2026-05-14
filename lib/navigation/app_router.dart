@@ -7,19 +7,24 @@ import '../guards/auth_guard.dart';
 import 'main_screen.dart';
 
 import '../screens/splash/splash_screen.dart';
+
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/otp_verification_screen.dart';
 import '../screens/auth/reset_password_screen.dart';
+
 import '../screens/home/home_screen.dart';
-import '../screens/field/field_list_screen.dart';
+
+// import '../screens/field/field_list_screen.dart';
 import '../screens/field/field_detail_screen.dart';
 import '../screens/booking/booking_confirmation_screen.dart';
 import '../screens/booking/booking_success_screen.dart';
 import '../screens/booking/booking_failure_screen.dart';
-import '../screens/booking/booking_history_screen.dart';
+
+// import '../screens/booking/booking_history_screen.dart';
 import '../screens/booking/booking_detail_screen.dart';
+
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/edit_profile_screen.dart';
 import '../screens/profile/change_password_screen.dart';
@@ -46,9 +51,9 @@ class AppRouter {
       }
 
       if (status == AuthStatus.unauthenticated) {
-        if (isAuthRoute) return null;
-        return '/auth/login';
-        // return isAuthRoute ? null : '/auth/login';
+        // if (isAuthRoute) return null;
+        // return '/auth/login';
+        return isAuthRoute ? null : '/auth/login';
       }
 
       if (status == AuthStatus.authenticated) {
@@ -100,7 +105,7 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: '/fields',
-                builder: (_, _) => const FieldListScreen(),
+                // builder: (_, _) => const FieldListScreen(),
                 routes: [
                   GoRoute(
                     path: 'detail',
@@ -128,7 +133,7 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: '/booking_history',
-                builder: (_, _) => const BookingHistoryScreen(),
+                // builder: (_, _) => const BookingHistoryScreen(),
                 routes: [
                   GoRoute(
                     path: 'detail',

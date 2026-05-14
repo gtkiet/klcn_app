@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 // import '../../models/user.dart';
-import '../../services/user_service.dart';
+import '../../services/profile_service.dart';
 import '../../session/user_session.dart';
 import '../../network/api_client.dart';
 import '../../theme/app_theme.dart';
@@ -48,7 +48,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _loadFreshProfile() async {
     try {
-      final user = await UserService.instance.getProfile();
+      final user = await ProfileService.instance.getProfile();
       if (!mounted) return;
       _nameCtrl.text    = user.fullName;
       _phoneCtrl.text   = user.phone;
@@ -85,16 +85,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await UserService.instance.updateProfile(
-        fullName:    _nameCtrl.text.trim(),
-        phone:       _phoneCtrl.text.trim(),
-        dateOfBirth: _selectedDob != null
-            ? DateFormat('yyyy-MM-dd').format(_selectedDob!)
-            : null,
-        address: _addressCtrl.text.trim().isNotEmpty
-            ? _addressCtrl.text.trim()
-            : null,
-      );
+      // await ProfileService.instance.updateProfile(
+      //   fullName:    _nameCtrl.text.trim(),
+      //   phone:       _phoneCtrl.text.trim(),
+      //   dateOfBirth: _selectedDob != null
+      //       ? DateFormat('yyyy-MM-dd').format(_selectedDob!)
+      //       : null,
+      //   address: _addressCtrl.text.trim().isNotEmpty
+      //       ? _addressCtrl.text.trim()
+      //       : null,
+      // );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

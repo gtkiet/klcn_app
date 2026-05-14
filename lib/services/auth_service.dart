@@ -11,9 +11,38 @@ class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();
 
-  final _client  = ApiClient.instance;
+  final _client = ApiClient.instance;
   final _session = UserSession.instance;
-  final _guard   = AuthGuard.instance;
+  final _guard = AuthGuard.instance;
+
+  // ─────────────────────────────────────────────────────────────
+  // HELPER: prefix base URL cho avatar path từ server
+  // Dùng chung với ProfileService — server trả "/Uploads/..."
+  // ─────────────────────────────────────────────────────────────
+
+  static String? _fullAvatarUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http')) return path;
+    return '${ApiClient.baseUrl}$path';
+  }
+
+  /// Patch AuthResponse để avatarUrl trong user có full URL trước khi save.
+  static AuthResponse _withFullAvatar(AuthResponse auth) {
+    final raw = auth.user.profile?.avatarUrl;
+    final full = _fullAvatarUrl(raw);
+    if (full == raw) return auth;
+    final patchedUser = auth.user.copyWith(
+      profile:
+          auth.user.profile?.copyWith(avatarUrl: full) ??
+          ProfileModel(avatarUrl: full),
+    );
+    return AuthResponse(
+      accessToken: auth.accessToken,
+      refreshToken: auth.refreshToken,
+      expiresAt: auth.expiresAt,
+      user: patchedUser,
+    );
+  }
 
   // ── LOGIN ──────────────────────────────────────────────────────────────
   /// POST /api/auth/login
@@ -31,13 +60,10 @@ class AuthService {
 
     final res = await _client.post(
       '/api/auth/login',
-      body: {
-        'email':    email.trim(),
-        'password': password.trim(),
-      },
+      body: {'email': email.trim(), 'password': password.trim()},
     );
 
-    final auth = res.item(AuthResponse.fromJson);
+    final auth = _withFullAvatar(res.item(AuthResponse.fromJson));
     await _session.save(auth);
     _guard.setAuthenticated();
     return auth;
@@ -55,14 +81,14 @@ class AuthService {
     final res = await _client.post(
       '/api/auth/register',
       body: {
-        'email':    email.trim(),
-        'phone':    phone.trim(),
+        'email': email.trim(),
+        'phone': phone.trim(),
         'password': password.trim(),
         'fullName': fullName.trim(),
       },
     );
 
-    final auth = res.item(AuthResponse.fromJson);
+    final auth = _withFullAvatar(res.item(AuthResponse.fromJson));
     await _session.save(auth);
     _guard.setAuthenticated();
     return auth;
@@ -70,21 +96,19 @@ class AuthService {
 
   // ── LOGOUT ─────────────────────────────────────────────────────────────
   /// POST /api/auth/logout  (Bearer token required)
+  /// Chỉ clear session + gọi API — AuthGuard.logout() tự set unauthenticated.
   Future<void> logout() async {
     try {
       await _client.plainDio.post(
         '/api/auth/logout',
         options: Options(
-          headers: {
-            'Authorization': 'Bearer ${_session.accessToken ?? ''}',
-          },
+          headers: {'Authorization': 'Bearer ${_session.accessToken ?? ''}'},
         ),
       );
     } catch (_) {
       // Bỏ qua lỗi — luôn xoá session
     } finally {
       await _session.clear();
-      _guard.setUnauthenticated();
     }
   }
 
@@ -101,14 +125,11 @@ class AuthService {
 
       final response = await _client.plainDio.post(
         '/api/auth/refresh-token',
-        data: {
-          'accessToken':  aToken ?? '',
-          'refreshToken': rToken,
-        },
+        data: {'accessToken': aToken ?? '', 'refreshToken': rToken},
       );
 
       final map = response.data as Map<String, dynamic>;
-      final ok  = map['success'] as bool? ?? false;
+      final ok = map['success'] as bool? ?? false;
       if (!ok) return null;
 
       final tokens = TokenResponse.fromJson(
@@ -116,7 +137,7 @@ class AuthService {
       );
 
       await _session.updateTokens(
-        accessToken:  tokens.accessToken,
+        accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
       );
       return tokens.accessToken;
