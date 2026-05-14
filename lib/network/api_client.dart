@@ -1,10 +1,10 @@
-// lib/core/network/api_client.dart
+// lib/network/api_client.dart
 
 import 'package:dio/dio.dart';
 
 import 'api_interceptor.dart';
 
-import 'package:klcn_app/models/paging_model.dart';
+import 'package:klcn_app/models/paging.dart'; // FIX: đổi từ paging_model → paging
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ERROR LAYER
@@ -60,7 +60,7 @@ class ErrorParser {
       }
 
       if (data is Map<String, dynamic>) {
-        // 1. errors[] — giờ là List<String> thay vì List<{description}>
+        // 1. errors[] — List<String>
         final errors = data['errors'];
         if (errors is List && errors.isNotEmpty) {
           final msgs = errors
@@ -119,7 +119,7 @@ class ErrorParser {
 // API RESPONSE WRAPPER
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Bọc response đã kiểm tra `isOk` thành công.
+/// Bọc response đã kiểm tra `success` thành công.
 /// Service chỉ cần gọi `.item(...)`, `.list(...)`, hoặc `.pagedResult(...)`.
 class ApiResponse {
   final dynamic _result;
@@ -129,7 +129,7 @@ class ApiResponse {
 
   // ── Lấy một object ────────────────────────────────────────────────────────
 
-  /// Parse `result` thành một object. Ném [AppException] nếu result null.
+  /// Parse `data` thành một object. Ném [AppException] nếu result null.
   T item<T>(T Function(Map<String, dynamic>) fromJson) {
     if (_result == null) {
       throw const AppException(
@@ -140,15 +140,15 @@ class ApiResponse {
     return fromJson(_result as Map<String, dynamic>);
   }
 
-  /// Parse `result` thành một object, cho phép null.
+  /// Parse `data` thành một object, cho phép null.
   T? itemOrNull<T>(T Function(Map<String, dynamic>) fromJson) {
     if (_result == null) return null;
     return fromJson(_result as Map<String, dynamic>);
   }
 
-  // ── Lấy danh sách ────────────────────────────────────────────────────────
+  // ── Lấy danh sách ─────────────────────────────────────────────────────────
 
-  /// Parse `result` (là một List) thành `List<T>`.
+  /// Parse `data` (là một List) thành `List<T>`.
   List<T> list<T>(T Function(Map<String, dynamic>) fromJson) {
     final raw = _result as List<dynamic>? ?? [];
     return raw.map((e) => fromJson(e as Map<String, dynamic>)).toList();
@@ -168,7 +168,7 @@ class ApiResponse {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ApiClient {
-  static const String baseUrl = 'http://klcnhost-001-site1.ntempurl.com/api';
+  static const String baseUrl = 'http://klcnhost-001-site1.ntempurl.com';
 
   ApiClient._internal();
   static final ApiClient instance = ApiClient._internal();
@@ -224,7 +224,6 @@ class ApiClient {
   }) => _execute(() => dio.delete(path, data: body ?? {}, options: options));
 
   /// Upload multipart/form-data.
-  /// Caller tự build [FormData], method này chỉ wrap error handling.
   Future<ApiResponse> postForm(String path, FormData formData) => _execute(
     () => dio.post(
       path,
@@ -265,16 +264,13 @@ class ApiClient {
     }
 
     final map = data as Map<String, dynamic>;
-    final success = map['success'] as bool? ?? true; // ← đổi isOk → success
+    final success = map['success'] as bool? ?? true;
 
     if (!success) {
       throw ErrorParser.parse(map, statusCode: response.statusCode);
     }
 
-    return ApiResponse(
-      map['data'],
-      statusCode: response.statusCode,
-    ); // ← result → data
+    return ApiResponse(map['data'], statusCode: response.statusCode);
   }
 
   AppException _fromDio(DioException e) {

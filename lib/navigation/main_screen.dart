@@ -1,4 +1,4 @@
-// lib/core/navigation/main_screen.dart
+// lib/navigation/main_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -17,7 +17,7 @@ class MainScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AppNavigation.setShell(shell);
-    AppNavigation.setRouter(GoRouter.of(context));
+    // AppNavigation.setRouter(GoRouter.of(context));
     return Scaffold(
       body: shell,
       bottomNavigationBar: BottomNavigationBar(

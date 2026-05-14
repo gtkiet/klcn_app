@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../services/auth_service.dart';
-
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -16,42 +16,71 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  String? _emailError;
+  String? _passwordError;
+
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
     super.dispose();
   }
 
+  bool _validate() {
+    setState(() {
+      _emailError = _emailCtrl.text.trim().isEmpty
+          ? 'Vui lòng nhập email'
+          : null;
+      _passwordError = _passwordCtrl.text.trim().isEmpty
+          ? 'Vui lòng nhập mật khẩu'
+          : null;
+    });
+    return _emailError == null && _passwordError == null;
+  }
+
   Future<void> _onLogin() async {
+    FocusScope.of(context).unfocus();
+    if (!_validate()) return;
+
     setState(() => _isLoading = true);
     try {
       await AuthService.instance.login(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        email: _emailCtrl.text.trim(),
+        password: _passwordCtrl.text.trim(),
       );
+      // FIX: bỏ AuthGuard.instance.setAuthenticated() — AuthService.login()
+      // đã gọi nội bộ rồi. GoRouter tự redirect khi nhận notifyListeners().
+    } catch (e) {
       if (mounted) {
-        AuthGuard.instance.setAuthenticated();
-        // GoRouter tự redirect về /home nhờ refreshListenable
-      }
-    } on AppException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _onForgotPassword() => Navigator.pushNamed(context, '/forgot_password');
-  void _onRegister() => Navigator.pushNamed(context, '/register');
+  void _onForgotPassword() => context.push('/auth/forgot-password');
+  // void _onRegister() => context.push('/auth/register');
+  void _onRegister() {
+    debugPrint('NAVIGATE: going to /auth/register');
+    context.push('/auth/register');
+  }
+
   void _onGoogleLogin() {} // TODO: GoogleAuthService.signIn()
   void _onFacebookLogin() {} // TODO: FacebookAuthService.signIn()
 
@@ -85,11 +114,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         const SizedBox(height: 52),
 
-                        // Brand logo
-                        const Center(child: SpBrandLogo(size: 108)),
-                        const SizedBox(height: 24),
-
-                        // App name
                         const Center(child: SpAppNameText(fontSize: 34)),
                         const SizedBox(height: 10),
 
@@ -108,10 +132,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SpFieldLabel('EMAIL'),
                         const SizedBox(height: 8),
                         SpTextField(
-                          controller: _emailController,
+                          controller: _emailCtrl,
+                          focusNode: _emailFocus,
+                          nextFocusNode: _passwordFocus,
                           hintText: 'example@gmail.com',
                           keyboardType: TextInputType.emailAddress,
-                          prefixIcon: Icons.email,
+                          prefixIcon: Icons.email_outlined,
+                          errorText: _emailError,
+                          onChanged: (_) => setState(() => _emailError = null),
                         ),
                         const SizedBox(height: 20),
 
@@ -135,15 +163,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         SpPasswordField(
-                          controller: _passwordController,
+                          controller: _passwordCtrl,
                           obscure: _obscurePassword,
                           onToggle: () => setState(
                             () => _obscurePassword = !_obscurePassword,
                           ),
+                          errorText: _passwordError,
+                          onChanged: (_) =>
+                              setState(() => _passwordError = null),
                         ),
                         const SizedBox(height: 28),
 
-                        // Login button
                         SpPrimaryButton(
                           label: 'Đăng nhập',
                           isLoading: _isLoading,
@@ -154,7 +184,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SpOrDivider(label: 'HOẶC ĐĂNG NHẬP VỚI'),
                         const SizedBox(height: 20),
 
-                        // Social buttons
                         Row(
                           children: [
                             Expanded(
@@ -176,7 +205,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 36),
 
-                        // Register footer
                         Center(
                           child: GestureDetector(
                             onTap: _onRegister,

@@ -1,4 +1,4 @@
-// lib/shared/models/paging_model.dart
+// lib/models/paging.dart
 
 class PagingInfo {
   final int pageNumber;

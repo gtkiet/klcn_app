@@ -3,28 +3,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'guards/auth_guard.dart';
+import 'session/user_session.dart';
+// import 'guards/auth_guard.dart';
+import 'navigation/app_router.dart';
+
 import 'theme/app_theme.dart';
 
-import 'screens/splash/splash_screen.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/auth/register_screen.dart';
-import 'screens/auth/forgot_password_screen.dart';
-import 'screens/auth/otp_verification_screen.dart';
-import 'screens/auth/reset_password_screen.dart';
-import 'screens/home/home_screen.dart';
-import 'screens/field/field_list_screen.dart';
-import 'screens/field/field_detail_screen.dart';
-import 'screens/booking/booking_confirmation_screen.dart';
-import 'screens/booking/booking_success_screen.dart';
-import 'screens/booking/booking_failure_screen.dart';
-import 'screens/booking/booking_history_screen.dart';
-import 'screens/booking/booking_detail_screen.dart';
-import 'screens/profile/profile_screen.dart';
-import 'screens/profile/edit_profile_screen.dart';
-import 'screens/profile/change_password_screen.dart';
-
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -36,40 +21,28 @@ void main() async {
     ),
   );
 
-  await AuthGuard.instance.init();
+  await UserSession.instance.load();
 
-  runApp(const SportPlusApp());
+  // await AuthGuard.instance.init();
+
+  runApp(const App());
 }
 
-class SportPlusApp extends StatelessWidget {
-  const SportPlusApp({super.key});
+class App extends StatelessWidget {
+  const App({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Sport Plus',
+
       debugShowCheckedModeBanner: false,
+
+      routerConfig: AppRouter.router,
+
+      // ── Apply the design system theme ──────────────────────────────────────
       theme: buildAppTheme(),
-      initialRoute: '/splash',
-      routes: {
-        '/splash': (context) => const SplashScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/forgot_password': (context) => const ForgotPasswordScreen(),
-        '/otp_verification': (context) => const OtpVerificationScreen(),
-        '/reset_password': (context) => const ResetPasswordScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/fields': (context) => const FieldListScreen(),
-        '/field_detail': (context) => const FieldDetailScreen(),
-        '/booking_confirm': (context) => const BookingConfirmationScreen(),
-        '/booking_success': (context) => const BookingSuccessScreen(),
-        '/booking_failure': (context) => const BookingFailureScreen(),
-        '/booking_history': (context) => const BookingHistoryScreen(),
-        '/booking_detail': (context) => const BookingDetailScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/edit_profile': (context) => const EditProfileScreen(),
-        '/change_password': (context) => const ChangePasswordScreen(),
-      },
+      themeMode: ThemeMode.light,
     );
   }
 }

@@ -1,4 +1,4 @@
-// lib/core/storage/user_session.dart
+// lib/session/user_session.dart
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -19,30 +19,24 @@ abstract class _K {
   static const statusId = 'statusId';
   static const avatarUrl = 'avatarUrl';
   static const createdAt = 'createdAt';
+  static const dateOfBirth = 'dateOfBirth';
+  static const address = 'address';
 }
 
 class UserSession {
   UserSession._();
   static final UserSession instance = UserSession._();
 
-  final _storage = const FlutterSecureStorage();
+  // final _storage = const FlutterSecureStorage(
+  //   aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  // );
+  final _storage = const FlutterSecureStorage(aOptions: AndroidOptions());
 
-  // ── Reactive field ────────────────────────────────────────────────────────
-  //
-  // Chỉ avatar cần reactive vì có chức năng đổi ảnh từ ProfileScreen.
-  // Các field khác đọc thẳng (sync) sau khi load().
-
-  /// Lắng nghe thay đổi avatar:
-  ///   ValueListenableBuilder(
-  ///     valueListenable: UserSession.instance.avatarUrlNotifier,
-  ///     builder: (context, url, _) => ...,
-  ///   )
+  // ── Reactive fields (rebuild widgets khi thay đổi) ────────────────────
   final avatarUrlNotifier = ValueNotifier<String?>(null);
-
   String? get avatarUrl => avatarUrlNotifier.value;
 
-  // ── Các field sync (đọc sau khi load()) ──────────────────────────────────
-
+  // ── Sync fields (đọc sau khi load()) ─────────────────────────────────
   String? accessToken;
   String? refreshToken;
   String? expiresAt;
@@ -55,27 +49,31 @@ class UserSession {
   String? status;
   String? statusId;
   String? createdAt;
+  String? dateOfBirth;
+  String? address;
 
   bool get isLoggedIn => accessToken?.isNotEmpty == true;
 
-  // ── Khởi động app ─────────────────────────────────────────────────────────
+  // ── Khởi động app ─────────────────────────────────────────────────────
 
   /// Gọi một lần trong main() trước runApp().
   Future<void> load() async {
     final values = await Future.wait([
-      _storage.read(key: _K.accessToken),
-      _storage.read(key: _K.refreshToken),
-      _storage.read(key: _K.expiresAt),
-      _storage.read(key: _K.userId),
-      _storage.read(key: _K.fullName),
-      _storage.read(key: _K.email),
-      _storage.read(key: _K.phone),
-      _storage.read(key: _K.role),
-      _storage.read(key: _K.roleId),
-      _storage.read(key: _K.status),
-      _storage.read(key: _K.statusId),
-      _storage.read(key: _K.avatarUrl),
-      _storage.read(key: _K.createdAt),
+      _storage.read(key: _K.accessToken), // 0
+      _storage.read(key: _K.refreshToken), // 1
+      _storage.read(key: _K.expiresAt), // 2
+      _storage.read(key: _K.userId), // 3
+      _storage.read(key: _K.fullName), // 4
+      _storage.read(key: _K.email), // 5
+      _storage.read(key: _K.phone), // 6
+      _storage.read(key: _K.role), // 7
+      _storage.read(key: _K.roleId), // 8
+      _storage.read(key: _K.status), // 9
+      _storage.read(key: _K.statusId), // 10
+      _storage.read(key: _K.avatarUrl), // 11
+      _storage.read(key: _K.createdAt), // 12
+      _storage.read(key: _K.dateOfBirth), // 13
+      _storage.read(key: _K.address), // 14
     ]);
 
     accessToken = values[0];
@@ -90,18 +88,21 @@ class UserSession {
     status = values[9];
     statusId = values[10];
     createdAt = values[12];
+    dateOfBirth = values[13];
+    address = values[14];
 
-    // Gán thẳng vào .value — không trigger notify vì chưa có widget lắng nghe
+    // Gán trực tiếp — chưa có widget lắng nghe ở thời điểm này
     avatarUrlNotifier.value = values[11];
   }
 
-  // ── Đăng nhập ─────────────────────────────────────────────────────────────
+  // ── Đăng nhập (AuthResponse từ login / register) ───────────────────────
 
   Future<void> save(AuthResponse auth) async {
+    final user = auth.user;
+
     accessToken = auth.accessToken;
     refreshToken = auth.refreshToken;
     expiresAt = auth.expiresAt.toIso8601String();
-    var user = auth.user;
     userId = user.userId.toString();
     fullName = user.fullName;
     email = user.email;
@@ -111,6 +112,8 @@ class UserSession {
     status = user.status;
     statusId = user.statusId.toString();
     createdAt = user.createdAt.toIso8601String();
+    dateOfBirth = user.dateOfBirth?.toIso8601String();
+    address = user.address;
 
     avatarUrlNotifier.value = user.avatarUrl;
 
@@ -118,7 +121,7 @@ class UserSession {
       _storage.write(key: _K.accessToken, value: accessToken),
       _storage.write(key: _K.refreshToken, value: refreshToken),
       _storage.write(key: _K.expiresAt, value: expiresAt),
-      _storage.write(key: _K.userId, value:userId),
+      _storage.write(key: _K.userId, value: userId),
       _storage.write(key: _K.fullName, value: fullName),
       _storage.write(key: _K.email, value: email),
       _storage.write(key: _K.phone, value: phone),
@@ -127,10 +130,34 @@ class UserSession {
       _storage.write(key: _K.status, value: status),
       _storage.write(key: _K.statusId, value: statusId),
       _storage.write(key: _K.avatarUrl, value: avatarUrlNotifier.value),
+      _storage.write(key: _K.createdAt, value: createdAt),
+      _storage.write(key: _K.dateOfBirth, value: dateOfBirth),
+      _storage.write(key: _K.address, value: address),
     ]);
   }
 
-  // ── Refresh token ─────────────────────────────────────────────────────────
+  // ── Cập nhật profile (từ GET/PUT /api/profile) ────────────────────────
+
+  Future<void> updateUser(UserModel user) async {
+    fullName = user.fullName;
+    phone = user.phone;
+    email = user.email;
+    dateOfBirth = user.dateOfBirth?.toIso8601String();
+    address = user.address;
+
+    avatarUrlNotifier.value = user.avatarUrl;
+
+    await Future.wait([
+      _storage.write(key: _K.fullName, value: fullName),
+      _storage.write(key: _K.phone, value: phone),
+      _storage.write(key: _K.email, value: email),
+      _storage.write(key: _K.avatarUrl, value: avatarUrlNotifier.value),
+      _storage.write(key: _K.dateOfBirth, value: dateOfBirth),
+      _storage.write(key: _K.address, value: address),
+    ]);
+  }
+
+  // ── Refresh token ─────────────────────────────────────────────────────
 
   Future<void> updateTokens({
     required String accessToken,
@@ -144,18 +171,38 @@ class UserSession {
     ]);
   }
 
-  // ── Đổi avatar ────────────────────────────────────────────────────────────
-  //
-  // Gọi từ ProfileScreen sau khi upload thành công:
-  //   await UserSession.instance.updateAvatar(newUrl);
-  //   → HomeScreen và mọi widget đang lắng nghe tự rebuild
+  // ── Đổi avatar ────────────────────────────────────────────────────────
 
   Future<void> updateAvatar(String newUrl) async {
     avatarUrlNotifier.value = newUrl;
     await _storage.write(key: _K.avatarUrl, value: newUrl);
   }
 
-  // ── Đăng xuất ─────────────────────────────────────────────────────────────
+  // ── Build UserModel từ session (dùng khi cần model cục bộ) ───────────
+
+  UserModel? toUserModel() {
+    if (userId == null) return null;
+    return UserModel(
+      userId: int.tryParse(userId ?? '') ?? 0,
+      email: email ?? '',
+      phone: phone ?? '',
+      fullName: fullName ?? '',
+      role: role ?? '',
+      roleId: int.tryParse(roleId ?? '') ?? 0,
+      status: status ?? '',
+      statusId: int.tryParse(statusId ?? '') ?? 0,
+      createdAt: DateTime.tryParse(createdAt ?? '') ?? DateTime.now(),
+      profile: ProfileModel(
+        avatarUrl: avatarUrl,
+        dateOfBirth: dateOfBirth != null
+            ? DateTime.tryParse(dateOfBirth!)
+            : null,
+        address: address,
+      ),
+    );
+  }
+
+  // ── Đăng xuất ─────────────────────────────────────────────────────────
 
   Future<void> clear() async {
     accessToken = null;
@@ -170,6 +217,8 @@ class UserSession {
     status = null;
     statusId = null;
     createdAt = null;
+    dateOfBirth = null;
+    address = null;
 
     avatarUrlNotifier.value = null;
 

@@ -1,4 +1,5 @@
-// lib/core/guards/auth_guard.dart
+// lib/guards/auth_guard.dart
+
 import 'package:flutter/material.dart';
 
 import 'package:klcn_app/session/user_session.dart';
@@ -6,6 +7,7 @@ import 'package:klcn_app/services/auth_service.dart';
 
 class AuthGuard extends ChangeNotifier {
   AuthGuard._();
+
   static final AuthGuard instance = AuthGuard._();
 
   final UserSession _session = UserSession.instance;
@@ -21,7 +23,11 @@ class AuthGuard extends ChangeNotifier {
     if (_initialized || _isInitializing) return;
     _isInitializing = true;
     try {
-      final isLoggedIn = await tryAutoLogin();
+      final results = await Future.wait([
+        tryAutoLogin(),
+        Future.delayed(const Duration(milliseconds: 2000)),
+      ]);
+      final isLoggedIn = results[0] as bool;
       _setStatus(
         isLoggedIn ? AuthStatus.authenticated : AuthStatus.unauthenticated,
       );
@@ -56,7 +62,6 @@ class AuthGuard extends ChangeNotifier {
   // ===================== LOGOUT =====================
   Future<void> logout() async {
     await AuthService.instance.logout();
-    _setStatus(AuthStatus.unauthenticated);
   }
 
   // ===================== SET STATUS =====================
@@ -67,6 +72,7 @@ class AuthGuard extends ChangeNotifier {
   }
 
   void setAuthenticated() => _setStatus(AuthStatus.authenticated);
+  void setUnauthenticated() => _setStatus(AuthStatus.unauthenticated);
 }
 
 enum AuthStatus { unknown, authenticated, unauthenticated }

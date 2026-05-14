@@ -131,8 +131,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 const SizedBox(height: 32),
 
                 // Brand logo
-                const Center(child: SpBrandLogo(size: 100)),
-                const SizedBox(height: 28),
+                // const Center(child: SpBrandLogo(size: 100)),
+                // const SizedBox(height: 28),
 
                 const Center(
                   child: Text(

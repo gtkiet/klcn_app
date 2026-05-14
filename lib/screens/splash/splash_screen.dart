@@ -2,7 +2,15 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+
+import 'package:klcn_app/guards/auth_guard.dart';
+
 import '../../theme/app_theme.dart';
+
+// ── CONSTANTS ─────────────────────────────────
+const _kFadeDuration  = Duration(milliseconds: 800);
+const _kScaleDuration = Duration(milliseconds: 700);
+const _kSpinDuration  = Duration(milliseconds: 900);
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,29 +30,24 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    _initAnimations();
+    AuthGuard.instance.init();
+  }
 
+  void _initAnimations() {
     _spinnerCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: _kSpinDuration,
     )..repeat();
 
-    _fadeCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
+    _fadeCtrl = AnimationController(vsync: this, duration: _kFadeDuration);
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
 
-    _scaleCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
+    _scaleCtrl = AnimationController(vsync: this, duration: _kScaleDuration);
     _scaleAnim = CurvedAnimation(parent: _scaleCtrl, curve: Curves.elasticOut);
 
     _fadeCtrl.forward();
     _scaleCtrl.forward();
-
-    // TODO: Thay bằng logic auth check thật
-    // _navigateAfterDelay();
   }
 
   @override
@@ -63,7 +66,6 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: AppColors.primary,
       body: Stack(
         children: [
-          // Decorative circles
           _DecorativeCircle(
             top: -size.width * 0.18,
             left: -size.width * 0.18,
@@ -74,22 +76,17 @@ class _SplashScreenState extends State<SplashScreen>
             right: -size.width * 0.22,
             diameter: size.width * 0.60,
           ),
-
-          // Content
           FadeTransition(
             opacity: _fadeAnim,
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Brand logo card (animated)
                   ScaleTransition(
                     scale: _scaleAnim,
                     child: _SplashLogoCard(size: size),
                   ),
                   const SizedBox(height: 28),
-
-                  // App name
                   Text(
                     'SportPlus',
                     style: TextStyle(
@@ -112,12 +109,6 @@ class _SplashScreenState extends State<SplashScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.white,
-        onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-        child: const Icon(Icons.arrow_forward, color: AppColors.primary),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
@@ -256,13 +247,19 @@ class _DecorativeCircle extends StatelessWidget {
 
   const _DecorativeCircle({
     required this.diameter,
-    this.top, this.left, this.bottom, this.right,
+    this.top,
+    this.left,
+    this.bottom,
+    this.right,
   });
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: top, left: left, bottom: bottom, right: right,
+      top: top,
+      left: left,
+      bottom: bottom,
+      right: right,
       child: Container(
         width: diameter,
         height: diameter,

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
@@ -15,11 +16,17 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  final _nameCtrl = TextEditingController();
+
+  final _nameFocus = FocusNode();
+  final _emailFocus = FocusNode();
+  final _phoneFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+  final _confirmFocus = FocusNode();
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
@@ -33,11 +40,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _confirmError;
 
   @override
+  void initState() {
+    super.initState();
+    debugPrint('REGISTER SCREEN: mounted');
+  }
+
+  @override
   void dispose() {
     _nameCtrl.dispose();
+    _nameFocus.dispose();
     _emailCtrl.dispose();
+    _emailFocus.dispose();
+    _phoneCtrl.dispose();
+    _phoneFocus.dispose();
     _passwordCtrl.dispose();
+    _passwordFocus.dispose();
     _confirmCtrl.dispose();
+    _confirmFocus.dispose();
     super.dispose();
   }
 
@@ -46,11 +65,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _nameError = _nameCtrl.text.trim().isEmpty
           ? 'Vui lòng nhập họ và tên'
           : null;
-      _emailError = _emailCtrl.text.trim().isEmpty
-          ? 'Vui lòng nhập email'
+      _emailError = !_emailCtrl.text.trim().contains('@')
+          ? 'Email không hợp lệ'
           : null;
-      _phoneError = _phoneCtrl.text.trim().isEmpty
-          ? 'Vui lòng nhập số điện thoại'
+      _phoneError = _phoneCtrl.text.trim().length < 9
+          ? 'Số điện thoại không hợp lệ'
           : null;
       _passwordError = _passwordCtrl.text.length < 6
           ? 'Mật khẩu tối thiểu 6 ký tự'
@@ -59,16 +78,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ? 'Mật khẩu xác nhận không khớp'
           : null;
     });
+
     return _nameError == null &&
         _emailError == null &&
         _phoneError == null &&
         _passwordError == null &&
-        _confirmError == null &&
-        _agreedToTerms;
+        _confirmError == null;
   }
 
   Future<void> _onRegister() async {
+    FocusScope.of(context).unfocus();
+    if (!_agreedToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng đồng ý với điều khoản sử dụng'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+      return;
+    }
     if (!_validate()) return;
+
     setState(() => _isLoading = true);
     try {
       await AuthService.instance.register(
@@ -77,26 +107,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordCtrl.text.trim(),
         fullName: _nameCtrl.text.trim(),
       );
+      // FIX: bỏ AuthGuard.instance.setAuthenticated() ở đây —
+      // AuthService.register() đã gọi nội bộ rồi (nhất quán với login).
+      // GoRouter tự redirect khi nhận notifyListeners().
+    } catch (e) {
       if (mounted) {
-        AuthGuard.instance.setAuthenticated();
-        // GoRouter redirect → /home
-      }
-    } on AppException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _onLogin() => Navigator.pushReplacementNamed(context, '/login');
+  void _onLogin() => context.go('/auth/login');
   void _onGoogleRegister() {} // TODO
   void _onFacebookRegister() {} // TODO
-  void _onTermsTap() => Navigator.pushNamed(context, '/terms');
-  void _onPrivacyTap() => Navigator.pushNamed(context, '/privacy');
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.maybePop(context),
+            onPressed: () => context.go('/auth/login'),
           ),
           title: const Text('Đăng ký'),
         ),
@@ -119,166 +149,177 @@ class _RegisterScreenState extends State<RegisterScreen> {
               colors: [AppColors.bgTop, AppColors.bgBottom],
             ),
           ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.pagePadH,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 12),
-                const Center(child: SpBrandLogo(size: 88)),
-                const SizedBox(height: 20),
-                const Center(
-                  child: Text(
-                    'Gia nhập đội hình',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      fontStyle: FontStyle.italic,
+          child: GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.pagePadH,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 12),
+                  const Center(
+                    child: Text(
+                      'Gia nhập đội hình',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Center(
-                  child: Text(
-                    'Bắt đầu hành trình chinh phục mọi sân cỏ\ncùng Sport Plus.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.textMid,
-                      fontSize: 14,
-                      height: 1.55,
+                  const SizedBox(height: 8),
+                  const Center(
+                    child: Text(
+                      'Bắt đầu hành trình chinh phục mọi sân cỏ\ncùng Sport Plus.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.textMid,
+                        fontSize: 14,
+                        height: 1.55,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 32),
+                  const SizedBox(height: 32),
 
-                const SpFieldLabel('HỌ VÀ TÊN'),
-                const SizedBox(height: 8),
-                SpTextField(
-                  controller: _nameCtrl,
-                  hintText: 'Nhập họ và tên',
-                  keyboardType: TextInputType.name,
-                  errorText: _nameError,
-                  onChanged: (_) => setState(() => _nameError = null),
-                ),
-                const SizedBox(height: 18),
+                  const SpFieldLabel('HỌ VÀ TÊN'),
+                  const SizedBox(height: 8),
+                  SpTextField(
+                    controller: _nameCtrl,
+                    focusNode: _nameFocus,
+                    nextFocusNode: _emailFocus,
+                    hintText: 'Nhập họ và tên',
+                    keyboardType: TextInputType.name,
+                    prefixIcon: Icons.person_outline_rounded,
+                    errorText: _nameError,
+                    onChanged: (_) => setState(() => _nameError = null),
+                  ),
+                  const SizedBox(height: 18),
 
-                const SpFieldLabel('EMAIL'),
-                const SizedBox(height: 8),
-                SpTextField(
-                  controller: _emailCtrl,
-                  hintText: 'name@example.com',
-                  keyboardType: TextInputType.emailAddress,
-                  errorText: _emailError,
-                  onChanged: (_) => setState(() => _emailError = null),
-                ),
-                const SizedBox(height: 18),
+                  const SpFieldLabel('EMAIL'),
+                  const SizedBox(height: 8),
+                  SpTextField(
+                    controller: _emailCtrl,
+                    focusNode: _emailFocus,
+                    nextFocusNode: _phoneFocus,
+                    hintText: 'name@example.com',
+                    keyboardType: TextInputType.emailAddress,
+                    prefixIcon: Icons.email_outlined,
+                    errorText: _emailError,
+                    onChanged: (_) => setState(() => _emailError = null),
+                  ),
+                  const SizedBox(height: 18),
 
-                const SpFieldLabel('SỐ ĐIỆN THOẠI'),
-                const SizedBox(height: 8),
-                SpTextField(
-                  controller: _phoneCtrl,
-                  hintText: '0xxxxxxxxx',
-                  keyboardType: TextInputType.phone,
-                  errorText: _phoneError,
-                  onChanged: (_) => setState(() => _phoneError = null),
-                ),
-                const SizedBox(height: 18),
+                  const SpFieldLabel('SỐ ĐIỆN THOẠI'),
+                  const SizedBox(height: 8),
+                  SpTextField(
+                    controller: _phoneCtrl,
+                    focusNode: _phoneFocus,
+                    nextFocusNode: _passwordFocus,
+                    hintText: '0xxxxxxxxx',
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: Icons.phone_android_outlined,
+                    errorText: _phoneError,
+                    onChanged: (_) => setState(() => _phoneError = null),
+                  ),
+                  const SizedBox(height: 18),
 
-                const SpFieldLabel('MẬT KHẨU'),
-                const SizedBox(height: 8),
-                SpPasswordField(
-                  controller: _passwordCtrl,
-                  obscure: _obscurePassword,
-                  onToggle: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
-                  errorText: _passwordError,
-                  onChanged: (_) => setState(() => _passwordError = null),
-                ),
-                const SizedBox(height: 18),
+                  const SpFieldLabel('MẬT KHẨU'),
+                  const SizedBox(height: 8),
+                  SpPasswordField(
+                    controller: _passwordCtrl,
+                    obscure: _obscurePassword,
+                    onToggle: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    errorText: _passwordError,
+                    onChanged: (_) => setState(() => _passwordError = null),
+                  ),
+                  const SizedBox(height: 18),
 
-                const SpFieldLabel('XÁC NHẬN MẬT KHẨU'),
-                const SizedBox(height: 8),
-                SpPasswordField(
-                  controller: _confirmCtrl,
-                  obscure: _obscureConfirm,
-                  onToggle: () =>
-                      setState(() => _obscureConfirm = !_obscureConfirm),
-                  errorText: _confirmError,
-                  onChanged: (_) => setState(() => _confirmError = null),
-                ),
-                const SizedBox(height: 22),
+                  const SpFieldLabel('XÁC NHẬN MẬT KHẨU'),
+                  const SizedBox(height: 8),
+                  SpPasswordField(
+                    controller: _confirmCtrl,
+                    obscure: _obscureConfirm,
+                    onToggle: () =>
+                        setState(() => _obscureConfirm = !_obscureConfirm),
+                    errorText: _confirmError,
+                    onChanged: (_) => setState(() => _confirmError = null),
+                  ),
+                  const SizedBox(height: 22),
 
-                _TermsCheckbox(
-                  value: _agreedToTerms,
-                  onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-                  onTermsTap: _onTermsTap,
-                  onPrivacyTap: _onPrivacyTap,
-                ),
-                const SizedBox(height: 28),
+                  _TermsCheckbox(
+                    value: _agreedToTerms,
+                    onChanged: (v) =>
+                        setState(() => _agreedToTerms = v ?? false),
+                    onTermsTap: () {},
+                    onPrivacyTap: () {},
+                  ),
+                  const SizedBox(height: 28),
 
-                SpPrimaryButton(
-                  label: 'Đăng ký',
-                  isLoading: _isLoading,
-                  onTap: _agreedToTerms ? _onRegister : null,
-                  trailingIcon: null,
-                ),
-                const SizedBox(height: 20),
+                  SpPrimaryButton(
+                    label: 'Đăng ký',
+                    isLoading: _isLoading,
+                    onTap: _agreedToTerms ? _onRegister : null,
+                    trailingIcon: null,
+                  ),
+                  const SizedBox(height: 20),
 
-                Center(
-                  child: GestureDetector(
-                    onTap: _onLogin,
-                    child: RichText(
-                      text: const TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Đã có tài khoản?  ',
-                            style: TextStyle(
-                              color: AppColors.textMid,
-                              fontSize: 14,
+                  Center(
+                    child: GestureDetector(
+                      onTap: _onLogin,
+                      child: RichText(
+                        text: const TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Đã có tài khoản?  ',
+                              style: TextStyle(
+                                color: AppColors.textMid,
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
-                          TextSpan(
-                            text: 'Đăng nhập',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                            TextSpan(
+                              text: 'Đăng nhập',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 28),
+                  const SizedBox(height: 28),
 
-                const SpOrDivider(),
-                const SizedBox(height: 20),
+                  const SpOrDivider(),
+                  const SizedBox(height: 20),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: SpSocialButton(
-                        label: 'Google',
-                        icon: const SpGoogleIcon(),
-                        onTap: _onGoogleRegister,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SpSocialButton(
+                          label: 'Google',
+                          icon: const SpGoogleIcon(),
+                          onTap: _onGoogleRegister,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: SpSocialButton(
-                        label: 'Facebook',
-                        icon: const SpFacebookIcon(),
-                        onTap: _onFacebookRegister,
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: SpSocialButton(
+                          label: 'Facebook',
+                          icon: const SpFacebookIcon(),
+                          onTap: _onFacebookRegister,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 40),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ),
@@ -287,7 +328,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-// ── TERMS CHECKBOX ────────────────────────────
+// ── TERMS CHECKBOX ─────────────────────────────────────────────────────────
 class _TermsCheckbox extends StatelessWidget {
   final bool value;
   final ValueChanged<bool?> onChanged;

@@ -7,76 +7,76 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-// ════════════════════════════════════════════
-//  BRAND LOGO  (thay thế Image.asset logo)
-// ════════════════════════════════════════════
-class SpBrandLogo extends StatelessWidget {
-  final double size;
-  final Color bgColor;
-  final BorderRadius? borderRadius;
+// // ════════════════════════════════════════════
+// //  BRAND LOGO (Nhóm không muốn dùng logo)
+// // ════════════════════════════════════════════
+// class SpBrandLogo extends StatelessWidget {
+//   final double size;
+//   final Color bgColor;
+//   final BorderRadius? borderRadius;
 
-  const SpBrandLogo({
-    super.key,
-    this.size = 88,
-    this.bgColor = Colors.white,
-    this.borderRadius,
-  });
+//   const SpBrandLogo({
+//     super.key,
+//     this.size = 88,
+//     this.bgColor = Colors.white,
+//     this.borderRadius,
+//   });
 
-  @override
-  Widget build(BuildContext context) {
-    final br = borderRadius ?? BorderRadius.circular(size * 0.22);
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: br,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 18,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.sports_soccer,
-            color: AppColors.primary,
-            size: size * 0.36,
-          ),
-          const SizedBox(height: 4),
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: 'SPORT',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: size * 0.12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                TextSpan(
-                  text: 'PLUS',
-                  style: TextStyle(
-                    color: AppColors.primaryLight,
-                    fontSize: size * 0.12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     final br = borderRadius ?? BorderRadius.circular(size * 0.22);
+//     return Container(
+//       width: size,
+//       height: size,
+//       decoration: BoxDecoration(
+//         color: bgColor,
+//         borderRadius: br,
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.black.withValues(alpha: 0.10),
+//             blurRadius: 18,
+//             offset: const Offset(0, 5),
+//           ),
+//         ],
+//       ),
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           Icon(
+//             Icons.sports_soccer,
+//             color: AppColors.primary,
+//             size: size * 0.36,
+//           ),
+//           const SizedBox(height: 4),
+//           RichText(
+//             text: TextSpan(
+//               children: [
+//                 TextSpan(
+//                   text: 'SPORT',
+//                   style: TextStyle(
+//                     color: AppColors.primary,
+//                     fontSize: size * 0.12,
+//                     fontWeight: FontWeight.w900,
+//                     letterSpacing: 0.5,
+//                   ),
+//                 ),
+//                 TextSpan(
+//                   text: 'PLUS',
+//                   style: TextStyle(
+//                     color: AppColors.primaryLight,
+//                     fontSize: size * 0.12,
+//                     fontWeight: FontWeight.w900,
+//                     letterSpacing: 0.5,
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 // ════════════════════════════════════════════
 //  APP NAME TEXT  ("SportPlus" italic)

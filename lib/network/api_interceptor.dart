@@ -1,11 +1,12 @@
-// lib/core/network/api_interceptor.dart
+// lib/network/api_interceptor.dart
 
 import 'dart:async';
 
 import 'package:dio/dio.dart';
 
-import '../services/auth_service.dart';
-import '../session/user_session.dart';
+import 'package:klcn_app/guards/auth_guard.dart';
+import 'package:klcn_app/services/auth_service.dart';
+import 'package:klcn_app/session/user_session.dart';
 
 class ApiInterceptor extends Interceptor {
   final Dio dio;
@@ -63,22 +64,18 @@ class ApiInterceptor extends Interceptor {
       return handler.next(err);
     }
 
-    // Request retry fail -> logout
+    // Request retry hoặc skipAuth thất bại → logout
     if (request.extra['skipAuth'] == true || request.extra['isRetry'] == true) {
       await _logout();
-
       return handler.next(err);
     }
 
-    // Đang refresh token
+    // Đang refresh token → queue lại
     if (_isRefreshing) {
       final completer = Completer<Response>();
-
       _queue.add(_PendingRequest(request, completer));
-
       try {
         final response = await completer.future;
-
         return handler.resolve(response);
       } catch (_) {
         return handler.next(err);
@@ -88,7 +85,7 @@ class ApiInterceptor extends Interceptor {
     _isRefreshing = true;
 
     try {
-      // Refresh token
+      // Refresh token — không truyền tham số, tự lấy từ session
       await AuthService.instance.refreshToken();
 
       // Retry request hiện tại
@@ -98,7 +95,6 @@ class ApiInterceptor extends Interceptor {
       for (final pending in _queue) {
         try {
           final retryResponse = await _retry(pending.request);
-
           pending.completer.complete(retryResponse);
         } catch (e) {
           pending.completer.completeError(e);
@@ -106,13 +102,10 @@ class ApiInterceptor extends Interceptor {
       }
 
       _queue.clear();
-
       return handler.resolve(response);
     } catch (_) {
       await _failQueue();
-
       await _logout();
-
       return handler.next(err);
     } finally {
       _isRefreshing = false;
@@ -134,7 +127,6 @@ class ApiInterceptor extends Interceptor {
         method: request.method,
         headers: {
           ...request.headers,
-
           if (token != null && token.isNotEmpty)
             'Authorization': 'Bearer $token',
         },
@@ -151,7 +143,6 @@ class ApiInterceptor extends Interceptor {
     for (final pending in _queue) {
       pending.completer.completeError(Exception('Refresh token failed'));
     }
-
     _queue.clear();
   }
 
@@ -166,8 +157,6 @@ class ApiInterceptor extends Interceptor {
 
 class _PendingRequest {
   final RequestOptions request;
-
   final Completer<Response> completer;
-
   _PendingRequest(this.request, this.completer);
 }

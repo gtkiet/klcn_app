@@ -2,6 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../services/user_service.dart';
+import '../../network/api_client.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -66,22 +70,40 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return _currentError == null && _newError == null && _confirmError == null;
   }
 
-  void _onUpdate() {
+  Future<void> _onUpdate() async {
     FocusScope.of(context).unfocus();
     if (!_validate()) return;
+
     setState(() => _isLoading = true);
-    // TODO: ChangePasswordService.changePassword(current, newPassword)
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mật khẩu đã được cập nhật!'),
-          backgroundColor: AppColors.primary,
-        ),
+    try {
+      // PUT /api/profile/change-password
+      // Body: { currentPassword, newPassword, confirmPassword }
+      await UserService.instance.changePassword(
+        currentPassword: _currentCtrl.text,
+        newPassword:     _newCtrl.text,
+        confirmPassword: _confirmCtrl.text,
       );
-      Navigator.pop(context);
-    });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Mật khẩu đã được cập nhật!'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+        context.pop();
+      }
+    } on AppException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -93,20 +115,21 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.maybePop(context),
+            onPressed: () => context.pop(),
           ),
           title: const Text('Đổi mật khẩu'),
         ),
         body: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.pagePadH,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 28),
 
-                // Header text
                 const Center(
                   child: Text(
                     'Bảo mật tài khoản',
@@ -132,61 +155,82 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // Main card with 3 fields
+                // Card 3 fields
                 SpCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Current password
-                      const Text('Mật khẩu hiện tại',
-                          style: TextStyle(
-                              color: AppColors.textDark, fontSize: 14.5, fontWeight: FontWeight.w600)),
+                      // Mật khẩu hiện tại
+                      const Text(
+                        'Mật khẩu hiện tại',
+                        style: TextStyle(
+                          color: AppColors.textDark,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       _PassField(
                         controller: _currentCtrl,
-                        focusNode: _currentFocus,
-                        nextFocus: _newFocus,
-                        hint: 'Nhập mật khẩu hiện tại',
+                        focusNode:  _currentFocus,
+                        nextFocus:  _newFocus,
+                        hint:       'Nhập mật khẩu hiện tại',
                         prefixIcon: Icons.lock_outline_rounded,
-                        showText: _showCurrent,
-                        onToggle: () => setState(() => _showCurrent = !_showCurrent),
-                        onChanged: (_) => setState(() => _currentError = null),
-                        errorText: _currentError,
+                        showText:   _showCurrent,
+                        onToggle:   () =>
+                            setState(() => _showCurrent = !_showCurrent),
+                        onChanged: (_) =>
+                            setState(() => _currentError = null),
+                        errorText:  _currentError,
                       ),
                       const SizedBox(height: 20),
 
-                      // New password
-                      const Text('Mật khẩu mới',
-                          style: TextStyle(
-                              color: AppColors.textDark, fontSize: 14.5, fontWeight: FontWeight.w600)),
+                      // Mật khẩu mới
+                      const Text(
+                        'Mật khẩu mới',
+                        style: TextStyle(
+                          color: AppColors.textDark,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       _PassField(
                         controller: _newCtrl,
-                        focusNode: _newFocus,
-                        nextFocus: _confirmFocus,
-                        hint: 'Nhập mật khẩu mới',
+                        focusNode:  _newFocus,
+                        nextFocus:  _confirmFocus,
+                        hint:       'Nhập mật khẩu mới',
                         prefixIcon: Icons.vpn_key_outlined,
-                        showText: _showNew,
-                        onToggle: () => setState(() => _showNew = !_showNew),
-                        onChanged: (_) => setState(() => _newError = null),
-                        errorText: _newError,
+                        showText:   _showNew,
+                        onToggle:   () =>
+                            setState(() => _showNew = !_showNew),
+                        onChanged: (_) =>
+                            setState(() => _newError = null),
+                        errorText:  _newError,
                       ),
                       const SizedBox(height: 20),
 
-                      // Confirm password
-                      const Text('Xác nhận mật khẩu mới',
-                          style: TextStyle(
-                              color: AppColors.textDark, fontSize: 14.5, fontWeight: FontWeight.w600)),
+                      // Xác nhận mật khẩu
+                      const Text(
+                        'Xác nhận mật khẩu mới',
+                        style: TextStyle(
+                          color: AppColors.textDark,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       _PassField(
                         controller: _confirmCtrl,
-                        focusNode: _confirmFocus,
-                        hint: 'Nhập lại mật khẩu mới',
+                        focusNode:  _confirmFocus,
+                        hint:       'Nhập lại mật khẩu mới',
                         prefixIcon: Icons.shield_outlined,
-                        showText: _showConfirm,
-                        onToggle: () => setState(() => _showConfirm = !_showConfirm),
-                        onChanged: (_) => setState(() => _confirmError = null),
-                        errorText: _confirmError,
+                        showText:   _showConfirm,
+                        onToggle:   () =>
+                            setState(() => _showConfirm = !_showConfirm),
+                        onChanged: (_) =>
+                            setState(() => _confirmError = null),
+                        errorText:  _confirmError,
                       ),
                       const SizedBox(height: 20),
 
@@ -197,18 +241,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // Update button
                 SpPrimaryButton(
-                  label: 'CẬP NHẬT MẬT KHẨU',
-                  isLoading: _isLoading,
-                  onTap: _onUpdate,
+                  label:        'CẬP NHẬT MẬT KHẨU',
+                  isLoading:    _isLoading,
+                  onTap:        _onUpdate,
                   trailingIcon: Icons.check_circle_outline_rounded,
                 ),
                 const SizedBox(height: 16),
 
-                // Cancel
                 GestureDetector(
-                  onTap: () => Navigator.maybePop(context),
+                  onTap: () => context.pop(),
                   child: const Center(
                     child: Text(
                       'Hủy bỏ',
@@ -230,7 +272,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   }
 }
 
-// ── PASSWORD FIELD (stateful for focus border) ─
+// ── PASSWORD FIELD ─────────────────────────────────────────────────────────
 class _PassField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -302,10 +344,10 @@ class _PassFieldState extends State<_PassField> {
               ),
               Expanded(
                 child: TextField(
-                  controller: widget.controller,
-                  focusNode: widget.focusNode,
+                  controller:  widget.controller,
+                  focusNode:   widget.focusNode,
                   obscureText: !widget.showText,
-                  onChanged: widget.onChanged,
+                  onChanged:   widget.onChanged,
                   textInputAction: widget.nextFocus != null
                       ? TextInputAction.next
                       : TextInputAction.done,
@@ -316,11 +358,17 @@ class _PassFieldState extends State<_PassField> {
                       widget.focusNode.unfocus();
                     }
                   },
-                  style: const TextStyle(color: AppColors.textDark, fontSize: 15),
+                  style: const TextStyle(
+                    color: AppColors.textDark,
+                    fontSize: 15,
+                  ),
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     hintText: widget.hint,
-                    hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 14.5),
+                    hintStyle: const TextStyle(
+                      color: AppColors.textHint,
+                      fontSize: 14.5,
+                    ),
                     isDense: true,
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -348,7 +396,7 @@ class _PassFieldState extends State<_PassField> {
   }
 }
 
-// ── PASSWORD RULE BOX ─────────────────────────
+// ── PASSWORD RULE BOX ──────────────────────────────────────────────────────
 class _PasswordRuleBox extends StatelessWidget {
   const _PasswordRuleBox();
 
@@ -364,14 +412,13 @@ class _PasswordRuleBox extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Left accent bar
             Container(
               width: 4,
               decoration: const BoxDecoration(
                 color: AppColors.primary,
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(10),
-                  bottomLeft: Radius.circular(10),
+                  topLeft:     Radius.circular(10),
+                  bottomLeft:  Radius.circular(10),
                 ),
               ),
             ),
@@ -390,12 +437,15 @@ class _PasswordRuleBox extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: const Center(
-                        child: Text('i',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                fontStyle: FontStyle.italic)),
+                        child: Text(
+                          'i',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -403,17 +453,23 @@ class _PasswordRuleBox extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('QUY ĐỊNH MẬT KHẨU',
-                              style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.5)),
+                          Text(
+                            'QUY ĐỊNH MẬT KHẨU',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                           SizedBox(height: 5),
                           Text(
                             'Mật khẩu phải có ít nhất 8 ký tự, bao gồm cả chữ cái và chữ số để đảm bảo tính bảo mật cho tài khoản của bạn.',
                             style: TextStyle(
-                                color: AppColors.textMid, fontSize: 13, height: 1.55),
+                              color: AppColors.textMid,
+                              fontSize: 13,
+                              height: 1.55,
+                            ),
                           ),
                         ],
                       ),

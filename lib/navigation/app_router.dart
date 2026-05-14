@@ -1,4 +1,4 @@
-// lib/core/navigation/app_router.dart
+// lib/navigation/app_router.dart
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -35,6 +35,7 @@ class AppRouter {
     redirect: (context, state) {
       final status = AuthGuard.instance.status;
       final location = state.uri.path;
+      debugPrint('REDIRECT: status=$status, location=$location');
 
       final isAuthRoute = location.startsWith('/auth');
 
@@ -45,7 +46,9 @@ class AppRouter {
       }
 
       if (status == AuthStatus.unauthenticated) {
-        return isAuthRoute ? null : '/login';
+        if (isAuthRoute) return null;
+        return '/auth/login';
+        // return isAuthRoute ? null : '/auth/login';
       }
 
       if (status == AuthStatus.authenticated) {
@@ -57,11 +60,15 @@ class AppRouter {
 
     /// ================= ROUTES =================
     routes: [
-      /// SPLASH
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
 
       GoRoute(
         path: '/auth',
+        redirect: (_, state) {
+          // Chỉ redirect khi path chính xác là /auth, không redirect subpath
+          if (state.uri.path == '/auth') return '/auth/login';
+          return null; // ← các subpath tự xử lý
+        },
         routes: [
           GoRoute(path: 'login', builder: (_, _) => const LoginScreen()),
           GoRoute(path: 'register', builder: (_, _) => const RegisterScreen()),
@@ -80,40 +87,15 @@ class AppRouter {
         ],
       ),
 
-      // /// LOGIN
-      // GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
-
-      // GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
-
-      // GoRoute(
-      //   path: '/forgot-password',
-      //   builder: (_, _) => const ForgotPasswordScreen(),
-      // ),
-
-      // GoRoute(
-      //   path: '/otp-verification',
-      //   builder: (_, _) => const OtpVerificationScreen(),
-      // ),
-
-      // GoRoute(
-      //   path: '/reset-password',
-      //   builder: (_, _) => const ResetPasswordScreen(),
-      // ),
-
-      /// 🔥 STATEFUL SHELL (BOTTOM NAV)
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return MainScreen(shell: navigationShell);
-        },
+        builder: (context, state, navigationShell) =>
+            MainScreen(shell: navigationShell),
         branches: [
-          /// ── 0: Trang chủ ──
           StatefulShellBranch(
             routes: [
               GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
             ],
           ),
-
-          /// ── 1: Sân bóng ──
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -142,8 +124,6 @@ class AppRouter {
               ),
             ],
           ),
-
-          /// ── 2: LỊCH SỬ ──
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -158,8 +138,6 @@ class AppRouter {
               ),
             ],
           ),
-
-          /// ── 3: Hồ sơ ──
           StatefulShellBranch(
             routes: [
               GoRoute(

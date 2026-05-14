@@ -2,36 +2,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+
+// import '../../guards/auth_guard.dart';
+import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
+import '../../session/user_session.dart';
+import '../../models/user.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/shared_widgets.dart';
-
-// ── MOCK DATA ─────────────────────────────────
-class _UserData {
-  final String name;
-  final String email;
-  final String phone;
-  final int bookingCount;
-  final double rating;
-  final String memberTier;
-
-  const _UserData({
-    required this.name,
-    required this.email,
-    required this.phone,
-    required this.bookingCount,
-    required this.rating,
-    required this.memberTier,
-  });
-}
-
-const _mockUser = _UserData(
-  name: 'Nguyễn Văn A',
-  email: 'nguyenvana@email.com',
-  phone: '090 123 4567',
-  bookingCount: 12,
-  rating: 4.9,
-  memberTier: 'MVP',
-);
+// import '../../widgets/shared_widgets.dart';
 
 class _MenuItem {
   final IconData icon;
@@ -41,14 +20,26 @@ class _MenuItem {
 }
 
 final _accountItems = [
-  const _MenuItem(Icons.person_outline_rounded,  'Thông tin cá nhân', '/edit_profile'),
-  const _MenuItem(Icons.lock_outline_rounded,    'Đổi mật khẩu',     '/change_password'),
-  const _MenuItem(Icons.history_rounded,         'Lịch sử đặt sân',  '/booking_history'),
+  const _MenuItem(
+    Icons.person_outline_rounded,
+    'Thông tin cá nhân',
+    'edit_profile',
+  ),
+  const _MenuItem(
+    Icons.lock_outline_rounded,
+    'Đổi mật khẩu',
+    'change_password',
+  ),
+  const _MenuItem(Icons.history_rounded, 'Lịch sử đặt sân', '/booking_history'),
 ];
 
 final _supportItems = [
-  const _MenuItem(Icons.help_outline_rounded,    'Hỗ trợ & Liên hệ',         '/support'),
-  const _MenuItem(Icons.description_outlined,    'Điều khoản & Chính sách',  '/terms'),
+  const _MenuItem(Icons.help_outline_rounded, 'Hỗ trợ & Liên hệ', '/support'),
+  const _MenuItem(
+    Icons.description_outlined,
+    'Điều khoản & Chính sách',
+    '/terms',
+  ),
 ];
 
 // ─────────────────────────────────────────────
@@ -62,41 +53,86 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int _currentNav = 3;
+  
+  final _session = UserSession.instance;
 
-  void _onNavTap(int i) {
-    setState(() => _currentNav = i);
-    switch (i) {
-      case 0: Navigator.pushReplacementNamed(context, '/home'); break;
-      case 1: Navigator.pushReplacementNamed(context, '/fields'); break;
-      case 2: Navigator.pushReplacementNamed(context, '/booking_history'); break;
+  UserModel? _user;
+  bool _isLoading = true;
+  bool _isLoggingOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    // Hiển thị dữ liệu từ session ngay lập tức
+    setState(() {
+      _user = _session.toUserModel();
+      _isLoading = false;
+    });
+
+    // Fetch fresh data từ API ở background
+    try {
+      final user = await UserService.instance.getProfile();
+      if (mounted) setState(() => _user = user);
+    } catch (_) {
+      // Giữ dữ liệu session nếu API lỗi
     }
   }
 
-  void _onLogout() {
-    showDialog(
+  void _onMenuItem(String route) {
+    if (route.startsWith('/')) {
+      context.push(route);
+    } else {
+      context.push('/profile/$route');
+    }
+  }
+
+  Future<void> _onLogout() async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Đăng xuất', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Đăng xuất',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         content: const Text('Bạn có chắc muốn đăng xuất không?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy', style: TextStyle(color: AppColors.textMid)),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: AppColors.textMid),
+            ),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: AuthService.logout()
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-            child: const Text('Đăng xuất',
-                style: TextStyle(color: AppColors.logoutText, fontWeight: FontWeight.w700)),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Đăng xuất',
+              style: TextStyle(
+                color: AppColors.logoutText,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
     );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isLoggingOut = true);
+    try {
+      await AuthService.instance.logout();
+      if (mounted) {
+        // AuthGuard notifyListeners → GoRouter redirect → /auth/login
+      }
+    } finally {
+      if (mounted) setState(() => _isLoggingOut = false);
+    }
   }
 
   @override
@@ -106,84 +142,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bgPage,
         appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
-          ),
+          automaticallyImplyLeading: false,
           title: const Text('Hồ sơ'),
           actions: [
             IconButton(
               icon: const Icon(Icons.settings_outlined),
-              onPressed: () => Navigator.pushNamed(context, '/settings'),
+              onPressed: () {},
             ),
           ],
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 16),
-
-              // Hero card
-              _ProfileHeroCard(
-                user: _mockUser,
-                onEditAvatar: () {},
-              ),
-              const SizedBox(height: 24),
-
-              // Account menu
-              _SectionLabel('TÀI KHOẢN & THIẾT LẬP'),
-              const SizedBox(height: 8),
-              _MenuGroup(items: _accountItems, onTap: (r) => Navigator.pushNamed(context, r)),
-              const SizedBox(height: 20),
-
-              // Support menu
-              _SectionLabel('THÔNG TIN HỖ TRỢ'),
-              const SizedBox(height: 8),
-              _MenuGroup(items: _supportItems, onTap: (r) => Navigator.pushNamed(context, r)),
-              const SizedBox(height: 24),
-
-              // Logout
-              _LogoutButton(onTap: _onLogout),
-              const SizedBox(height: 28),
-
-              // Footer
-              Column(
-                children: [
-                  Icon(Icons.sports_soccer, size: 20,
-                      color: AppColors.textHint.withValues(alpha: 0.5)),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'SPORT PLUS V2.4.0  •  PITCH PRECISION ENGINE',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.textHint,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                    ),
+        body: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              )
+            : RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: _loadProfile,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.pagePadH,
                   ),
-                ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 16),
+
+                      // Hero card
+                      _ProfileHeroCard(
+                        user: _user,
+                        onEditAvatar: () =>
+                            context.push('/profile/edit_profile'),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Account menu
+                      _SectionLabel('TÀI KHOẢN & THIẾT LẬP'),
+                      const SizedBox(height: 8),
+                      _MenuGroup(items: _accountItems, onTap: _onMenuItem),
+                      const SizedBox(height: 20),
+
+                      // Support menu
+                      _SectionLabel('THÔNG TIN HỖ TRỢ'),
+                      const SizedBox(height: 8),
+                      _MenuGroup(items: _supportItems, onTap: _onMenuItem),
+                      const SizedBox(height: 24),
+
+                      // Logout
+                      _LogoutButton(
+                        onTap: _isLoggingOut ? () {} : _onLogout,
+                        isLoading: _isLoggingOut,
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Footer
+                      Column(
+                        children: [
+                          Icon(
+                            Icons.sports_soccer,
+                            size: 20,
+                            color: AppColors.textHint.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'SPORT PLUS V2.4.0  •  PITCH PRECISION ENGINE',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.textHint,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 32),
-            ],
-          ),
-        ),
-        bottomNavigationBar: SpBottomNav(currentIndex: _currentNav, onTap: _onNavTap),
       ),
     );
   }
 }
 
-// ── PROFILE HERO CARD ─────────────────────────
+// ── PROFILE HERO CARD ──────────────────────────────────────────────────────
 class _ProfileHeroCard extends StatelessWidget {
-  final _UserData user;
+  final UserModel? user;
   final VoidCallback onEditAvatar;
+
   const _ProfileHeroCard({required this.user, required this.onEditAvatar});
 
   @override
   Widget build(BuildContext context) {
+    final session = UserSession.instance;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
@@ -204,28 +257,34 @@ class _ProfileHeroCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 28),
         child: Column(
           children: [
-            // Avatar
+            // Avatar — reactive với ValueListenableBuilder
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.20),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Container(
-                      color: const Color(0xFF8D6E63),
-                      child: const Icon(Icons.person, color: Colors.white54, size: 52),
+                ValueListenableBuilder<String?>(
+                  valueListenable: session.avatarUrlNotifier,
+                  builder: (_, url, _) => Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.20),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: url != null && url.isNotEmpty
+                          ? Image.network(
+                              url,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => _avatarFallback(),
+                            )
+                          : _avatarFallback(),
                     ),
                   ),
                 ),
@@ -241,7 +300,11 @@ class _ProfileHeroCard extends StatelessWidget {
                         color: Color(0xFF5C6BC0),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.edit, color: Colors.white, size: 15),
+                      child: const Icon(
+                        Icons.edit,
+                        color: Colors.white,
+                        size: 15,
+                      ),
                     ),
                   ),
                 ),
@@ -249,34 +312,61 @@ class _ProfileHeroCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            Text(user.name,
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+            Text(
+              user?.fullName ?? session.fullName ?? '—',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 6),
             Text(
-              '${user.email}  •  ${user.phone}',
+              '${user?.email ?? session.email ?? ''}  •  ${user?.phone ?? session.phone ?? ''}',
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.80), fontSize: 12.5),
+                color: Colors.white.withValues(alpha: 0.80),
+                fontSize: 12.5,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
 
-            Divider(color: Colors.white.withValues(alpha: 0.20), indent: 24, endIndent: 24, height: 1),
+            Divider(
+              color: Colors.white.withValues(alpha: 0.20),
+              indent: 24,
+              endIndent: 24,
+              height: 1,
+            ),
             const SizedBox(height: 20),
 
-            // Stats
+            // Stats row
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _StatItem(value: '${user.bookingCount}', label: 'LƯỢT ĐẶT'),
-                  Container(width: 1, height: 36,
-                      color: Colors.white.withValues(alpha: 0.25)),
-                  _StatItem(value: '${user.rating}',      label: 'ĐÁNH GIÁ'),
-                  Container(width: 1, height: 36,
-                      color: Colors.white.withValues(alpha: 0.25)),
-                  _StatItem(value: user.memberTier,       label: 'THÀNH VIÊN'),
+                  _StatItem(
+                    value: user?.role ?? session.role ?? '—',
+                    label: 'VAI TRÒ',
+                  ),
+                  Container(
+                    width: 1,
+                    height: 36,
+                    color: Colors.white.withValues(alpha: 0.25),
+                  ),
+                  _StatItem(
+                    value: user?.status ?? session.status ?? '—',
+                    label: 'TRẠNG THÁI',
+                  ),
+                  Container(
+                    width: 1,
+                    height: 36,
+                    color: Colors.white.withValues(alpha: 0.25),
+                  ),
+                  _StatItem(
+                    value: 'ID ${user?.userId ?? session.userId ?? '—'}',
+                    label: 'TÀI KHOẢN',
+                  ),
                 ],
               ),
             ),
@@ -285,6 +375,11 @@ class _ProfileHeroCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _avatarFallback() => Container(
+    color: const Color(0xFF8D6E63),
+    child: const Icon(Icons.person, color: Colors.white54, size: 52),
+  );
 }
 
 class _StatItem extends StatelessWidget {
@@ -296,23 +391,32 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         const SizedBox(height: 4),
-        Text(label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.70),
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            )),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.70),
+            fontSize: 9.5,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.8,
+          ),
+        ),
       ],
     );
   }
 }
 
-// ── SECTION LABEL ─────────────────────────────
+// ── SECTION LABEL ──────────────────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {
   final String text;
   const _SectionLabel(this.text);
@@ -331,7 +435,7 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ── MENU GROUP ────────────────────────────────
+// ── MENU GROUP ─────────────────────────────────────────────────────────────
 class _MenuGroup extends StatelessWidget {
   final List<_MenuItem> items;
   final ValueChanged<String> onTap;
@@ -352,7 +456,12 @@ class _MenuGroup extends StatelessWidget {
             children: [
               _MenuRow(item: items[i], onTap: () => onTap(items[i].route)),
               if (!isLast)
-                const Divider(height: 1, color: Color(0xFFF0F2EF), indent: 60, endIndent: 16),
+                const Divider(
+                  height: 1,
+                  color: Color(0xFFF0F2EF),
+                  indent: 60,
+                  endIndent: 16,
+                ),
             ],
           );
         }),
@@ -386,11 +495,20 @@ class _MenuRow extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(item.label,
-                  style: const TextStyle(
-                      color: AppColors.textDark, fontSize: 15, fontWeight: FontWeight.w600)),
+              child: Text(
+                item.label,
+                style: const TextStyle(
+                  color: AppColors.textDark,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.textHint, size: 22),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.textHint,
+              size: 22,
+            ),
           ],
         ),
       ),
@@ -398,10 +516,11 @@ class _MenuRow extends StatelessWidget {
   }
 }
 
-// ── LOGOUT BUTTON ─────────────────────────────
+// ── LOGOUT BUTTON ──────────────────────────────────────────────────────────
 class _LogoutButton extends StatelessWidget {
   final VoidCallback onTap;
-  const _LogoutButton({required this.onTap});
+  final bool isLoading;
+  const _LogoutButton({required this.onTap, this.isLoading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -414,20 +533,37 @@ class _LogoutButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppSpacing.btnRadius),
           border: Border.all(color: AppColors.logoutBorder),
         ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.logout_rounded, color: AppColors.logoutText, size: 20),
-            SizedBox(width: 10),
-            Text('ĐĂNG XUẤT',
-                style: TextStyle(
-                  color: AppColors.logoutText,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
-                )),
-          ],
-        ),
+        child: isLoading
+            ? const Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    color: AppColors.logoutText,
+                    strokeWidth: 2.5,
+                  ),
+                ),
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.logout_rounded,
+                    color: AppColors.logoutText,
+                    size: 20,
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    'ĐĂNG XUẤT',
+                    style: TextStyle(
+                      color: AppColors.logoutText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

@@ -2,8 +2,19 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+// import 'package:go_router/go_router.dart';
+
+import '../../session/user_session.dart';
+import '../../network/api_client.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
+
+// ── HELPER ────────────────────────────────────
+String? buildAvatarUrl(String? path) {
+  if (path == null || path.isEmpty) return null;
+  if (path.startsWith('http')) return path;
+  return '${ApiClient.baseUrl}$path';
+}
 
 // ── MOCK DATA ─────────────────────────────────
 class _FeaturedField {
@@ -37,50 +48,15 @@ const _featuredFields = [
 
 const _nearbyFields = [
   _NearbyField('Sân Hoa Lư', '2.4 km', 'Quận 1', '350k/h', Color(0xFF43A047)),
-  _NearbyField(
-    'Sân Phú Nhuận',
-    '1.1 km',
-    'Phú Nhuận',
-    '420k/h',
-    Color(0xFF2E7D32),
-  ),
-  _NearbyField(
-    'Sân Bình Thạnh',
-    '3.2 km',
-    'Bình Thạnh',
-    '380k/h',
-    Color(0xFF00695C),
-  ),
+  _NearbyField('Sân Phú Nhuận', '1.1 km', 'Phú Nhuận', '420k/h', Color(0xFF2E7D32)),
+  _NearbyField('Sân Bình Thạnh', '3.2 km', 'Bình Thạnh', '380k/h', Color(0xFF00695C)),
 ];
 
 // ─────────────────────────────────────────────
 //  HOME SCREEN
 // ─────────────────────────────────────────────
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _tab = 0;
-
-  void _onNavTap(int i) {
-    if (_tab == i) return;
-    setState(() => _tab = i);
-    switch (i) {
-      case 1:
-        Navigator.pushReplacementNamed(context, '/fields');
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/booking_history');
-        break;
-      case 3:
-        Navigator.pushReplacementNamed(context, '/profile');
-        break;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: SpSectionHeader(
                   title: 'Sân nổi bật',
                   actionLabel: 'Xem tất cả',
-                  onAction: () => Navigator.pushNamed(context, '/fields'),
+                  onAction: () {}, // TODO: navigate to fields
                 ),
               ),
             ),
@@ -127,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: SpSectionHeader(
                   title: 'Gần bạn',
                   actionLabel: 'Xem tất cả',
-                  onAction: () => Navigator.pushNamed(context, '/fields'),
+                  onAction: () {}, // TODO: navigate to fields
                 ),
               ),
             ),
@@ -141,15 +117,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: _nearbyFields.length,
                 itemBuilder: (_, i) => _NearbyCard(
                   field: _nearbyFields[i],
-                  onBookTap: () =>
-                      Navigator.pushNamed(context, '/field_detail'),
+                  onBookTap: () {}, // TODO: navigate to field detail
                 ),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
-        bottomNavigationBar: SpBottomNav(currentIndex: _tab, onTap: _onNavTap),
+        // Không có bottomNavigationBar — đã được MainScreen quản lý
       ),
     );
   }
@@ -162,44 +137,95 @@ class _HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final session = UserSession.instance;
+    final avatarUrl = buildAvatarUrl(session.avatarUrl);
+    final displayName = session.fullName ?? 'Bạn';
+
     return AppBar(
       backgroundColor: AppColors.primary,
       automaticallyImplyLeading: false,
-      titleSpacing: 12,
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: Colors.white24,
-            child: const Icon(Icons.person, size: 20, color: Colors.white),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                'Xin chào 👋',
-                style: TextStyle(color: Colors.white70, fontSize: 11),
+
+      // QUAN TRỌNG
+      leadingWidth: MediaQuery.of(context).size.width,
+
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 16),
+        child: Row(
+          children: [
+            // Avatar
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.white24,
+              child: ClipOval(
+                child: avatarUrl != null
+                    ? Image.network(
+                        avatarUrl,
+                        width: 36,
+                        height: 36,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            const _AvatarPlaceholder(),
+                      )
+                    : const _AvatarPlaceholder(),
               ),
-              Text(
-                'Tuấn Kiệt',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+            ),
+
+            const SizedBox(width: 10),
+
+            // Greeting + name
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Xin chào 👋',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    height: 1.2,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Text(
+                  displayName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
+
       actions: [
         IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+          icon: const Icon(
+            Icons.notifications_outlined,
+            color: Colors.white,
+          ),
           onPressed: () {},
         ),
       ],
+    );
+  }
+}
+
+// ── AVATAR PLACEHOLDER ────────────────────────
+class _AvatarPlaceholder extends StatelessWidget {
+  const _AvatarPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      color: Colors.white24,
+      child: const Icon(Icons.person, size: 20, color: Colors.white),
     );
   }
 }
@@ -211,7 +237,7 @@ class _SearchBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
       child: GestureDetector(
-        onTap: () {}, // TODO: navigate to search
+        onTap: () {}, // TODO: search
         child: Container(
           height: 48,
           decoration: BoxDecoration(
@@ -269,10 +295,10 @@ class _PromoBanner extends StatelessWidget {
                   ),
                 ),
               ),
-              Positioned(
+              const Positioned(
                 right: 20,
                 top: 20,
-                child: const Icon(
+                child: Icon(
                   Icons.sports_soccer,
                   color: Colors.white12,
                   size: 80,
@@ -343,7 +369,7 @@ class _FeaturedRow extends StatelessWidget {
         itemCount: _featuredFields.length,
         itemBuilder: (_, i) => _FeaturedCard(
           field: _featuredFields[i],
-          onTap: () => Navigator.pushNamed(context, '/field_detail'),
+          onTap: () {}, // TODO: navigate to field detail
         ),
       ),
     );
@@ -370,7 +396,6 @@ class _FeaturedCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Placeholder image
             Stack(
               children: [
                 ClipRRect(
@@ -422,7 +447,6 @@ class _FeaturedCard extends StatelessWidget {
                 ),
               ],
             ),
-
             Padding(
               padding: const EdgeInsets.all(10),
               child: Column(
@@ -494,7 +518,6 @@ class _NearbyCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Placeholder image
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Container(
