@@ -1,107 +1,88 @@
-// // lib/services/field_service.dart
+// lib/services/field_service.dart
 
-// import '../models/field.dart';
-// import '../network/api_client.dart';
+import '../models/field.dart';
+import '../network/api_client.dart';
+import '../network/media_url.dart';
 
-// class FieldService {
-//   FieldService._();
-//   static final instance = FieldService._();
-//   final _api = ApiClient.instance;
-//   // ─────────────────────────────────────────────────────────────
-//   // DANH SÁCH SÂN
-//   // GET /fields
-//   // ─────────────────────────────────────────────────────────────
+class FieldService {
+  FieldService._();
+  static final FieldService instance = FieldService._();
 
-//   Future<List<FieldModel>> getFields({
-//     int? typeId,
-//     String? keyword,
+  final _api = ApiClient.instance;
 
-//     // price_asc | price_desc | rating
-//     String? sortBy,
-//   }) async {
-//     final params = <String, dynamic>{
-//       if (typeId != null) 'type_id': typeId.toString(),
+  // ─────────────────────────────────────────────────────────────
+  // DANH SÁCH SÂN — GET /api/fields
+  //
+  // Parameters:
+  //   Search   — tìm theo tên
+  //   TypeId   — 1: Sân 5 | 2: Sân 7
+  //   StatusId — 1: Hoạt động | 2: Bảo trì
+  //   Page, PageSize
+  // ─────────────────────────────────────────────────────────────
 
-//       if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
+  Future<PagedFieldResult> getFields({
+    String? search,
+    int? typeId,
+    int? statusId,
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    final res = await _api.get(
+      '/api/fields',
+      queryParameters: {
+        if (search != null && search.trim().isNotEmpty) 'Search': search.trim(),
+        'TypeId':   ?typeId,
+        'StatusId': ?statusId,
+        'Page':     page,
+        'PageSize': pageSize,
+      },
+    );
 
-//       if (sortBy != null && sortBy.isNotEmpty) 'sort_by': sortBy,
-//     };
+    final result = res.item(PagedFieldResult.fromJson);
 
-//     final data = await _api.get('/fields', params: params);
+    // Patch imageUrl thành full URL (server trả path tương đối)
+    final patchedItems = result.items.map(_patchImageUrl).toList();
+    return PagedFieldResult(
+      items:           patchedItems,
+      totalCount:      result.totalCount,
+      page:            result.page,
+      pageSize:        result.pageSize,
+      totalPages:      result.totalPages,
+      hasNextPage:     result.hasNextPage,
+      hasPreviousPage: result.hasPreviousPage,
+    );
+  }
 
-//     final list = data['data'] as List<dynamic>;
+  // ─────────────────────────────────────────────────────────────
+  // CHI TIẾT SÂN — GET /api/fields/{fieldId}
+  // ─────────────────────────────────────────────────────────────
 
-//     return list
-//         .map((e) => FieldModel.fromJson(e as Map<String, dynamic>))
-//         .toList();
-//   }
+  Future<FieldModel> getFieldDetail(int fieldId) async {
+    final res = await _api.get('/api/fields/$fieldId');
+    return _patchImageUrl(res.item(FieldModel.fromJson));
+  }
 
-//   // ─────────────────────────────────────────────────────────────
-//   // CHI TIẾT SÂN
-//   // GET /fields/{id}
-//   // ─────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // HELPER: patch imageUrl thành full URL
+  // ─────────────────────────────────────────────────────────────
 
-//   Future<FieldModel> getFieldDetail(int fieldId) async {
-//     final data = await _api.get('/fields/$fieldId');
-
-//     return FieldModel.fromJson(data['data'] as Map<String, dynamic>);
-//   }
-
-//   // ─────────────────────────────────────────────────────────────
-//   // SLOT THEO NGÀY
-//   // GET /fields/{id}/slots
-//   // ─────────────────────────────────────────────────────────────
-
-//   Future<List<FieldSlotModel>> getSlots({
-//     required int fieldId,
-//     required DateTime date,
-//   }) async {
-//     final dateStr =
-//         '${date.year}-'
-//         '${date.month.toString().padLeft(2, '0')}-'
-//         '${date.day.toString().padLeft(2, '0')}';
-
-//     final data = await _api.get(
-//       '/fields/$fieldId/slots',
-//       params: {'date': dateStr},
-//     );
-
-//     final list = data['data'] as List<dynamic>;
-
-//     return list
-//         .map((e) => FieldSlotModel.fromJson(e as Map<String, dynamic>))
-//         .toList();
-//   }
-
-//   // ─────────────────────────────────────────────────────────────
-//   // SLOT NHIỀU SÂN
-//   // GET /slots/available
-//   // ─────────────────────────────────────────────────────────────
-
-//   Future<List<FieldSlotModel>> getAvailableSlots({
-//     required DateTime date,
-//     int? typeId,
-//     int? fieldId,
-//   }) async {
-//     final dateStr =
-//         '${date.year}-'
-//         '${date.month.toString().padLeft(2, '0')}-'
-//         '${date.day.toString().padLeft(2, '0')}';
-
-//     final params = <String, dynamic>{
-//       'date': dateStr,
-
-//       if (typeId != null) 'type_id': typeId.toString(),
-
-//       if (fieldId != null) 'field_id': fieldId.toString(),
-//     };
-
-//     final data = await _api.get('/slots/available', params: params);
-
-//     final list = data['data'] as List<dynamic>;
-
-//     return list
-//         .map((e) => FieldSlotModel.fromJson(e as Map<String, dynamic>))
-//         .toList();
-//   }
-// }
+  static FieldModel _patchImageUrl(FieldModel field) {
+    final full = field.imageUrl.toFullMediaUrl;
+    if (full == field.imageUrl) return field;
+    return FieldModel(
+      fieldId:      field.fieldId,
+      name:         field.name,
+      description:  field.description,
+      basePrice:    field.basePrice,
+      peakPrice:    field.peakPrice,
+      imageUrl:     full,
+      fieldType:    field.fieldType,
+      typeId:       field.typeId,
+      status:       field.status,
+      statusId:     field.statusId,
+      avgRating:    field.avgRating,
+      totalReviews: field.totalReviews,
+      createdAt:    field.createdAt,
+    );
+  }
+}

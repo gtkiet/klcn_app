@@ -17,10 +17,10 @@ import '../screens/auth/reset_password_screen.dart';
 import '../screens/home/home_screen.dart';
 
 import '../screens/field/field_list_screen.dart';
-import '../screens/field/field_detail_screen.dart';
-import '../screens/booking/booking_confirmation_screen.dart';
-import '../screens/booking/booking_success_screen.dart';
-import '../screens/booking/booking_failure_screen.dart';
+// import '../screens/field/field_detail_screen.dart';
+// import '../screens/booking/booking_confirmation_screen.dart';
+// import '../screens/booking/booking_success_screen.dart';
+// import '../screens/booking/booking_failure_screen.dart';
 
 import '../screens/booking/booking_history_screen.dart';
 import '../screens/booking/booking_detail_screen.dart';
@@ -106,26 +106,26 @@ class AppRouter {
               GoRoute(
                 path: '/fields',
                 builder: (_, _) => const FieldListScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'detail',
-                    builder: (_, _) => const FieldDetailScreen(),
-                  ),
-                  GoRoute(
-                    path: 'booking_confirm',
-                    builder: (_, _) => const BookingConfirmationScreen(),
-                    routes: [
-                      GoRoute(
-                        path: 'booking_success',
-                        builder: (_, _) => const BookingSuccessScreen(),
-                      ),
-                      GoRoute(
-                        path: 'booking_failure',
-                        builder: (_, _) => const BookingFailureScreen(),
-                      ),
-                    ],
-                  ),
-                ],
+                // routes: [
+                //   GoRoute(
+                //     path: 'detail',
+                //     builder: (_, _) => const FieldDetailScreen(),
+                //   ),
+                //   GoRoute(
+                //     path: 'booking_confirm',
+                //     builder: (_, _) => const BookingConfirmationScreen(),
+                //     routes: [
+                //       GoRoute(
+                //         path: 'booking_success',
+                //         builder: (_, _) => const BookingSuccessScreen(),
+                //       ),
+                //       GoRoute(
+                //         path: 'booking_failure',
+                //         builder: (_, _) => const BookingFailureScreen(),
+                //       ),
+                //     ],
+                //   ),
+                // ],
               ),
             ],
           ),
