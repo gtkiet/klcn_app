@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../services/profile_service.dart';
 import '../../session/user_session.dart';
@@ -20,17 +21,17 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _session = UserSession.instance;
 
-  late final _nameCtrl    = TextEditingController(text: _session.fullName ?? '');
-  late final _phoneCtrl   = TextEditingController(text: _session.phone ?? '');
+  late final _nameCtrl = TextEditingController(text: _session.fullName ?? '');
+  late final _phoneCtrl = TextEditingController(text: _session.phone ?? '');
   late final _addressCtrl = TextEditingController(text: _session.address ?? '');
 
-  final _nameFocus    = FocusNode();
-  final _phoneFocus   = FocusNode();
+  final _nameFocus = FocusNode();
+  final _phoneFocus = FocusNode();
   final _addressFocus = FocusNode();
 
   DateTime? _selectedDob;
-  bool _isLoading        = false;
-  final bool _isUploadingAvatar = false;
+  bool _isLoading = false;
+  bool _isUploadingAvatar = false;
 
   String? _nameError;
   String? _phoneError;
@@ -48,26 +49,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final user = await ProfileService.instance.getProfile();
       if (!mounted) return;
-      _nameCtrl.text    = user.fullName;
-      _phoneCtrl.text   = user.phone;
+      _nameCtrl.text = user.fullName;
+      _phoneCtrl.text = user.phone;
       _addressCtrl.text = user.address ?? '';
       setState(() => _selectedDob = user.dateOfBirth);
-    } catch (_) {
-      // Dữ liệu session đã được pre-fill
-    }
+    } catch (_) {}
   }
 
   @override
   void dispose() {
-    _nameCtrl.dispose();    _nameFocus.dispose();
-    _phoneCtrl.dispose();   _phoneFocus.dispose();
-    _addressCtrl.dispose(); _addressFocus.dispose();
+    _nameCtrl.dispose();
+    _nameFocus.dispose();
+    _phoneCtrl.dispose();
+    _phoneFocus.dispose();
+    _addressCtrl.dispose();
+    _addressFocus.dispose();
     super.dispose();
   }
 
   bool _validate() {
     setState(() {
-      _nameError  = _nameCtrl.text.trim().isEmpty
+      _nameError = _nameCtrl.text.trim().isEmpty
           ? 'Vui lòng nhập họ và tên'
           : null;
       _phoneError = _phoneCtrl.text.trim().length < 9
@@ -83,12 +85,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // FIX: uncomment và dùng đúng signature mới (DateTime? thay vì String?)
       await ProfileService.instance.updateProfile(
-        fullName:    _nameCtrl.text.trim(),
-        phone:       _phoneCtrl.text.trim(),
+        fullName: _nameCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
         dateOfBirth: _selectedDob,
-        address:     _addressCtrl.text.trim().isNotEmpty
+        address: _addressCtrl.text.trim().isNotEmpty
             ? _addressCtrl.text.trim()
             : null,
       );
@@ -116,20 +117,125 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  // ── CHỌN ẢNH ─────────────────────────────────────────────────────────────
   Future<void> _onPickAvatar() async {
-    // TODO: implement khi thêm package image_picker
-    // Ví dụ:
-    // final picker = ImagePicker();
-    // final file = await picker.pickImage(source: ImageSource.gallery);
-    // if (file == null || !mounted) return;
-    // setState(() => _isUploadingAvatar = true);
-    // try {
-    //   await ProfileService.instance.updateAvatar(file.path);
-    // } catch (e) {
-    //   if (mounted) ScaffoldMessenger.of(context).showSnackBar(...);
-    // } finally {
-    //   if (mounted) setState(() => _isUploadingAvatar = false);
-    // }
+    // Hiện bottom sheet cho user chọn nguồn ảnh
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Text(
+                'CHỌN ẢNH ĐẠI DIỆN',
+                style: TextStyle(
+                  color: AppColors.textLight,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryUltraLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.photo_library_outlined,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
+                ),
+                title: const Text(
+                  'Chọn từ thư viện',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                ),
+                subtitle: const Text(
+                  'Chọn ảnh có sẵn trên thiết bị',
+                  style: TextStyle(fontSize: 12.5),
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+              const Divider(indent: 70, endIndent: 16, height: 1),
+              ListTile(
+                leading: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryUltraLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_outlined,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
+                ),
+                title: const Text(
+                  'Chụp ảnh mới',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                ),
+                subtitle: const Text(
+                  'Dùng camera để chụp ảnh đại diện',
+                  style: TextStyle(fontSize: 12.5),
+                ),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null || !mounted) return;
+
+    // Pick ảnh từ nguồn đã chọn
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: source,
+      imageQuality: 85, // nén nhẹ để giảm dung lượng upload
+      maxWidth: 1024,
+      maxHeight: 1024,
+    );
+
+    if (file == null || !mounted) return;
+
+    setState(() => _isUploadingAvatar = true);
+    try {
+      await ProfileService.instance.updateAvatar(file.path);
+      // session.avatarUrlNotifier đã được update trong service
+      // → ValueListenableBuilder tự rebuild avatar
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cập nhật ảnh thất bại: ${e.toString()}'),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
+    }
   }
 
   Future<void> _pickDob() async {
@@ -198,7 +304,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               children: [
                 const SizedBox(height: 28),
 
-                // Avatar
                 Center(
                   child: _AvatarSection(
                     isUploading: _isUploadingAvatar,
@@ -232,35 +337,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SpFieldLabel('HỌ VÀ TÊN'),
                 const SizedBox(height: 8),
                 _ProfileField(
-                  controller:    _nameCtrl,
-                  focusNode:     _nameFocus,
+                  controller: _nameCtrl,
+                  focusNode: _nameFocus,
                   nextFocusNode: _phoneFocus,
-                  prefixIcon:    Icons.person_outline_rounded,
-                  keyboardType:  TextInputType.name,
-                  errorText:     _nameError,
+                  prefixIcon: Icons.person_outline_rounded,
+                  keyboardType: TextInputType.name,
+                  errorText: _nameError,
                   onChanged: (_) => setState(() => _nameError = null),
                 ),
                 const SizedBox(height: 18),
 
-                // Email — read-only
                 const SpFieldLabel('EMAIL'),
                 const SizedBox(height: 8),
                 _ReadOnlyField(
-                  value:      _session.email ?? '',
+                  value: _session.email ?? '',
                   prefixIcon: Icons.email_outlined,
-                  hint:       'Email không thể thay đổi',
+                  hint: 'Email không thể thay đổi',
                 ),
                 const SizedBox(height: 18),
 
                 const SpFieldLabel('SỐ ĐIỆN THOẠI'),
                 const SizedBox(height: 8),
                 _ProfileField(
-                  controller:    _phoneCtrl,
-                  focusNode:     _phoneFocus,
+                  controller: _phoneCtrl,
+                  focusNode: _phoneFocus,
                   nextFocusNode: _addressFocus,
-                  prefixIcon:    Icons.phone_android_outlined,
-                  keyboardType:  TextInputType.phone,
-                  errorText:     _phoneError,
+                  prefixIcon: Icons.phone_android_outlined,
+                  keyboardType: TextInputType.phone,
+                  errorText: _phoneError,
                   onChanged: (_) => setState(() => _phoneError = null),
                 ),
                 const SizedBox(height: 18),
@@ -273,8 +377,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     height: 52,
                     decoration: BoxDecoration(
                       color: AppColors.fieldBg,
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.fieldRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.fieldRadius,
+                      ),
                       border: Border.all(color: AppColors.fieldBorder),
                     ),
                     child: Row(
@@ -314,18 +419,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SpFieldLabel('ĐỊA CHỈ'),
                 const SizedBox(height: 8),
                 _ProfileField(
-                  controller:   _addressCtrl,
-                  focusNode:    _addressFocus,
-                  prefixIcon:   Icons.location_on_outlined,
+                  controller: _addressCtrl,
+                  focusNode: _addressFocus,
+                  prefixIcon: Icons.location_on_outlined,
                   keyboardType: TextInputType.streetAddress,
-                  maxLines:     2,
+                  maxLines: 2,
                 ),
                 const SizedBox(height: 28),
 
                 SpPrimaryButton(
-                  label:        'LƯU THAY ĐỔI',
-                  isLoading:    _isLoading,
-                  onTap:        _onSave,
+                  label: 'LƯU THAY ĐỔI',
+                  isLoading: _isLoading,
+                  onTap: _onSave,
                   trailingIcon: Icons.check_circle_outline_rounded,
                 ),
                 const SizedBox(height: 32),
@@ -343,17 +448,13 @@ class _AvatarSection extends StatelessWidget {
   final VoidCallback onTap;
   final bool isUploading;
 
-  const _AvatarSection({
-    required this.onTap,
-    this.isUploading = false,
-  });
+  const _AvatarSection({required this.onTap, this.isUploading = false});
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // FIX: đổi (_, url, _) → (_, url, __) cho đúng wildcard
         ValueListenableBuilder<String?>(
           valueListenable: UserSession.instance.avatarUrlNotifier,
           builder: (_, avatarUrl, _) => Container(
@@ -371,7 +472,6 @@ class _AvatarSection extends StatelessWidget {
               ],
             ),
             child: ClipOval(
-              // session.avatarUrl đã là full URL — dùng trực tiếp
               child: isUploading
                   ? Container(
                       color: AppColors.fieldBg,
@@ -383,12 +483,12 @@ class _AvatarSection extends StatelessWidget {
                       ),
                     )
                   : avatarUrl != null && avatarUrl.isNotEmpty
-                      ? Image.network(
-                          avatarUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => _fallback(),
-                        )
-                      : _fallback(),
+                  ? Image.network(
+                      avatarUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _fallback(),
+                    )
+                  : _fallback(),
             ),
           ),
         ),
@@ -396,12 +496,12 @@ class _AvatarSection extends StatelessWidget {
           bottom: 2,
           right: -2,
           child: GestureDetector(
-            onTap: onTap,
+            onTap: isUploading ? null : onTap,
             child: Container(
               width: 32,
               height: 32,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
+              decoration: BoxDecoration(
+                color: isUploading ? AppColors.primaryLight : AppColors.primary,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -417,9 +517,9 @@ class _AvatarSection extends StatelessWidget {
   }
 
   Widget _fallback() => Container(
-        color: const Color(0xFF7B6052),
-        child: const Icon(Icons.person, color: Colors.white38, size: 56),
-      );
+    color: const Color(0xFF7B6052),
+    child: const Icon(Icons.person, color: Colors.white38, size: 56),
+  );
 }
 
 // ── READ-ONLY FIELD ────────────────────────────────────────────────────────
@@ -475,8 +575,6 @@ class _ReadOnlyField extends StatelessWidget {
 }
 
 // ── PROFILE FIELD ──────────────────────────────────────────────────────────
-// Dùng widget riêng thay vì SpTextField vì cần focus animation
-// (đổi màu border + icon khi focused).
 class _ProfileField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -528,17 +626,17 @@ class _ProfileFieldState extends State<_ProfileField> {
               color: hasError
                   ? AppColors.errorRed
                   : _isFocused
-                      ? AppColors.primary
-                      : AppColors.fieldBorder,
+                  ? AppColors.primary
+                  : AppColors.fieldBorder,
               width: hasError || _isFocused ? 1.5 : 1.0,
             ),
           ),
           child: TextField(
-            controller:   widget.controller,
-            focusNode:    widget.focusNode,
+            controller: widget.controller,
+            focusNode: widget.focusNode,
             keyboardType: widget.keyboardType,
-            maxLines:     widget.maxLines,
-            onChanged:    widget.onChanged,
+            maxLines: widget.maxLines,
+            onChanged: widget.onChanged,
             textInputAction: widget.nextFocusNode != null
                 ? TextInputAction.next
                 : TextInputAction.done,
@@ -564,8 +662,10 @@ class _ProfileFieldState extends State<_ProfileField> {
                   size: 20,
                 ),
               ),
-              prefixIconConstraints:
-                  const BoxConstraints(minWidth: 0, minHeight: 52),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 0,
+                minHeight: 52,
+              ),
             ),
           ),
         ),

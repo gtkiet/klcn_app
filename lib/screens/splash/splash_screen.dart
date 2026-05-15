@@ -10,7 +10,7 @@ import '../../theme/app_theme.dart';
 // ── CONSTANTS ─────────────────────────────────
 const _kFadeDuration  = Duration(milliseconds: 800);
 const _kScaleDuration = Duration(milliseconds: 700);
-const _kSpinDuration  = Duration(milliseconds: 900);
+const _kSpinDuration = Duration(milliseconds: 1000);
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
