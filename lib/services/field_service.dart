@@ -10,16 +10,7 @@ class FieldService {
 
   final _api = ApiClient.instance;
 
-  // ─────────────────────────────────────────────────────────────
-  // DANH SÁCH SÂN — GET /api/fields
-  //
-  // Parameters:
-  //   Search   — tìm theo tên
-  //   TypeId   — 1: Sân 5 | 2: Sân 7
-  //   StatusId — 1: Hoạt động | 2: Bảo trì
-  //   Page, PageSize
-  // ─────────────────────────────────────────────────────────────
-
+  // GET /api/fields
   Future<PagedFieldResult> getFields({
     String? search,
     int? typeId,
@@ -39,8 +30,6 @@ class FieldService {
     );
 
     final result = res.item(PagedFieldResult.fromJson);
-
-    // Patch imageUrl thành full URL (server trả path tương đối)
     final patchedItems = result.items.map(_patchImageUrl).toList();
     return PagedFieldResult(
       items:           patchedItems,
@@ -53,18 +42,46 @@ class FieldService {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // CHI TIẾT SÂN — GET /api/fields/{fieldId}
-  // ─────────────────────────────────────────────────────────────
-
+  // GET /api/fields/{fieldId}
   Future<FieldModel> getFieldDetail(int fieldId) async {
     final res = await _api.get('/api/fields/$fieldId');
     return _patchImageUrl(res.item(FieldModel.fromJson));
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // HELPER: patch imageUrl thành full URL
-  // ─────────────────────────────────────────────────────────────
+  // GET /api/fields/schedule
+  Future<List<FieldScheduleModel>> getSchedule({
+    required DateTime date,
+    int? fieldId,
+    int? typeId,
+  }) async {
+    final dateStr =
+        '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+
+    final res = await _api.get(
+      '/api/fields/schedule',
+      queryParameters: {
+        'Date': dateStr,
+        'FieldId': ?fieldId,
+        'TypeId':  ?typeId,
+      },
+    );
+
+    final schedules = res.list(FieldScheduleModel.fromJson);
+    return schedules.map((s) {
+      final full = s.imageUrl.toFullMediaUrl;
+      if (full == s.imageUrl) return s;
+      return FieldScheduleModel(
+        fieldId:   s.fieldId,
+        fieldName: s.fieldName,
+        fieldType: s.fieldType,
+        imageUrl:  full,
+        slotDate:  s.slotDate,
+        slots:     s.slots,
+      );
+    }).toList();
+  }
 
   static FieldModel _patchImageUrl(FieldModel field) {
     final full = field.imageUrl.toFullMediaUrl;

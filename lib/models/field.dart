@@ -1,5 +1,4 @@
 // lib/models/field.dart
-// Ánh xạ GET /api/fields và GET /api/fields/{fieldId}
 
 // ── FIELD MODEL ───────────────────────────────────────────────────
 class FieldModel {
@@ -9,9 +8,9 @@ class FieldModel {
   final double basePrice;
   final double peakPrice;
   final String? imageUrl;
-  final String fieldType;   // "Sân 5" | "Sân 7" — string từ server
+  final String fieldType;
   final int typeId;
-  final String status;      // "Hoạt động" | "Bảo trì"
+  final String status;
   final int statusId;
   final double? avgRating;
   final int? totalReviews;
@@ -36,16 +35,12 @@ class FieldModel {
   bool get isActive => statusId == 1;
 
   String get basePriceFmt {
-    if (basePrice >= 1000000) {
-      return '${(basePrice / 1000000).toStringAsFixed(basePrice % 1000000 == 0 ? 0 : 1)}M';
-    }
+    if (basePrice >= 1000000) return '${(basePrice / 1000000).toStringAsFixed(basePrice % 1000000 == 0 ? 0 : 1)}M';
     return '${(basePrice / 1000).toStringAsFixed(0)}k';
   }
 
   String get peakPriceFmt {
-    if (peakPrice >= 1000000) {
-      return '${(peakPrice / 1000000).toStringAsFixed(peakPrice % 1000000 == 0 ? 0 : 1)}M';
-    }
+    if (peakPrice >= 1000000) return '${(peakPrice / 1000000).toStringAsFixed(peakPrice % 1000000 == 0 ? 0 : 1)}M';
     return '${(peakPrice / 1000).toStringAsFixed(0)}k';
   }
 
@@ -66,8 +61,93 @@ class FieldModel {
   );
 }
 
+// ── SLOT MODEL ────────────────────────────────────────────────────
+class SlotModel {
+  final int fieldSlotId;
+  final int slotId;
+  final String startTime;
+  final String endTime;
+  final double price;
+  final bool isPeakHour;
+  final String status;
+  final int statusId;
+  final int? holdRemainingSeconds;
+
+  const SlotModel({
+    required this.fieldSlotId,
+    required this.slotId,
+    required this.startTime,
+    required this.endTime,
+    required this.price,
+    required this.isPeakHour,
+    required this.status,
+    required this.statusId,
+    this.holdRemainingSeconds,
+  });
+
+  bool get isAvailable => statusId == 1;
+  bool get isHolding   => statusId == 2;
+  bool get isBooked    => statusId == 3;
+
+  String get displayTime => '$startTime - $endTime';
+
+  String get priceFmt {
+    if (price >= 1000000) return '${(price / 1000000).toStringAsFixed(1)}M';
+    return '${(price / 1000).toStringAsFixed(0)}k';
+  }
+
+  static String _parseTime(String raw) {
+    final clean = raw.contains('T') ? raw.split('T').last : raw;
+    final parts  = clean.split(':');
+    if (parts.length < 2) return raw;
+    return '${parts[0]}:${parts[1]}';
+  }
+
+  factory SlotModel.fromJson(Map<String, dynamic> json) => SlotModel(
+    fieldSlotId:          json['fieldSlotId']          as int,
+    slotId:               json['slotId']               as int,
+    startTime:            _parseTime(json['startTime'] as String),
+    endTime:              _parseTime(json['endTime']   as String),
+    price:                (json['price']               as num).toDouble(),
+    isPeakHour:           json['isPeakHour']           as bool,
+    status:               json['status']               as String,
+    statusId:             json['statusId']             as int,
+    holdRemainingSeconds: json['holdRemainingSeconds'] as int?,
+  );
+}
+
+// ── FIELD SCHEDULE MODEL ──────────────────────────────────────────
+class FieldScheduleModel {
+  final int fieldId;
+  final String fieldName;
+  final String fieldType;
+  final String? imageUrl;
+  final DateTime slotDate;
+  final List<SlotModel> slots;
+
+  const FieldScheduleModel({
+    required this.fieldId,
+    required this.fieldName,
+    required this.fieldType,
+    this.imageUrl,
+    required this.slotDate,
+    required this.slots,
+  });
+
+  factory FieldScheduleModel.fromJson(Map<String, dynamic> json) {
+    final rawSlots = json['slots'] as List<dynamic>? ?? [];
+    return FieldScheduleModel(
+      fieldId:   json['fieldId']   as int,
+      fieldName: json['fieldName'] as String,
+      fieldType: json['fieldType'] as String,
+      imageUrl:  json['imageUrl']  as String?,
+      slotDate:  DateTime.parse(json['slotDate'] as String),
+      slots:     rawSlots.map((e) => SlotModel.fromJson(e as Map<String, dynamic>)).toList(),
+    );
+  }
+}
+
 // ── PAGED FIELD RESPONSE ──────────────────────────────────────────
-// Khớp với data{} của GET /api/fields
 class PagedFieldResult {
   final List<FieldModel> items;
   final int totalCount;

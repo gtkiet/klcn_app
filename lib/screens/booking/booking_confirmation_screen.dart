@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/field.dart';
-import '../../models/booking.dart';
+// import '../../models/booking.dart';
 import '../../models/service.dart';
 import '../../models/promotion.dart';
 import '../../services/booking_service.dart';
