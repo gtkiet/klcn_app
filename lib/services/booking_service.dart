@@ -1,9 +1,9 @@
 // lib/services/booking_service.dart
 
-import '../models/booking.dart';
-import '../models/service.dart';
-import '../models/promotion.dart';
-import '../network/api_client.dart';
+import 'package:klcn_app/models/booking.dart';
+import 'package:klcn_app/models/service.dart';
+import 'package:klcn_app/models/promotion.dart';
+import 'package:klcn_app/network/api_client.dart';
 
 class BookingService {
   BookingService._();
@@ -11,16 +11,18 @@ class BookingService {
 
   final _api = ApiClient.instance;
 
-  // POST /api/bookings/hold
-  Future<String> holdSlots(List<int> fieldSlotIds) async {
-    final res = await _api.post(
-      '/api/bookings/hold',
-      body: {'fieldSlotIds': fieldSlotIds},
-    );
-    return res.raw<String>();
+  // ── HOLD SLOTS ─────────────────────────────────────────────────
+  /// POST /api/bookings/hold
+  /// Body: { fieldSlotIds: [int] }
+  /// Giữ slot tạm thời (status = PendingPayment) trước khi tạo booking chính thức
+  Future<void> holdSlots(List<int> fieldSlotIds) async {
+    await _api.post('/api/bookings/hold', body: {'fieldSlotIds': fieldSlotIds});
   }
 
-  // POST /api/bookings
+  // ── CREATE BOOKING ─────────────────────────────────────────────
+  /// POST /api/bookings
+  /// Body: { fieldSlotIds, services?, promotionCode?, note? }
+  /// Trả về BookingModel đầy đủ kèm deposit info
   Future<BookingModel> createBooking({
     required List<int> fieldSlotIds,
     List<ServiceRequestItem> services = const [],
@@ -33,43 +35,44 @@ class BookingService {
         'fieldSlotIds': fieldSlotIds,
         if (services.isNotEmpty)
           'services': services.map((s) => s.toJson()).toList(),
-        if (promotionCode != null && promotionCode.isNotEmpty)
-          'promotionCode': promotionCode,
-        if (note != null && note.trim().isNotEmpty)
-          'note': note.trim(),
+        if (promotionCode != null && promotionCode.trim().isNotEmpty)
+          'promotionCode': promotionCode.trim(),
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
       },
     );
     return res.item(BookingModel.fromJson);
   }
 
-  // GET /api/bookings/my
+  // ── GET MY BOOKINGS ────────────────────────────────────────────
+  /// GET /api/bookings/my
+  /// Params: statusId?, page, pageSize
   Future<PagedBookingResult> getMyBookings({
     int? statusId,
-    int page     = 1,
+    int page = 1,
     int pageSize = 10,
   }) async {
     final res = await _api.get(
       '/api/bookings/my',
       queryParameters: {
         'statusId': ?statusId,
-        'page':     page,
+        'page': page,
         'pageSize': pageSize,
       },
     );
     return res.item(PagedBookingResult.fromJson);
   }
 
-  // GET /api/bookings/{bookingId}
+  // ── GET BOOKING DETAIL ─────────────────────────────────────────
+  /// GET /api/bookings/{bookingId}
   Future<BookingModel> getBookingDetail(int bookingId) async {
     final res = await _api.get('/api/bookings/$bookingId');
     return res.item(BookingModel.fromJson);
   }
 
-  // POST /api/bookings/{bookingId}/cancel
-  Future<void> cancelBooking({
-    required int bookingId,
-    String? reason,
-  }) async {
+  // ── CANCEL BOOKING ─────────────────────────────────────────────
+  /// POST /api/bookings/{bookingId}/cancel
+  /// Body: { reason? }
+  Future<void> cancelBooking({required int bookingId, String? reason}) async {
     await _api.post(
       '/api/bookings/$bookingId/cancel',
       body: {
@@ -78,7 +81,9 @@ class BookingService {
     );
   }
 
-  // POST /api/bookings/{bookingId}/reschedule
+  // ── RESCHEDULE ─────────────────────────────────────────────────
+  /// POST /api/bookings/{bookingId}/reschedule
+  /// Body: { bookingDetailId, newFieldSlotId }
   Future<void> reschedule({
     required int bookingId,
     required int bookingDetailId,
@@ -88,12 +93,14 @@ class BookingService {
       '/api/bookings/$bookingId/reschedule',
       body: {
         'bookingDetailId': bookingDetailId,
-        'newFieldSlotId':  newFieldSlotId,
+        'newFieldSlotId': newFieldSlotId,
       },
     );
   }
 
-  // POST /api/bookings/{bookingId}/apply-voucher
+  // ── APPLY VOUCHER ──────────────────────────────────────────────
+  /// POST /api/bookings/{bookingId}/apply-voucher
+  /// Body: { code }
   Future<void> applyVoucher({
     required int bookingId,
     required String code,
@@ -104,55 +111,33 @@ class BookingService {
     );
   }
 
-  // POST /api/bookings/{bookingId}/payment
-  Future<void> submitPayment({
-    required int bookingId,
-    required int methodId,
-    String? transactionCode,
-    String? note,
-  }) async {
-    await _api.post(
-      '/api/bookings/$bookingId/payment',
-      body: {
-        'methodId': methodId,
-        if (transactionCode != null && transactionCode.isNotEmpty)
-          'transactionCode': transactionCode,
-        if (note != null && note.trim().isNotEmpty)
-          'note': note.trim(),
-      },
-    );
-  }
-
-  // GET /api/bookings/{bookingId}/payments
+  // ── GET PAYMENTS ───────────────────────────────────────────────
+  /// GET /api/bookings/{bookingId}/payments
   Future<List<PaymentModel>> getPayments(int bookingId) async {
     final res = await _api.get('/api/bookings/$bookingId/payments');
     return res.list(PaymentModel.fromJson);
   }
 
-  // GET /api/bookings/{bookingId}/deposit
+  // ── GET DEPOSIT ────────────────────────────────────────────────
+  /// GET /api/bookings/{bookingId}/deposit
   Future<DepositModel> getDeposit(int bookingId) async {
     final res = await _api.get('/api/bookings/$bookingId/deposit');
     return res.item(DepositModel.fromJson);
   }
 
-  // POST /api/payments/momo/create/{bookingId}
-  Future<String> createMoMoPayment(int bookingId) async {
-    final res = await _api.post('/api/payments/momo/create/$bookingId');
-    return res.raw<String>();
-  }
-
-  // GET /api/services
+  // ── GET SERVICES ───────────────────────────────────────────────
+  /// GET /api/services
+  /// Params: isAvailable?
   Future<List<ServiceModel>> getServices({bool? isAvailable}) async {
     final res = await _api.get(
       '/api/services',
-      queryParameters: {
-        'isAvailable': ?isAvailable,
-      },
+      queryParameters: {'isAvailable': ?isAvailable},
     );
     return res.list(ServiceModel.fromJson);
   }
 
-  // GET /api/promotions/{code}
+  // ── GET PROMOTION ──────────────────────────────────────────────
+  /// GET /api/promotions/{code}
   Future<PromotionModel> getPromotion(String code) async {
     final res = await _api.get('/api/promotions/${code.trim()}');
     return res.item(PromotionModel.fromJson);

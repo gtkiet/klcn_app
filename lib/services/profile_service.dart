@@ -2,37 +2,32 @@
 
 import 'package:dio/dio.dart';
 
-import '../models/user.dart';
-import '../network/api_client.dart';
-import '../network/media_url.dart';
-import '../session/user_session.dart';
+import 'package:klcn_app/models/user.dart';
+import 'package:klcn_app/network/api_client.dart';
+import 'package:klcn_app/network/media_url.dart';
+import 'package:klcn_app/session/user_session.dart';
 
 class ProfileService {
   ProfileService._();
   static final ProfileService instance = ProfileService._();
 
-  final _api = ApiClient.instance;
+  final _api     = ApiClient.instance;
   final _session = UserSession.instance;
 
-  // ─────────────────────────────────────────────────────────────
-  // LẤY PROFILE
-  // GET /api/profile
-  // ─────────────────────────────────────────────────────────────
-
+  // ── GET PROFILE ────────────────────────────────────────────────
+  /// GET /api/profile
+  /// Trả về UserModel (có nested profile{})
   Future<UserModel> getProfile() async {
-    final res = await _api.get('/api/profile');
+    final res  = await _api.get('/api/profile');
     final user = res.item(UserModel.fromJson).withFullAvatarUrl;
     await _session.updateUser(user);
     return user;
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // CẬP NHẬT PROFILE
-  // PUT /api/profile
-  // Body: { fullName, phone, dateOfBirth?, address? }
-  // dateOfBirth format: "YYYY-MM-DD"
-  // ─────────────────────────────────────────────────────────────
-
+  // ── UPDATE PROFILE ─────────────────────────────────────────────
+  /// PUT /api/profile
+  /// Body: { fullName, phone, dateOfBirth?, address? }
+  /// dateOfBirth format: "YYYY-MM-DD"
   Future<UserModel> updateProfile({
     required String fullName,
     required String phone,
@@ -41,7 +36,7 @@ class ProfileService {
   }) async {
     final body = <String, dynamic>{
       'fullName': fullName.trim(),
-      'phone': phone.trim(),
+      'phone':    phone.trim(),
       if (dateOfBirth != null)
         'dateOfBirth':
             '${dateOfBirth.year.toString().padLeft(4, '0')}-'
@@ -51,18 +46,15 @@ class ProfileService {
         'address': address.trim(),
     };
 
-    final res = await _api.put('/api/profile', body: body);
+    final res  = await _api.put('/api/profile', body: body);
     final user = res.item(UserModel.fromJson).withFullAvatarUrl;
     await _session.updateUser(user);
     return user;
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // ĐỔI MẬT KHẨU
-  // PUT /api/profile/change-password
-  // Body: { currentPassword, newPassword, confirmPassword }
-  // ─────────────────────────────────────────────────────────────
-
+  // ── CHANGE PASSWORD ────────────────────────────────────────────
+  /// PUT /api/profile/change-password
+  /// Body: { currentPassword, newPassword, confirmPassword }
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -72,26 +64,24 @@ class ProfileService {
       '/api/profile/change-password',
       body: {
         'currentPassword': currentPassword,
-        'newPassword': newPassword,
+        'newPassword':     newPassword,
         'confirmPassword': confirmPassword,
       },
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // CẬP NHẬT AVATAR
-  // PUT /api/profile/avatar
-  // Body: multipart/form-data  field name = "file"
-  // Response data: String path "/Uploads/avatar/..."
-  // ─────────────────────────────────────────────────────────────
-
+  // ── UPDATE AVATAR ──────────────────────────────────────────────
+  /// PUT /api/profile/avatar
+  /// Body: multipart/form-data, field name = "file"
+  /// Response data: String — relative path "/Uploads/avatar/..."
   Future<String> updateAvatar(String filePath) async {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(filePath),
     });
 
-    final res = await _api.putForm('/api/profile/avatar', formData);
-    final fullUrl = res.raw<String>().toFullMediaUrl ?? res.raw<String>();
+    final res    = await _api.putForm('/api/profile/avatar', formData);
+    final rawUrl = res.raw<String>();
+    final fullUrl = rawUrl.toFullMediaUrl ?? rawUrl;
 
     await _session.updateAvatar(fullUrl);
     return fullUrl;

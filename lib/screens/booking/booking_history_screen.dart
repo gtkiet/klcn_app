@@ -306,7 +306,7 @@ class _BookingCard extends StatelessWidget {
                   Text(
                     '#${booking.bookingId}',
                     style: TextStyle(
-                      color: booking.isBooked ? AppColors.primary : AppColors.textDark,
+                      // color: booking.isBooked ? AppColors.primary : AppColors.textDark,
                       fontSize: 18, fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -414,17 +414,17 @@ class _BookingCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 3),
-                        Text(
-                          booking.isBooked    ? 'Chưa thanh toán'
-                          : booking.isCompleted ? 'Đã thanh toán'
-                          : 'Hoàn tiền 100%',
-                          style: TextStyle(
-                            color: booking.isBooked    ? AppColors.textLight
-                                 : booking.isCompleted ? AppColors.primaryLight
-                                 : AppColors.badgeCancelText,
-                            fontSize: 12,
-                          ),
-                        ),
+                        // Text(
+                        //   booking.isBooked    ? 'Chưa thanh toán'
+                        //   : booking.isCompleted ? 'Đã thanh toán'
+                        //   : 'Hoàn tiền 100%',
+                        //   style: TextStyle(
+                        //     color: booking.isBooked    ? AppColors.textLight
+                        //          : booking.isCompleted ? AppColors.primaryLight
+                        //          : AppColors.badgeCancelText,
+                        //     fontSize: 12,
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),

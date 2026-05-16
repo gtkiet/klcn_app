@@ -70,7 +70,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     if (_bookingId == null) return;
     setState(() => _isPayingMoMo = true);
     try {
-      await BookingService.instance.createMoMoPayment(_bookingId!);
+      // await BookingService.instance.createMoMoPayment(_bookingId!);
       // TODO: mở URL MoMo qua url_launcher
     } catch (e) {
       if (!mounted) return;

@@ -1,7 +1,7 @@
 // lib/services/notification_service.dart
 
-import '../models/notification.dart';
-import '../network/api_client.dart';
+import 'package:klcn_app/models/notification.dart';
+import 'package:klcn_app/network/api_client.dart';
 
 class NotificationService {
   NotificationService._();
@@ -9,7 +9,9 @@ class NotificationService {
 
   final _api = ApiClient.instance;
 
-  // GET /api/notifications
+  // ── GET NOTIFICATIONS ──────────────────────────────────────────
+  /// GET /api/notifications
+  /// Params: IsRead?, Page, PageSize
   Future<PagedNotificationResult> getNotifications({
     bool? isRead,
     int page     = 1,
@@ -26,18 +28,22 @@ class NotificationService {
     return res.item(PagedNotificationResult.fromJson);
   }
 
-  // GET /api/notifications/unread-count
+  // ── GET UNREAD COUNT ───────────────────────────────────────────
+  /// GET /api/notifications/unread-count
+  /// Response data: int
   Future<int> getUnreadCount() async {
     final res = await _api.get('/api/notifications/unread-count');
     return res.raw<int>();
   }
 
-  // PATCH /api/notifications/{id}/read
+  // ── MARK AS READ ───────────────────────────────────────────────
+  /// PATCH /api/notifications/{notificationId}/read
   Future<void> markAsRead(int notificationId) async {
     await _api.patch('/api/notifications/$notificationId/read');
   }
 
-  // PATCH /api/notifications/read-all
+  // ── MARK ALL AS READ ───────────────────────────────────────────
+  /// PATCH /api/notifications/read-all
   Future<void> markAllAsRead() async {
     await _api.patch('/api/notifications/read-all');
   }

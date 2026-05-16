@@ -1,5 +1,7 @@
 // lib/models/user.dart
 
+// ── PROFILE MODEL ─────────────────────────────────────────────────
+// Nested trong GET /api/profile response
 class ProfileModel {
   final String? avatarUrl;
   final DateTime? dateOfBirth;
@@ -31,6 +33,9 @@ class ProfileModel {
       );
 }
 
+// ── USER MODEL ────────────────────────────────────────────────────
+// Dùng cho GET /api/profile (có nested profile{})
+// và auth response (user{} phẳng, avatarUrl trực tiếp)
 class UserModel {
   final int userId;
   final String email;
@@ -42,7 +47,7 @@ class UserModel {
   final int statusId;
   final DateTime createdAt;
 
-  // Nested profile — có thể null với response từ auth (login/register)
+  // Chỉ có trong GET /api/profile — null với auth response
   final ProfileModel? profile;
 
   const UserModel({
@@ -58,54 +63,48 @@ class UserModel {
     this.profile,
   });
 
-  // ── Convenience getters ────────────────────────────────────────────────
-  String? get avatarUrl => profile?.avatarUrl;
+  // ── Convenience getters ────────────────────────────────────────
+  String? get avatarUrl    => profile?.avatarUrl;
   DateTime? get dateOfBirth => profile?.dateOfBirth;
-  String? get address => profile?.address;
+  String? get address      => profile?.address;
 
-  bool get isActive => statusId == 1;
-  bool get isAdmin => roleId == 1;
-  bool get isStaff => roleId == 2;
+  bool get isActive   => statusId == 1;
+  bool get isAdmin    => roleId == 1;
+  bool get isStaff    => roleId == 2;
   bool get isCustomer => roleId == 3;
 
-  // ── Parse từ GET /api/profile (có nested profile{}) ───────────────────
+  // ── Parse từ GET /api/profile (có nested profile{}) ───────────
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final profileJson = json['profile'] as Map<String, dynamic>?;
     return UserModel(
-      userId: json['userId'] as int,
-      email: json['email'] as String,
-      phone: json['phone'] as String,
-      fullName: json['fullName'] as String,
-      role: json['role'] as String,
-      roleId: json['roleId'] as int,
-      status: json['status'] as String,
-      statusId: json['statusId'] as int,
-      createdAt:
-          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
-          DateTime.now(),
-      profile: profileJson != null ? ProfileModel.fromJson(profileJson) : null,
+      userId:    json['userId']    as int,
+      email:     json['email']     as String,
+      phone:     json['phone']     as String,
+      fullName:  json['fullName']  as String,
+      role:      json['role']      as String,
+      roleId:    json['roleId']    as int,
+      status:    json['status']    as String,
+      statusId:  json['statusId']  as int,
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      profile:   profileJson != null ? ProfileModel.fromJson(profileJson) : null,
     );
   }
 
-  // ── Parse từ auth response (user{} không có nested profile) ───────────
-  factory UserModel.fromAuthJson(Map<String, dynamic> json) {
-    return UserModel(
-      userId: json['userId'] as int,
-      email: json['email'] as String,
-      phone: json['phone'] as String,
-      fullName: json['fullName'] as String,
-      role: json['role'] as String,
-      roleId: json['roleId'] as int,
-      status: json['status'] as String,
-      statusId: json['statusId'] as int,
-      createdAt:
-          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
-          DateTime.now(),
-      profile: json['avatarUrl'] != null
-          ? ProfileModel(avatarUrl: json['avatarUrl'] as String?)
-          : null,
-    );
-  }
+  // ── Parse từ auth response (user{} phẳng, avatarUrl trực tiếp) ─
+  factory UserModel.fromAuthJson(Map<String, dynamic> json) => UserModel(
+        userId:    json['userId']    as int,
+        email:     json['email']     as String,
+        phone:     json['phone']     as String,
+        fullName:  json['fullName']  as String,
+        role:      json['role']      as String,
+        roleId:    json['roleId']    as int,
+        status:    json['status']    as String,
+        statusId:  json['statusId']  as int,
+        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+        profile:   json['avatarUrl'] != null
+            ? ProfileModel(avatarUrl: json['avatarUrl'] as String?)
+            : null,
+      );
 
   UserModel copyWith({
     String? fullName,
@@ -113,20 +112,21 @@ class UserModel {
     ProfileModel? profile,
   }) =>
       UserModel(
-        userId: userId,
-        email: email,
-        phone: phone ?? this.phone,
-        fullName: fullName ?? this.fullName,
-        role: role,
-        roleId: roleId,
-        status: status,
-        statusId: statusId,
+        userId:    userId,
+        email:     email,
+        phone:     phone ?? this.phone,
+        fullName:  fullName ?? this.fullName,
+        role:      role,
+        roleId:    roleId,
+        status:    status,
+        statusId:  statusId,
         createdAt: createdAt,
-        profile: profile ?? this.profile,
+        profile:   profile ?? this.profile,
       );
 }
 
-// ── Auth response (login / register) ──────────────────────────────────────
+// ── AUTH RESPONSE ─────────────────────────────────────────────────
+// data{} của POST /api/auth/login và POST /api/auth/register
 class AuthResponse {
   final String accessToken;
   final String refreshToken;
@@ -141,14 +141,15 @@ class AuthResponse {
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) => AuthResponse(
-        accessToken: json['accessToken'] as String,
+        accessToken:  json['accessToken']  as String,
         refreshToken: json['refreshToken'] as String,
-        expiresAt: DateTime.parse(json['expiresAt'] as String),
-        user: UserModel.fromAuthJson(json['user'] as Map<String, dynamic>),
+        expiresAt:    DateTime.parse(json['expiresAt'] as String),
+        user:         UserModel.fromAuthJson(json['user'] as Map<String, dynamic>),
       );
 }
 
-// ── Token-only response (refresh-token) ───────────────────────────────────
+// ── TOKEN RESPONSE ────────────────────────────────────────────────
+// data{} của POST /api/auth/refresh-token
 class TokenResponse {
   final String accessToken;
   final String refreshToken;
@@ -161,8 +162,8 @@ class TokenResponse {
   });
 
   factory TokenResponse.fromJson(Map<String, dynamic> json) => TokenResponse(
-        accessToken: json['accessToken'] as String,
+        accessToken:  json['accessToken']  as String,
         refreshToken: json['refreshToken'] as String,
-        expiresAt: DateTime.parse(json['expiresAt'] as String),
+        expiresAt:    DateTime.parse(json['expiresAt'] as String),
       );
 }

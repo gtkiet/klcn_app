@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../services/auth_service.dart';
+// import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -54,10 +54,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await AuthService.instance.login(
-        email: _emailCtrl.text.trim(),
-        password: _passwordCtrl.text.trim(),
-      );
+      // await AuthService.instance.login(
+      //   email: _emailCtrl.text.trim(),
+      //   password: _passwordCtrl.text.trim(),
+      // );
       // FIX: bỏ AuthGuard.instance.setAuthenticated() — AuthService.login()
       // đã gọi nội bộ rồi. GoRouter tự redirect khi nhận notifyListeners().
     } catch (e) {

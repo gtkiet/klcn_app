@@ -1,8 +1,10 @@
 // lib/services/review_service.dart
 
-import '../models/review.dart';
-import '../network/api_client.dart';
-import '../network/media_url.dart';
+import 'package:dio/dio.dart';
+
+import 'package:klcn_app/models/review.dart';
+import 'package:klcn_app/network/api_client.dart';
+import 'package:klcn_app/network/media_url.dart';
 
 class ReviewService {
   ReviewService._();
@@ -10,77 +12,80 @@ class ReviewService {
 
   final _api = ApiClient.instance;
 
-  // ─────────────────────────────────────────────────────────────
-  // NHẬN XÉT THEO SÂN — GET /api/reviews/field/{fieldId}
-  // ─────────────────────────────────────────────────────────────
-
+  // ── GET FIELD REVIEWS ──────────────────────────────────────────
+  /// GET /api/reviews/field/{fieldId}
+  /// Trả về FieldReviewSummary (avgRating, star breakdown, + reviews[])
   Future<FieldReviewSummary> getFieldReviews(int fieldId) async {
     final res = await _api.get('/api/reviews/field/$fieldId');
     final summary = res.item(FieldReviewSummary.fromJson);
     return _patchUrls(summary);
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // GỬI NHẬN XÉT — POST /api/reviews
-  // Body: { bookingId, rating, comment?, imageUrl? }
-  // imageUrl: để null cho đến khi có upload file
-  // ─────────────────────────────────────────────────────────────
-
+  // ── CREATE REVIEW ──────────────────────────────────────────────
+  /// POST /api/reviews
+  /// Body: multipart/form-data
+  ///   BookingId (int, required)
+  ///   Rating    (int 1–5, required)
+  ///   Comment   (String, optional)
+  ///   Image     (file, optional)
   Future<ReviewModel> createReview({
     required int bookingId,
     required int rating,
     String? comment,
-    String? imageUrl,
+    String? imagePath, // local file path, null nếu không kèm ảnh
   }) async {
-    final res = await _api.post(
-      '/api/reviews',
-      body: {
-        'bookingId': bookingId,
-        'rating':    rating,
-        if (comment != null && comment.trim().isNotEmpty)
-          'comment': comment.trim(),
-        if (imageUrl != null && imageUrl.isNotEmpty)
-          'imageUrl': imageUrl,
-      },
-    );
+    final fields = <String, dynamic>{
+      'BookingId': bookingId.toString(),
+      'Rating': rating.toString(),
+      if (comment != null && comment.trim().isNotEmpty)
+        'Comment': comment.trim(),
+    };
+
+    if (imagePath != null && imagePath.isNotEmpty) {
+      fields['Image'] = await MultipartFile.fromFile(imagePath);
+    }
+
+    final formData = FormData.fromMap(fields);
+    final res = await _api.postForm('/api/reviews', formData);
     return res.item(ReviewModel.fromJson);
   }
+
+  // ── HELPERS ────────────────────────────────────────────────────
 
   // Patch avatarUrl + imageUrl trong từng review thành full URL
   static FieldReviewSummary _patchUrls(FieldReviewSummary summary) {
     final patched = summary.reviews.map((r) {
       final avatar = r.avatarUrl.toFullMediaUrl;
-      final image  = r.imageUrl.toFullMediaUrl;
+      final image = r.imageUrl.toFullMediaUrl;
       if (avatar == r.avatarUrl && image == r.imageUrl) return r;
       return ReviewModel(
-        reviewId:  r.reviewId,
+        reviewId: r.reviewId,
         bookingId: r.bookingId,
-        userId:    r.userId,
-        userName:  r.userName,
+        userId: r.userId,
+        userName: r.userName,
         avatarUrl: avatar,
-        fieldId:   r.fieldId,
+        fieldId: r.fieldId,
         fieldName: r.fieldName,
-        rating:    r.rating,
-        comment:   r.comment,
-        imageUrl:  image,
+        rating: r.rating,
+        comment: r.comment,
+        imageUrl: image,
         isVisible: r.isVisible,
         createdAt: r.createdAt,
       );
     }).toList();
 
-    if (identical(patched, summary.reviews)) return summary;
     return FieldReviewSummary(
-      fieldId:      summary.fieldId,
-      fieldName:    summary.fieldName,
-      fieldType:    summary.fieldType,
-      avgRating:    summary.avgRating,
+      fieldId: summary.fieldId,
+      fieldName: summary.fieldName,
+      fieldType: summary.fieldType,
+      avgRating: summary.avgRating,
       totalReviews: summary.totalReviews,
-      stars5:       summary.stars5,
-      stars4:       summary.stars4,
-      stars3:       summary.stars3,
-      stars2:       summary.stars2,
-      stars1:       summary.stars1,
-      reviews:      patched,
+      stars5: summary.stars5,
+      stars4: summary.stars4,
+      stars3: summary.stars3,
+      stars2: summary.stars2,
+      stars1: summary.stars1,
+      reviews: patched,
     );
   }
 }

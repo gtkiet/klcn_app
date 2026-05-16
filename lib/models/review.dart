@@ -1,5 +1,8 @@
 // lib/models/review.dart
-// Ánh xạ GET /api/reviews/field/{fieldId}
+//
+// API:
+//   POST /api/reviews                    → tạo review (multipart/form-data)
+//   GET  /api/reviews/field/{fieldId}    → lấy summary + list reviews
 
 // ── REVIEW MODEL ──────────────────────────────────────────────────
 class ReviewModel {
@@ -32,19 +35,19 @@ class ReviewModel {
   });
 
   factory ReviewModel.fromJson(Map<String, dynamic> json) => ReviewModel(
-    reviewId:  json['reviewId']  as int,
-    bookingId: json['bookingId'] as int,
-    userId:    json['userId']    as int,
-    userName:  json['userName']  as String,
-    avatarUrl: json['avatarUrl'] as String?,
-    fieldId:   json['fieldId']   as int,
-    fieldName: json['fieldName'] as String,
-    rating:    json['rating']    as int,
-    comment:   json['comment']   as String?,
-    imageUrl:  json['imageUrl']  as String?,
-    isVisible: json['isVisible'] as bool,
-    createdAt: DateTime.parse(json['createdAt'] as String),
-  );
+        reviewId:  json['reviewId']  as int,
+        bookingId: json['bookingId'] as int,
+        userId:    json['userId']    as int,
+        userName:  json['userName']  as String,
+        avatarUrl: json['avatarUrl'] as String?,
+        fieldId:   json['fieldId']   as int,
+        fieldName: json['fieldName'] as String,
+        rating:    json['rating']    as int,
+        comment:   json['comment']   as String?,
+        imageUrl:  json['imageUrl']  as String?,
+        isVisible: json['isVisible'] as bool,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+      );
 }
 
 // ── FIELD REVIEW SUMMARY ──────────────────────────────────────────
@@ -76,6 +79,19 @@ class FieldReviewSummary {
     required this.reviews,
   });
 
+  /// Tỷ lệ 0.0–1.0 của mỗi mức sao — dùng để vẽ progress bar
+  double starRatio(int star) {
+    if (totalReviews == 0) return 0;
+    final count = switch (star) {
+      5 => stars5,
+      4 => stars4,
+      3 => stars3,
+      2 => stars2,
+      _ => stars1,
+    };
+    return count / totalReviews;
+  }
+
   factory FieldReviewSummary.fromJson(Map<String, dynamic> json) {
     final rawReviews = json['reviews'] as List<dynamic>? ?? [];
     return FieldReviewSummary(
@@ -91,14 +107,5 @@ class FieldReviewSummary {
       stars1:       json['stars1']       as int? ?? 0,
       reviews:      rawReviews.map((e) => ReviewModel.fromJson(e as Map<String, dynamic>)).toList(),
     );
-  }
-
-  // Tỷ lệ % từng mức sao (0.0–1.0) để vẽ progress bar
-  double starRatio(int star) {
-    if (totalReviews == 0) return 0;
-    final count = switch (star) {
-      5 => stars5, 4 => stars4, 3 => stars3, 2 => stars2, _ => stars1,
-    };
-    return count / totalReviews;
   }
 }

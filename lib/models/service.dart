@@ -1,8 +1,8 @@
 // lib/models/service.dart
-// Ánh xạ GET /api/services
-// Response: data[] — List thẳng, không paged
-
-import 'package:klcn_app/network/media_url.dart';
+//
+// API:
+//   GET /api/services              → list thẳng (không paged)
+//   GET /api/services/{serviceId}  → detail
 
 // ── SERVICE MODEL ─────────────────────────────────────────────────
 class ServiceModel {
@@ -28,13 +28,13 @@ class ServiceModel {
   }
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) => ServiceModel(
-    serviceId: json['serviceId'] as int,
-    name: json['name'] as String,
-    description: json['description'] as String?,
-    price: (json['price'] as num).toDouble(),
-    imageUrl: (json['imageUrl'] as String?).toFullMediaUrl,
-    isAvailable: json['isAvailable'] as bool? ?? true,
-  );
+        serviceId:   json['serviceId']   as int,
+        name:        json['name']        as String,
+        description: json['description'] as String?,
+        price:       (json['price']      as num).toDouble(),
+        imageUrl:    json['imageUrl']    as String?,
+        isAvailable: json['isAvailable'] as bool? ?? true,
+      );
 }
 
 // ── SERVICE REQUEST ITEM ──────────────────────────────────────────
@@ -46,7 +46,7 @@ class ServiceRequestItem {
   const ServiceRequestItem({required this.serviceId, required this.quantity});
 
   Map<String, dynamic> toJson() => {
-    'serviceId': serviceId,
-    'quantity': quantity,
-  };
+        'serviceId': serviceId,
+        'quantity':  quantity,
+      };
 }
