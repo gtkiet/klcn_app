@@ -70,5 +70,16 @@
 	<string>Ứng dụng cần quyền truy cập camera để chụp ảnh đại diện</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Ứng dụng cần quyền truy cập thư viện ảnh để chọn ảnh đại diện</string>
+	<key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>sportplus</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
