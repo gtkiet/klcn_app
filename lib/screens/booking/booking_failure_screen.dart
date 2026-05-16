@@ -1,12 +1,15 @@
 // lib/screens/booking/booking_failure_screen.dart
+//
+// extra: { 'error'?: String, 'field'?: FieldModel, 'date'?: DateTime }
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
 class BookingFailureScreen extends StatefulWidget {
-  // TODO: Thêm params khi tích hợp: stadiumName, date, timeSlot, totalPrice, errorReason
   const BookingFailureScreen({super.key});
 
   @override
@@ -15,9 +18,11 @@ class BookingFailureScreen extends StatefulWidget {
 
 class _BookingFailureScreenState extends State<BookingFailureScreen>
     with SingleTickerProviderStateMixin {
+  String? _errorMsg;
+
   late final AnimationController _shakeCtrl;
-  late final Animation<double> _shakeAnim;
-  late final Animation<double> _fadeAnim;
+  late final Animation<double>   _shakeAnim;
+  late final Animation<double>   _fadeAnim;
 
   @override
   void initState() {
@@ -37,7 +42,16 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
         parent: _shakeCtrl, curve: const Interval(0.0, 0.4, curve: Curves.easeOut));
 
     WidgetsBinding.instance.addPostFrameCallback((_) =>
-        Future.delayed(const Duration(milliseconds: 200), () => _shakeCtrl.forward()));
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) _shakeCtrl.forward();
+        }));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
+    _errorMsg = extra?['error'] as String?;
   }
 
   @override
@@ -45,10 +59,6 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
     _shakeCtrl.dispose();
     super.dispose();
   }
-
-  void _onRetry()   => Navigator.pushReplacementNamed(context, '/booking_confirm');
-  void _onSupport() => Navigator.pushNamed(context, '/support');
-  void _onClose()   => Navigator.pop(context);
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +69,7 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.close),
-            onPressed: _onClose,
+            onPressed: () => context.go('/fields'),
           ),
           title: const Text('Trạng thái đặt sân'),
         ),
@@ -71,7 +81,7 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
               children: [
                 const SizedBox(height: 36),
 
-                // Error circle (shake animation)
+                // Shake icon
                 AnimatedBuilder(
                   animation: _shakeAnim,
                   builder: (_, child) => Transform.translate(
@@ -85,14 +95,11 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
                 ),
                 const SizedBox(height: 28),
 
-                // Headline
                 const Text(
                   'Đặt sân không thành công!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppColors.textDark,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
+                    color: AppColors.textDark, fontSize: 26, fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -101,25 +108,49 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
                   'Rất tiếc, đã có lỗi xảy ra trong quá trình\nthanh toán hoặc sân vừa mới được đặt.\nVui lòng thử lại sau.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppColors.textLight,
-                    fontSize: 14.5,
-                    height: 1.65,
+                    color: AppColors.textLight, fontSize: 14.5, height: 1.65,
                   ),
                 ),
+
+                // Chi tiết lỗi từ server
+                if (_errorMsg != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.badgeCancelBg,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.badgeCancelText.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: AppColors.badgeCancelText, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMsg!,
+                            style: const TextStyle(color: AppColors.badgeCancelText, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 28),
 
-                // Detail card
-                _FailureDetailCard(),
-                const SizedBox(height: 28),
-
-                SpPrimaryButton(label: 'THỬ LẠI NGAY', onTap: _onRetry),
+                SpPrimaryButton(
+                  label: 'THỬ LẠI',
+                  onTap: () => context.pop(),
+                  trailingIcon: Icons.refresh_rounded,
+                ),
                 const SizedBox(height: 12),
                 SpOutlineButton(
-                  label: 'LIÊN HỆ HỖ TRỢ',
-                  icon: Icons.headset_mic_outlined,
-                  onTap: _onSupport,
-                  borderColor: AppColors.primary,
-                  textColor: AppColors.primary,
+                  label: 'VỀ TRANG CHỦ',
+                  icon: Icons.home_outlined,
+                  onTap: () => context.go('/home'),
+                  borderColor: AppColors.fieldBorder,
+                  textColor: AppColors.textMid,
                 ),
                 const SizedBox(height: 36),
               ],
@@ -131,164 +162,44 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
   }
 }
 
-// ── ERROR CIRCLE ──────────────────────────────
 class _ErrorCircle extends StatelessWidget {
   const _ErrorCircle();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 130,
-      height: 130,
+      width: 130, height: 130,
       decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
             color: const Color(0xFFE53935).withValues(alpha: 0.20),
-            blurRadius: 24,
-            spreadRadius: 4,
+            blurRadius: 24, spreadRadius: 4,
           ),
         ],
       ),
       child: Center(
         child: Container(
-          width: 88,
-          height: 88,
+          width: 88, height: 88,
           decoration: BoxDecoration(
             color: const Color(0xFFE53935),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFFE53935).withValues(alpha: 0.35),
-                blurRadius: 16,
-                offset: const Offset(0, 5),
+                blurRadius: 16, offset: const Offset(0, 5),
               ),
             ],
           ),
           child: const Center(
             child: Text('!',
                 style: TextStyle(
-                    color: Colors.white, fontSize: 42, fontWeight: FontWeight.w900, height: 1)),
+                  color: Colors.white, fontSize: 42,
+                  fontWeight: FontWeight.w900, height: 1,
+                )),
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ── FAILURE DETAIL CARD ───────────────────────
-class _FailureDetailCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SpCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('CHI TIẾT SÂN',
-                      style: TextStyle(color: AppColors.textHint, fontSize: 10.5,
-                          fontWeight: FontWeight.w700, letterSpacing: 1.0)),
-                  SizedBox(height: 5),
-                  Text('Arena Santiago',
-                      style: TextStyle(color: AppColors.infoBlue, fontSize: 20, fontWeight: FontWeight.w800)),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.badgeCancelBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text('THẤT BẠI',
-                    style: TextStyle(color: AppColors.badgeCancelText, fontSize: 11, fontWeight: FontWeight.w800)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Date + Time
-          Row(
-            children: [
-              Expanded(
-                child: _InfoCell(
-                  icon: Icons.calendar_today_outlined,
-                  label: 'Ngày đặt',
-                  value: '20/10/2026',
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _InfoCell(
-                  icon: Icons.access_time_outlined,
-                  label: 'Khung giờ',
-                  value: '18:00 - 19:00',
-                  iconColor: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Dashed divider
-          SizedBox(height: 1, child: CustomPaint(painter: SpDashPainter())),
-          const SizedBox(height: 14),
-
-          // Total
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Tổng tiền', style: TextStyle(color: AppColors.textMid, fontSize: 15)),
-              Text('520.000đ',
-                  style: TextStyle(color: Color(0xFFE53935), fontSize: 22, fontWeight: FontWeight.w900)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoCell extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color iconColor;
-
-  const _InfoCell({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.iconColor = AppColors.textMid,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.fieldBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.fieldBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: iconColor, size: 18),
-          const SizedBox(height: 6),
-          Text(label,
-              style: const TextStyle(color: AppColors.textHint, fontSize: 11.5)),
-          const SizedBox(height: 3),
-          Text(value,
-              style: const TextStyle(
-                  color: AppColors.textDark, fontSize: 14.5, fontWeight: FontWeight.w800)),
-        ],
       ),
     );
   }

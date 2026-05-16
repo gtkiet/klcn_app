@@ -1,224 +1,211 @@
-// // lib/services/booking_service.dart
+// lib/services/booking_service.dart
+// Ánh xạ toàn bộ Booking + Payment + MoMo API
 
-// import '../models/booking.dart';
-// import '../network/api_client.dart';
+import '../models/booking.dart';
+import '../models/service.dart';
+import '../models/promotion.dart';
+import '../network/api_client.dart';
 
-// class BookingService {
-//   BookingService._();
-//   static final instance = BookingService._();
-//   final _api = ApiClient.instance;
-//   // ─────────────────────────────────────────────────────────────
-//   // GIỮ SLOT
-//   // POST /bookings/hold
-//   // ─────────────────────────────────────────────────────────────
+class BookingService {
+  BookingService._();
+  static final BookingService instance = BookingService._();
 
-//   Future<int> holdSlots({
-//     required List<int> fieldSlotIds,
-//   }) async {
-//     final data = await _api.post(
-//       '/bookings/hold',
-//       {
-//         'field_slot_ids':
-//             fieldSlotIds,
-//       },
-//     );
+  final _api = ApiClient.instance;
 
-//     return data['booking_id'] as int;
-//   }
+  // ─────────────────────────────────────────────────────────────
+  // GIỮ SLOT — POST /api/bookings/hold
+  // Body: { fieldSlotIds: [int] }
+  // Response data: String (hold session token hoặc message)
+  // ─────────────────────────────────────────────────────────────
 
-//   // ─────────────────────────────────────────────────────────────
-//   // XÁC NHẬN BOOKING
-//   // POST /bookings/{id}/confirm
-//   // ─────────────────────────────────────────────────────────────
+  Future<String> holdSlots(List<int> fieldSlotIds) async {
+    final res = await _api.post(
+      '/api/bookings/hold',
+      body: {'fieldSlotIds': fieldSlotIds},
+    );
+    return res.raw<String>();
+  }
 
-//   Future<BookingModel>
-//       confirmBooking({
-//     required int bookingId,
-//     required List<int> fieldSlotIds,
-//     required bool isFullPayment,
+  // ─────────────────────────────────────────────────────────────
+  // TẠO BOOKING — POST /api/bookings
+  // Body: { fieldSlotIds, services?, promotionCode?, note? }
+  // ─────────────────────────────────────────────────────────────
 
-//     // [{service_id, quantity}]
-//     List<Map<String, dynamic>>?
-//         services,
+  Future<BookingModel> createBooking({
+    required List<int> fieldSlotIds,
+    List<ServiceRequestItem> services = const [],
+    String? promotionCode,
+    String? note,
+  }) async {
+    final res = await _api.post(
+      '/api/bookings',
+      body: {
+        'fieldSlotIds': fieldSlotIds,
+        if (services.isNotEmpty) 'services': services.map((s) => s.toJson()).toList(),
+        if (promotionCode != null && promotionCode.isNotEmpty)
+          'promotionCode': promotionCode,
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+      },
+    );
+    return res.item(BookingModel.fromJson);
+  }
 
-//     String? promotionCode,
-//   }) async {
-//     final body = <String, dynamic>{
-//       'field_slot_ids':
-//           fieldSlotIds,
+  // ─────────────────────────────────────────────────────────────
+  // LỊCH SỬ BOOKING — GET /api/bookings/my
+  // Parameters: statusId?, page, pageSize
+  // ─────────────────────────────────────────────────────────────
 
-//       'is_full_payment':
-//           isFullPayment,
+  Future<PagedBookingResult> getMyBookings({
+    int? statusId,
+    int page     = 1,
+    int pageSize = 10,
+  }) async {
+    final res = await _api.get(
+      '/api/bookings/my',
+      queryParameters: {
+        'statusId': ?statusId,
+        'page':     page,
+        'pageSize': pageSize,
+      },
+    );
+    return res.item(PagedBookingResult.fromJson);
+  }
 
-//       'services': ?services,
+  // ─────────────────────────────────────────────────────────────
+  // CHI TIẾT BOOKING — GET /api/bookings/{bookingId}
+  // ─────────────────────────────────────────────────────────────
 
-//       if (promotionCode != null &&
-//           promotionCode.isNotEmpty)
-//         'promotion_code':
-//             promotionCode,
-//     };
+  Future<BookingModel> getBookingDetail(int bookingId) async {
+    final res = await _api.get('/api/bookings/$bookingId');
+    return res.item(BookingModel.fromJson);
+  }
 
-//     final data = await _api.post(
-//       '/bookings/$bookingId/confirm',
-//       body,
-//     );
+  // ─────────────────────────────────────────────────────────────
+  // HỦY BOOKING — POST /api/bookings/{bookingId}/cancel
+  // Body: { reason? }
+  // Response data: String
+  // ─────────────────────────────────────────────────────────────
 
-//     return BookingModel.fromJson(
-//       data['data']
-//           as Map<String, dynamic>,
-//     );
-//   }
+  Future<void> cancelBooking({
+    required int bookingId,
+    String? reason,
+  }) async {
+    await _api.post(
+      '/api/bookings/$bookingId/cancel',
+      body: {
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      },
+    );
+  }
 
-//   // ─────────────────────────────────────────────────────────────
-//   // ÁP DỤNG VOUCHER
-//   // POST /bookings/{id}/apply-promotion
-//   // ─────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // ĐỔI LỊCH — POST /api/bookings/{bookingId}/reschedule
+  // Body: { bookingDetailId, newFieldSlotId }
+  // Response data: String
+  // ─────────────────────────────────────────────────────────────
 
-//   Future<BookingModel>
-//       applyPromotion({
-//     required int bookingId,
-//     required String code,
-//   }) async {
-//     final data = await _api.post(
-//       '/bookings/$bookingId/apply-promotion',
-//       {
-//         'code': code,
-//       },
-//     );
+  Future<void> reschedule({
+    required int bookingId,
+    required int bookingDetailId,
+    required int newFieldSlotId,
+  }) async {
+    await _api.post(
+      '/api/bookings/$bookingId/reschedule',
+      body: {
+        'bookingDetailId': bookingDetailId,
+        'newFieldSlotId':  newFieldSlotId,
+      },
+    );
+  }
 
-//     return BookingModel.fromJson(
-//       data['data']
-//           as Map<String, dynamic>,
-//     );
-//   }
+  // ─────────────────────────────────────────────────────────────
+  // ÁP DỤNG VOUCHER — POST /api/bookings/{bookingId}/apply-voucher
+  // Body: { code }
+  // Response data: String
+  // ─────────────────────────────────────────────────────────────
 
-//   // ─────────────────────────────────────────────────────────────
-//   // LỊCH SỬ BOOKING
-//   // GET /bookings
-//   // ─────────────────────────────────────────────────────────────
+  Future<void> applyVoucher({
+    required int bookingId,
+    required String code,
+  }) async {
+    await _api.post(
+      '/api/bookings/$bookingId/apply-voucher',
+      body: {'code': code.trim()},
+    );
+  }
 
-//   Future<List<BookingModel>>
-//       getBookingHistory({
-//     int? statusId,
-//     int page = 1,
-//     int perPage = 10,
-//   }) async {
-//     final params = <String, dynamic>{
-//       'page': page.toString(),
+  // ─────────────────────────────────────────────────────────────
+  // THANH TOÁN — POST /api/bookings/{bookingId}/payment
+  // Body: { methodId, transactionCode?, note? }
+  // methodId: 1=Cash | 2=Transfer | 3=MoMo (tuỳ server định nghĩa)
+  // Response data: String
+  // ─────────────────────────────────────────────────────────────
 
-//       'per_page':
-//           perPage.toString(),
+  Future<void> submitPayment({
+    required int bookingId,
+    required int methodId,
+    String? transactionCode,
+    String? note,
+  }) async {
+    await _api.post(
+      '/api/bookings/$bookingId/payment',
+      body: {
+        'methodId': methodId,
+        if (transactionCode != null && transactionCode.isNotEmpty)
+          'transactionCode': transactionCode,
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+      },
+    );
+  }
 
-//       if (statusId != null)
-//         'status_id':
-//             statusId.toString(),
-//     };
+  // ─────────────────────────────────────────────────────────────
+  // LỊCH SỬ THANH TOÁN — GET /api/bookings/{bookingId}/payments
+  // ─────────────────────────────────────────────────────────────
 
-//     final data = await _api.get(
-//       '/bookings',
-//       params: params,
-//     );
+  Future<List<PaymentModel>> getPayments(int bookingId) async {
+    final res = await _api.get('/api/bookings/$bookingId/payments');
+    return res.list(PaymentModel.fromJson);
+  }
 
-//     final list =
-//         data['data'] as List<dynamic>;
+  // ─────────────────────────────────────────────────────────────
+  // THÔNG TIN ĐẶT CỌC — GET /api/bookings/{bookingId}/deposit
+  // ─────────────────────────────────────────────────────────────
 
-//     return list
-//         .map(
-//           (e) => BookingModel.fromJson(
-//             e as Map<String, dynamic>,
-//           ),
-//         )
-//         .toList();
-//   }
+  Future<DepositModel> getDeposit(int bookingId) async {
+    final res = await _api.get('/api/bookings/$bookingId/deposit');
+    return res.item(DepositModel.fromJson);
+  }
 
-//   // ─────────────────────────────────────────────────────────────
-//   // CHI TIẾT BOOKING
-//   // GET /bookings/{id}
-//   // ─────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // MOMO — POST /api/payments/momo/create/{bookingId}
+  // Response data: String (payment URL)
+  // ─────────────────────────────────────────────────────────────
 
-//   Future<BookingModel>
-//       getBookingDetail(
-//     int bookingId,
-//   ) async {
-//     final data = await _api.get(
-//       '/bookings/$bookingId',
-//     );
+  Future<String> createMoMoPayment(int bookingId) async {
+    final res = await _api.post('/api/payments/momo/create/$bookingId');
+    return res.raw<String>();
+  }
 
-//     return BookingModel.fromJson(
-//       data['data']
-//           as Map<String, dynamic>,
-//     );
-//   }
+  // ─────────────────────────────────────────────────────────────
+  // DANH SÁCH DỊCH VỤ — GET /api/services
+  // ─────────────────────────────────────────────────────────────
 
-//   // ─────────────────────────────────────────────────────────────
-//   // HỦY BOOKING
-//   // POST /bookings/{id}/cancel
-//   // ─────────────────────────────────────────────────────────────
+  Future<List<ServiceModel>> getServices({bool? isAvailable}) async {
+    final res = await _api.get(
+      '/api/services',
+      queryParameters: {
+        'isAvailable': ?isAvailable,
+      },
+    );
+    return res.list(ServiceModel.fromJson);
+  }
 
-//   Future<BookingModel>
-//       cancelBooking({
-//     required int bookingId,
-//     String? reason,
-//   }) async {
-//     final body = {
-//       'reason': ?reason,
-//     };
+  // ─────────────────────────────────────────────────────────────
+  // KIỂM TRA VOUCHER — GET /api/promotions/{code}
+  // ─────────────────────────────────────────────────────────────
 
-//     final data = await _api.post(
-//       '/bookings/$bookingId/cancel',
-//       body,
-//     );
-
-//     return BookingModel.fromJson(
-//       data['data']
-//           as Map<String, dynamic>,
-//     );
-//   }
-
-//   // ─────────────────────────────────────────────────────────────
-//   // ĐỔI LỊCH
-//   // POST /bookings/details/{detailId}/reschedule
-//   // ─────────────────────────────────────────────────────────────
-
-//   Future<BookingModel>
-//       reschedule({
-//     required int bookingDetailId,
-//     required int newFieldSlotId,
-//   }) async {
-//     final data = await _api.post(
-//       '/bookings/details/$bookingDetailId/reschedule',
-//       {
-//         'new_field_slot_id':
-//             newFieldSlotId,
-//       },
-//     );
-
-//     return BookingModel.fromJson(
-//       data['data']
-//           as Map<String, dynamic>,
-//     );
-//   }
-
-//   // ─────────────────────────────────────────────────────────────
-//   // DANH SÁCH DỊCH VỤ
-//   // GET /services
-//   // ─────────────────────────────────────────────────────────────
-
-//   Future<List<ServiceModel>>
-//       getServices() async {
-//     final data = await _api.get(
-//       '/services',
-//     );
-
-//     final list =
-//         data['data'] as List<dynamic>;
-
-//     return list
-//         .map(
-//           (e) => ServiceModel.fromJson(
-//             e as Map<String, dynamic>,
-//           ),
-//         )
-//         .toList();
-//   }
-// }
+  Future<PromotionModel> getPromotion(String code) async {
+    final res = await _api.get('/api/promotions/${code.trim()}');
+    return res.item(PromotionModel.fromJson);
+  }
+}

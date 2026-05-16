@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 
 import 'api_interceptor.dart';
 
-import 'package:klcn_app/models/paging.dart';
+import 'package:klcn_app/models/paging.dart'; // FIX: đổi từ paging_model → paging
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ERROR LAYER
@@ -222,6 +222,12 @@ class ApiClient {
     Map<String, dynamic>? body,
     Options? options,
   }) => _execute(() => dio.delete(path, data: body ?? {}, options: options));
+
+  Future<ApiResponse> patch(
+    String path, {
+    Map<String, dynamic>? body,
+    Options? options,
+  }) => _execute(() => dio.patch(path, data: body ?? {}, options: options));
 
   /// Upload multipart/form-data — POST.
   Future<ApiResponse> postForm(String path, FormData formData) => _execute(

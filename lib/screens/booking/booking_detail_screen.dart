@@ -1,33 +1,27 @@
 // lib/screens/booking/booking_detail_screen.dart
+//
+// extra: BookingSummary (từ history) hoặc BookingModel (từ success screen)
+// Luôn gọi API để lấy full detail
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../models/booking.dart';
+import '../../services/booking_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
-// ── MODELS + DATA ─────────────────────────────
-enum _BookingStatus { booked, completed, cancelled }
-
-class _TimelineEvent {
-  final String time;
-  final String label;
-  final String desc;
-  final bool done;
-  const _TimelineEvent(this.time, this.label, this.desc, {this.done = false});
+String _fmtMoney(double amount) {
+  final s = amount.toStringAsFixed(0);
+  final buf = StringBuffer();
+  for (int i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
+    buf.write(s[i]);
+  }
+  return '$bufđ';
 }
 
-const _mockStatus = _BookingStatus.booked;
-
-final _timeline = [
-  const _TimelineEvent('20/10 08:12', 'Đặt sân thành công',  'Đơn đặt #AS-9821 đã được xác nhận', done: true),
-  const _TimelineEvent('20/10 08:13', 'Chờ thanh toán',      'Vui lòng thanh toán trước khi đến sân', done: true),
-  const _TimelineEvent('20/10 18:00', 'Đến sân',             'Xuất trình mã đặt sân tại quầy check-in'),
-  const _TimelineEvent('20/10 19:00', 'Hoàn thành',          'Kết thúc khung giờ thi đấu'),
-];
-
-// ─────────────────────────────────────────────
-//  BOOKING DETAIL SCREEN
-// ─────────────────────────────────────────────
 class BookingDetailScreen extends StatefulWidget {
   const BookingDetailScreen({super.key});
 
@@ -36,47 +30,105 @@ class BookingDetailScreen extends StatefulWidget {
 }
 
 class _BookingDetailScreenState extends State<BookingDetailScreen> {
-  final _status = _mockStatus;
-  bool _isLoadingPay    = false;
-  bool isLoadingCancel = false;
+  int? _bookingId;
+  BookingModel? _booking;
 
-  void _onPay() {
-    setState(() => _isLoadingPay = true);
-    // TODO: PaymentService.pay(bookingId)
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (!mounted) return;
-      setState(() => _isLoadingPay = false);
-      Navigator.pushNamed(context, '/payment');
-    });
+  bool _isLoading       = false;
+  bool _isCancelling    = false;
+  bool _isPayingMoMo    = false;
+  String? _errorMsg;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_bookingId == null) {
+      final extra = GoRouterState.of(context).extra;
+      if (extra is BookingSummary) {
+        _bookingId = extra.bookingId;
+      } else if (extra is BookingModel) {
+        _booking   = extra;
+        _bookingId = extra.bookingId;
+      }
+      _loadDetail();
+    }
   }
 
-  void _onReview()  => Navigator.pushNamed(context, '/review');
-  void _onRebook()  => Navigator.pushNamed(context, '/booking_confirm');
-  void _onSupport() => Navigator.pushNamed(context, '/support');
+  Future<void> _loadDetail() async {
+    if (_bookingId == null) return;
+    setState(() { _isLoading = true; _errorMsg = null; });
+    try {
+      final detail = await BookingService.instance.getBookingDetail(_bookingId!);
+      if (!mounted) return;
+      setState(() { _booking = detail; _isLoading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _errorMsg = e.toString(); _isLoading = false; });
+    }
+  }
 
-  void _onCancel() {
-    showDialog(
+  Future<void> _onPayMoMo() async {
+    if (_bookingId == null) return;
+    setState(() => _isPayingMoMo = true);
+    try {
+      await BookingService.instance.createMoMoPayment(_bookingId!);
+      // TODO: mở URL MoMo qua url_launcher
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack(e.toString(), isError: true);
+    } finally {
+      if (mounted) setState(() => _isPayingMoMo = false);
+    }
+  }
+
+  Future<void> _onCancel() async {
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Xác nhận hủy', style: TextStyle(fontWeight: FontWeight.w700)),
-        content: const Text('Bạn có chắc muốn hủy đơn đặt sân này không?\nSẽ được hoàn tiền 100%.'),
+        title: const Text('Xác nhận hủy',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+        content: const Text(
+            'Bạn có chắc muốn hủy đơn đặt sân này không?\nSẽ được hoàn tiền 100%.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Không', style: TextStyle(color: AppColors.textMid)),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Không',
+                style: TextStyle(color: AppColors.textMid)),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: BookingService.cancel(bookingId)
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Hủy đặt sân',
-                style: TextStyle(color: AppColors.badgeCancelText, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: AppColors.badgeCancelText, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
     );
+
+    if (confirm != true || !mounted) return;
+    setState(() => _isCancelling = true);
+    try {
+      await BookingService.instance.cancelBooking(bookingId: _bookingId!);
+      if (!mounted) return;
+      _showSnack('Đã hủy đơn đặt sân');
+      await _loadDetail();
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack(e.toString(), isError: true);
+    } finally {
+      if (mounted) setState(() => _isCancelling = false);
+    }
+  }
+
+  void _onReview() {
+    // TODO: push review screen khi có
+  }
+
+  void _showSnack(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: isError ? AppColors.errorRed : AppColors.primary,
+    ));
   }
 
   @override
@@ -86,89 +138,151 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bgPage,
         appBar: AppBar(
+          title: const Text('Chi tiết đơn đặt'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.maybePop(context),
+            onPressed: () => context.pop(),
           ),
-          title: const Text('Chi tiết đơn đặt'),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.ios_share_outlined),
-              onPressed: () {}, // TODO: Share.share(bookingDetails)
-            ),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.all(14),
+                child: SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(
+                        color: AppColors.primary, strokeWidth: 2)),
+              ),
           ],
         ),
-        bottomNavigationBar: _ActionBar(
-          status: _status,
-          isLoadingPay: _isLoadingPay,
-          isLoadingCancel: isLoadingCancel,
-          onPay: _onPay,
-          onReview: _onReview,
-          onRebook: _onRebook,
-          onCancel: _onCancel,
-          onSupport: _onSupport,
+        bottomNavigationBar: _booking != null
+            ? _ActionBar(
+                booking:      _booking!,
+                isPayingMoMo: _isPayingMoMo,
+                isCancelling: _isCancelling,
+                onPayMoMo:    _onPayMoMo,
+                onCancel:     _onCancel,
+                onReview:     _onReview,
+                onRebook: () => context.go('/fields'),
+              )
+            : null,
+        body: _buildBody(),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading && _booking == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (_errorMsg != null && _booking == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 52, color: AppColors.textLight),
+              const SizedBox(height: 16),
+              Text(_errorMsg!, textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.textMid, fontSize: 14)),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: _loadDetail,
+                child: const Text('Thử lại',
+                    style: TextStyle(color: AppColors.primary,
+                        fontWeight: FontWeight.w700, fontSize: 15)),
+              ),
+            ],
+          ),
         ),
-        body: CustomScrollView(
-          slivers: [
-            // Hero
+      );
+    }
+
+    final booking = _booking;
+    if (booking == null) return const SizedBox.shrink();
+
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: _loadDetail,
+      child: CustomScrollView(
+        slivers: [
+          // Hero
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.pagePadH, 16, AppSpacing.pagePadH, 0,
+              ),
+              child: _HeroCard(booking: booking),
+            ),
+          ),
+
+          // Status + booking ID
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0,
+              ),
+              child: _StatusCard(booking: booking),
+            ),
+          ),
+
+          // Slot details
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0,
+              ),
+              child: _SlotCard(booking: booking),
+            ),
+          ),
+
+          // Services
+          if (booking.services.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 16, AppSpacing.pagePadH, 0),
-                child: _HeroCard(),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0,
+                ),
+                child: _ServicesCard(booking: booking),
               ),
             ),
 
-            // Booking code + status
+          // Payment summary
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0,
+              ),
+              child: _PaymentCard(booking: booking),
+            ),
+          ),
+
+          // Deposit info
+          if (booking.deposit != null)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
-                child: _BookingCodeRow(status: _status),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0,
+                ),
+                child: _DepositCard(deposit: booking.deposit!),
               ),
             ),
 
-            // Detail info
+          // Cancel reason
+          if (booking.cancelReason != null && booking.cancelReason!.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
-                child: _DetailInfoCard(),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0,
+                ),
+                child: _CancelReasonCard(reason: booking.cancelReason!),
               ),
             ),
 
-            // Add-ons
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
-                child: _AddonsCard(),
-              ),
-            ),
-
-            // Payment summary
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
-                child: _PaymentSummaryCard(status: _status),
-              ),
-            ),
-
-            // Timeline
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
-                child: _TimelineCard(),
-              ),
-            ),
-
-            // Support
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0),
-                child: _SupportRow(onTap: _onSupport),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 32)),
-          ],
-        ),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+        ],
       ),
     );
   }
@@ -176,12 +290,15 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
 // ── HERO CARD ─────────────────────────────────
 class _HeroCard extends StatelessWidget {
+  final BookingModel booking;
+  const _HeroCard({required this.booking});
+
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
       child: SizedBox(
-        height: 180,
+        height: 160,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -189,8 +306,8 @@ class _HeroCard extends StatelessWidget {
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Color(0xFF1565C0), Color(0xFF1B5E20)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
               child: const Center(
@@ -210,32 +327,12 @@ class _HeroCard extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: 14,
-              bottom: 14,
-              right: 14,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                        color: AppColors.primary, borderRadius: BorderRadius.circular(5)),
-                    child: const Text('SÂN CAO CẤP',
-                        style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800)),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text('Arena Santiago',
-                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: const [
-                      Icon(Icons.location_on_outlined, size: 13, color: Colors.white70),
-                      SizedBox(width: 3),
-                      Text('Phú Nhuận, TP.HCM',
-                          style: TextStyle(color: Colors.white70, fontSize: 12.5)),
-                    ],
-                  ),
-                ],
+              left: 14, bottom: 14, right: 14,
+              child: Text(
+                booking.primaryField,
+                style: const TextStyle(
+                  color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ],
@@ -245,26 +342,21 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// ── BOOKING CODE ROW ──────────────────────────
-class _BookingCodeRow extends StatelessWidget {
-  final _BookingStatus status;
-  const _BookingCodeRow({required this.status});
+// ── STATUS CARD ───────────────────────────────
+class _StatusCard extends StatelessWidget {
+  final BookingModel booking;
+  const _StatusCard({required this.booking});
 
-  (String, Color, Color) get _badge => switch (status) {
-    _BookingStatus.booked    => ('ĐÃ ĐẶT',    AppColors.badgeBookedText, AppColors.badgeBookedBg),
-    _BookingStatus.completed => ('HOÀN THÀNH', AppColors.badgeDoneText,  AppColors.badgeDoneBg),
-    _BookingStatus.cancelled => ('ĐÃ HỦY',    AppColors.badgeCancelText, AppColors.badgeCancelBg),
-  };
-
-  Color get _codeColor => switch (status) {
-    _BookingStatus.booked    => AppColors.primary,
-    _BookingStatus.completed => AppColors.textDark,
-    _BookingStatus.cancelled => AppColors.badgeCancelText,
+  ({String text, Color textColor, Color bgColor}) get _badge => switch (booking.statusId) {
+    1 => (text: 'ĐÃ ĐẶT',    textColor: AppColors.badgeBookedText, bgColor: AppColors.badgeBookedBg),
+    2 => (text: 'HOÀN THÀNH', textColor: AppColors.badgeDoneText,  bgColor: AppColors.badgeDoneBg),
+    3 => (text: 'ĐÃ HỦY',    textColor: AppColors.badgeCancelText, bgColor: AppColors.badgeCancelBg),
+    _ => (text: booking.status.toUpperCase(), textColor: AppColors.textMid, bgColor: AppColors.fieldBg),
   };
 
   @override
   Widget build(BuildContext context) {
-    final (label, txtColor, bgColor) = _badge;
+    final badge = _badge;
     return SpCard(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -276,20 +368,201 @@ class _BookingCodeRow extends StatelessWidget {
                   style: TextStyle(color: AppColors.textHint, fontSize: 10,
                       fontWeight: FontWeight.w700, letterSpacing: 0.8)),
               const SizedBox(height: 4),
-              Text('#AS-9821',
-                  style: TextStyle(color: _codeColor, fontSize: 20,
-                      fontWeight: FontWeight.w900, letterSpacing: 0.3)),
+              Text('#${booking.bookingId}',
+                  style: const TextStyle(
+                    color: AppColors.primary, fontSize: 20, fontWeight: FontWeight.w900,
+                  )),
             ],
           ),
-          SpStatusBadge(label: label, textColor: txtColor, bgColor: bgColor),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: badge.bgColor, borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(badge.text,
+                style: TextStyle(
+                  color: badge.textColor, fontSize: 12, fontWeight: FontWeight.w800,
+                )),
+          ),
         ],
       ),
     );
   }
 }
 
-// ── DETAIL INFO CARD ──────────────────────────
-class _DetailInfoCard extends StatelessWidget {
+// ── SLOT CARD ─────────────────────────────────
+class _SlotCard extends StatelessWidget {
+  final BookingModel booking;
+  const _SlotCard({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    return SpCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('CHI TIẾT SLOT',
+              style: TextStyle(color: AppColors.textHint, fontSize: 10.5,
+                  fontWeight: FontWeight.w700, letterSpacing: 1.2)),
+          const SizedBox(height: 12),
+          ...booking.details.map((d) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryUltraLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.sports_soccer_outlined,
+                      color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(d.fieldName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700, color: AppColors.textDark,
+                          )),
+                      Text(
+                        '${d.displayDate}  •  ${d.displayTime}',
+                        style: const TextStyle(color: AppColors.textMid, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(d.priceFmt,
+                    style: const TextStyle(
+                      color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 14,
+                    )),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+}
+
+// ── SERVICES CARD ─────────────────────────────
+class _ServicesCard extends StatelessWidget {
+  final BookingModel booking;
+  const _ServicesCard({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    return SpCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('DỊCH VỤ ĐI KÈM',
+              style: TextStyle(color: AppColors.textHint, fontSize: 10.5,
+                  fontWeight: FontWeight.w700, letterSpacing: 1.2)),
+          const SizedBox(height: 12),
+          ...booking.services.map((s) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${s.serviceName} ×${s.quantity}',
+                    style: const TextStyle(color: AppColors.textDark, fontSize: 14),
+                  ),
+                ),
+                Text(s.totalFmt,
+                    style: const TextStyle(
+                      color: AppColors.textDark, fontWeight: FontWeight.w700,
+                    )),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+}
+
+// ── PAYMENT CARD ──────────────────────────────
+class _PaymentCard extends StatelessWidget {
+  final BookingModel booking;
+  const _PaymentCard({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    return SpCard(
+      child: Column(
+        children: [
+          if (booking.discountAmount > 0) ...[
+            _PayRow('Tiền sân + dịch vụ', _fmtMoney(booking.subTotal)),
+            const SizedBox(height: 6),
+            _PayRow('Giảm giá', '-${_fmtMoney(booking.discountAmount)}',
+                valueColor: AppColors.badgeCancelText),
+            const SizedBox(height: 6),
+          ],
+          if (booking.taxAmount > 0) ...[
+            _PayRow('Thuế', _fmtMoney(booking.taxAmount)),
+            const SizedBox(height: 6),
+          ],
+          const Divider(color: AppColors.fieldBorder),
+          const SizedBox(height: 6),
+          _PayRow('Tổng cộng', _fmtMoney(booking.totalAmount), isTotal: true),
+          if (booking.promotionCode != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.local_offer_outlined,
+                    size: 14, color: AppColors.primary),
+                const SizedBox(width: 4),
+                Text(
+                  'Mã: ${booking.promotionCode}',
+                  style: const TextStyle(color: AppColors.primary, fontSize: 12.5),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PayRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isTotal;
+  final Color? valueColor;
+  const _PayRow(this.label, this.value, {this.isTotal = false, this.valueColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: TextStyle(
+              color: isTotal ? AppColors.textDark : AppColors.textMid,
+              fontSize: isTotal ? 15 : 14,
+              fontWeight: isTotal ? FontWeight.w700 : FontWeight.normal,
+            )),
+        Text(value,
+            style: TextStyle(
+              color: valueColor ?? (isTotal ? AppColors.primary : AppColors.textDark),
+              fontSize: isTotal ? 18 : 14,
+              fontWeight: FontWeight.w800,
+            )),
+      ],
+    );
+  }
+}
+
+// ── DEPOSIT CARD ──────────────────────────────
+class _DepositCard extends StatelessWidget {
+  final DepositModel deposit;
+  const _DepositCard({required this.deposit});
+
   @override
   Widget build(BuildContext context) {
     return SpCard(
@@ -297,31 +570,70 @@ class _DetailInfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Icon(Icons.calendar_month_outlined, color: AppColors.primary, size: 16),
-              SizedBox(width: 6),
-              Text('THÔNG TIN ĐẶT SÂN',
-                  style: TextStyle(color: AppColors.primary, fontSize: 11.5,
-                      fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('THÔNG TIN ĐẶT CỌC',
+                  style: TextStyle(color: AppColors.textHint, fontSize: 10.5,
+                      fontWeight: FontWeight.w700, letterSpacing: 1.2)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: deposit.isPaid ? AppColors.badgeBookedBg : AppColors.badgeCancelBg,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  deposit.status,
+                  style: TextStyle(
+                    color: deposit.isPaid
+                        ? AppColors.badgeBookedText : AppColors.badgeCancelText,
+                    fontSize: 11, fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _InfoCell(label: 'NGÀY', value: '20/10/2026')),
+              Expanded(
+                child: _InfoCell(
+                  label: 'Cần đặt cọc',
+                  value: _fmtMoney(deposit.requiredAmount),
+                ),
+              ),
               const SizedBox(width: 10),
-              Expanded(child: _InfoCell(label: 'KHUNG GIỜ', value: '18:00 – 19:00')),
+              Expanded(
+                child: _InfoCell(
+                  label: 'Đã thanh toán',
+                  value: _fmtMoney(deposit.paidAmount),
+                  valueColor: AppColors.primary,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: _InfoCell(label: 'THỜI LƯỢNG', value: '1 giờ')),
-              const SizedBox(width: 10),
-              Expanded(child: _InfoCell(label: 'PHƯƠNG THỨC', value: 'Online',
-                  icon: Icons.account_balance_wallet_outlined)),
-            ],
-          ),
+          if (!deposit.isPaid && deposit.minutesLeft > 0) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3E0),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.warningOrange.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.access_time_rounded,
+                      size: 16, color: AppColors.warningOrange),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Còn ${deposit.minutesLeft} phút để thanh toán',
+                    style: const TextStyle(
+                        color: AppColors.warningOrange, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -331,312 +643,61 @@ class _DetailInfoCard extends StatelessWidget {
 class _InfoCell extends StatelessWidget {
   final String label;
   final String value;
-  final IconData? icon;
-  const _InfoCell({required this.label, required this.value, this.icon});
+  final Color? valueColor;
+  const _InfoCell({required this.label, required this.value, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.fieldBg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.fieldBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: const TextStyle(color: AppColors.textHint, fontSize: 9.5,
-                  fontWeight: FontWeight.w700, letterSpacing: 0.6)),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 13, color: AppColors.primary),
-                const SizedBox(width: 4),
-              ],
-              Text(value,
-                  style: const TextStyle(
-                      color: AppColors.textDark, fontSize: 13.5, fontWeight: FontWeight.w700)),
-            ],
-          ),
+              style: const TextStyle(
+                color: AppColors.textHint, fontSize: 11,
+              )),
+          const SizedBox(height: 4),
+          Text(value,
+              style: TextStyle(
+                color: valueColor ?? AppColors.textDark,
+                fontWeight: FontWeight.w800, fontSize: 14,
+              )),
         ],
       ),
     );
   }
 }
 
-// ── ADD-ONS CARD ──────────────────────────────
-class _AddonsCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SpCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.add_shopping_cart_outlined, color: AppColors.primary, size: 16),
-              SizedBox(width: 6),
-              Text('DỊCH VỤ ĐI KÈM',
-                  style: TextStyle(color: AppColors.primary, fontSize: 11.5,
-                      fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _AddonChip(icon: Icons.water_drop_outlined, label: 'Nước uống × 1', price: '20.000đ'),
-              _AddonChip(icon: Icons.sports_soccer,       label: 'Thuê bóng × 1', price: '50.000đ'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddonChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String price;
-  const _AddonChip({required this.icon, required this.label, required this.price});
+// ── CANCEL REASON CARD ────────────────────────
+class _CancelReasonCard extends StatelessWidget {
+  final String reason;
+  const _CancelReasonCard({required this.reason});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.primaryUltraLight,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        color: AppColors.badgeCancelBg,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: AppColors.badgeCancelText.withValues(alpha: 0.3)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: AppColors.primary, size: 15),
-          const SizedBox(width: 6),
-          Text(label, style: const TextStyle(color: AppColors.primary, fontSize: 12.5, fontWeight: FontWeight.w600)),
-          const SizedBox(width: 6),
-          Text(price, style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
-        ],
-      ),
-    );
-  }
-}
-
-// ── PAYMENT SUMMARY ───────────────────────────
-class _PaymentSummaryCard extends StatelessWidget {
-  final _BookingStatus status;
-  const _PaymentSummaryCard({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final isPaid      = status == _BookingStatus.completed;
-    final isCancelled = status == _BookingStatus.cancelled;
-
-    return SpCard(
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.receipt_long_outlined, color: AppColors.primary, size: 16),
-              const SizedBox(width: 6),
-              const Text('THANH TOÁN',
-                  style: TextStyle(color: AppColors.primary, fontSize: 11.5,
-                      fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-              const Spacer(),
-              SpStatusBadge(
-                label: isCancelled ? 'Đã hoàn tiền' : isPaid ? 'Đã thanh toán' : 'Chưa thanh toán',
-                textColor: isCancelled ? AppColors.badgeCancelText
-                    : isPaid ? AppColors.badgeBookedText : const Color(0xFFF57F17),
-                bgColor: isCancelled ? AppColors.badgeCancelBg
-                    : isPaid ? AppColors.badgeBookedBg : const Color(0xFFFFF8E1),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          _PriceRow(label: 'Tiền thuê sân',  value: '450.000đ'),
-          const SizedBox(height: 8),
-          _PriceRow(label: 'Dịch vụ đi kèm', value: '70.000đ'),
-          const SizedBox(height: 14),
-          SizedBox(height: 1, child: CustomPaint(painter: SpDashPainter())),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Text('Tổng cộng',
-                  style: TextStyle(color: AppColors.textDark, fontSize: 15, fontWeight: FontWeight.w700)),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('520.000đ',
-                      style: TextStyle(
-                          color: isCancelled ? AppColors.textHint : AppColors.primary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          decoration: isCancelled ? TextDecoration.lineThrough : null)),
-                  const Text('Đã bao gồm VAT',
-                      style: TextStyle(color: AppColors.textLight, fontSize: 10)),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PriceRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _PriceRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(color: AppColors.textLight, fontSize: 13.5)),
-        Text(value, style: const TextStyle(color: AppColors.textDark, fontSize: 13.5, fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
-}
-
-// ── TIMELINE CARD ─────────────────────────────
-class _TimelineCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SpCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
-              Icon(Icons.timeline_outlined, color: AppColors.primary, size: 16),
-              SizedBox(width: 6),
-              Text('TIẾN TRÌNH ĐẶT SÂN',
-                  style: TextStyle(color: AppColors.primary, fontSize: 11.5,
-                      fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ..._timeline.asMap().entries.map((e) =>
-              _TimelineItem(event: e.value, isLast: e.key == _timeline.length - 1)),
+          const Text('LÝ DO HỦY',
+              style: TextStyle(color: AppColors.badgeCancelText, fontSize: 10.5,
+                  fontWeight: FontWeight.w700, letterSpacing: 1.2)),
+          const SizedBox(height: 8),
+          Text(reason,
+              style: const TextStyle(color: AppColors.textMid, fontSize: 14, height: 1.5)),
         ],
-      ),
-    );
-  }
-}
-
-class _TimelineItem extends StatelessWidget {
-  final _TimelineEvent event;
-  final bool isLast;
-  const _TimelineItem({required this.event, required this.isLast});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 24,
-          child: Column(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: event.done ? AppColors.primary : AppColors.textHint,
-                  shape: BoxShape.circle,
-                ),
-                child: event.done
-                    ? const Icon(Icons.check, color: Colors.white, size: 7)
-                    : null,
-              ),
-              if (!isLast)
-                Container(
-                  width: 2,
-                  height: 44,
-                  color: event.done
-                      ? AppColors.primary.withValues(alpha: 0.3)
-                      : AppColors.fieldBorder,
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(event.label,
-                    style: TextStyle(
-                        color: event.done ? AppColors.textDark : AppColors.textLight,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700)),
-                const SizedBox(height: 2),
-                Text(event.desc,
-                    style: TextStyle(
-                        color: event.done ? AppColors.textMid : AppColors.textLight,
-                        fontSize: 12)),
-                const SizedBox(height: 3),
-                Text(event.time,
-                    style: const TextStyle(color: AppColors.textLight, fontSize: 11)),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── SUPPORT ROW ───────────────────────────────
-class _SupportRow extends StatelessWidget {
-  final VoidCallback onTap;
-  const _SupportRow({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: SpCard(
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: AppColors.primaryUltraLight,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: const Icon(Icons.headset_mic_outlined, color: AppColors.primary, size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Cần hỗ trợ về đơn đặt này?',
-                      style: TextStyle(color: AppColors.textDark, fontSize: 13.5, fontWeight: FontWeight.w700)),
-                  SizedBox(height: 2),
-                  Text('Liên hệ hỗ trợ 24/7',
-                      style: TextStyle(color: AppColors.primary, fontSize: 12)),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: AppColors.textHint, size: 22),
-          ],
-        ),
       ),
     );
   }
@@ -644,19 +705,22 @@ class _SupportRow extends StatelessWidget {
 
 // ── ACTION BAR ────────────────────────────────
 class _ActionBar extends StatelessWidget {
-  final _BookingStatus status;
-  final bool isLoadingPay, isLoadingCancel;
-  final VoidCallback onPay, onReview, onRebook, onCancel, onSupport;
+  final BookingModel booking;
+  final bool isPayingMoMo;
+  final bool isCancelling;
+  final VoidCallback onPayMoMo;
+  final VoidCallback onCancel;
+  final VoidCallback onReview;
+  final VoidCallback onRebook;
 
   const _ActionBar({
-    required this.status,
-    required this.isLoadingPay,
-    required this.isLoadingCancel,
-    required this.onPay,
+    required this.booking,
+    required this.isPayingMoMo,
+    required this.isCancelling,
+    required this.onPayMoMo,
+    required this.onCancel,
     required this.onReview,
     required this.onRebook,
-    required this.onCancel,
-    required this.onSupport,
   });
 
   @override
@@ -665,47 +729,74 @@ class _ActionBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -3)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12, offset: const Offset(0, -3),
+          ),
         ],
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH, vertical: 12),
-          child: switch (status) {
-            _BookingStatus.booked => Row(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.pagePadH, vertical: 12),
+          child: switch (booking.statusId) {
+            1 => Row(
               children: [
                 Expanded(
                   flex: 2,
-                  child: _ActionBtn(label: 'Thanh toán', icon: Icons.payment_outlined,
-                      isLoading: isLoadingPay, onTap: onPay,
-                      color: AppColors.primary, textColor: Colors.white),
+                  child: _ActionBtn(
+                    label: 'Thanh toán',
+                    icon: Icons.account_balance_wallet_outlined,
+                    isLoading: isPayingMoMo,
+                    onTap: onPayMoMo,
+                    color: AppColors.primary,
+                    textColor: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _ActionBtn(label: 'Hủy đặt', icon: Icons.cancel_outlined,
-                      isLoading: isLoadingCancel, onTap: onCancel,
-                      color: AppColors.badgeCancelBg, textColor: AppColors.badgeCancelText,
-                      borderColor: const Color(0xFFFFCDD2)),
+                  child: _ActionBtn(
+                    label: 'Hủy đặt',
+                    icon: Icons.cancel_outlined,
+                    isLoading: isCancelling,
+                    onTap: onCancel,
+                    color: AppColors.badgeCancelBg,
+                    textColor: AppColors.badgeCancelText,
+                    borderColor: const Color(0xFFFFCDD2),
+                  ),
                 ),
               ],
             ),
-            _BookingStatus.completed => Row(
+            2 => Row(
               children: [
                 Expanded(
-                  child: _ActionBtn(label: 'Đánh giá', icon: Icons.star_outline_rounded,
-                      onTap: onReview, color: Colors.white, textColor: AppColors.textDark,
-                      borderColor: AppColors.fieldBorder),
+                  child: _ActionBtn(
+                    label: 'Đánh giá',
+                    icon: Icons.star_outline_rounded,
+                    onTap: onReview,
+                    color: Colors.white,
+                    textColor: AppColors.textDark,
+                    borderColor: AppColors.fieldBorder,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _ActionBtn(label: 'Đặt lại', icon: Icons.refresh_rounded,
-                      onTap: onRebook, color: AppColors.primary, textColor: Colors.white),
+                  child: _ActionBtn(
+                    label: 'Đặt lại',
+                    icon: Icons.refresh_rounded,
+                    onTap: onRebook,
+                    color: AppColors.primary,
+                    textColor: Colors.white,
+                  ),
                 ),
               ],
             ),
-            _BookingStatus.cancelled => _ActionBtn(
-              label: 'Liên hệ hỗ trợ', icon: Icons.headset_mic_outlined,
-              onTap: onSupport, color: Colors.white, textColor: AppColors.textDark,
+            _ => _ActionBtn(
+              label: 'Về trang chủ',
+              icon: Icons.home_outlined,
+              onTap: () => context.go('/home'),
+              color: Colors.white,
+              textColor: AppColors.textDark,
               borderColor: AppColors.fieldBorder,
             ),
           },
@@ -747,15 +838,19 @@ class _ActionBtn extends StatelessWidget {
           boxShadow: color == AppColors.primary ? AppShadow.btn : [],
         ),
         child: isLoading
-            ? Center(child: SizedBox(width: 20, height: 20,
-                child: CircularProgressIndicator(color: textColor, strokeWidth: 2)))
+            ? Center(
+                child: SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(color: textColor, strokeWidth: 2)),
+              )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(icon, color: textColor, size: 17),
                   const SizedBox(width: 6),
                   Text(label,
-                      style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w700)),
+                      style: TextStyle(
+                        color: textColor, fontSize: 14, fontWeight: FontWeight.w700,
+                      )),
                 ],
               ),
       ),
