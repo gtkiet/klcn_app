@@ -28,10 +28,10 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<double> _scaleAnim;
 
   @override
-  void initState() {
+  Future<void> initState() async {
     super.initState();
     _initAnimations();
-    AuthGuard.instance.init();
+    await AuthGuard.instance.init();
   }
 
   void _initAnimations() {

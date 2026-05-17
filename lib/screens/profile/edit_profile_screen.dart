@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 
 import '../../services/profile_service.dart';
 import '../../session/user_session.dart';
@@ -21,16 +21,16 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _session = UserSession.instance;
 
-  late final _nameCtrl = TextEditingController(text: _session.fullName ?? '');
-  late final _phoneCtrl = TextEditingController(text: _session.phone ?? '');
-  late final _addressCtrl = TextEditingController(text: _session.address ?? '');
+  late final _nameCtrl    = TextEditingController(text: _session.fullName ?? '');
+  late final _phoneCtrl   = TextEditingController(text: _session.phone    ?? '');
+  late final _addressCtrl = TextEditingController(text: _session.address  ?? '');
 
-  final _nameFocus = FocusNode();
-  final _phoneFocus = FocusNode();
+  final _nameFocus    = FocusNode();
+  final _phoneFocus   = FocusNode();
   final _addressFocus = FocusNode();
 
   DateTime? _selectedDob;
-  bool _isLoading = false;
+  bool _isLoading         = false;
   bool _isUploadingAvatar = false;
 
   String? _nameError;
@@ -39,9 +39,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
+    // Parse dob từ session nếu có
     if (_session.dateOfBirth != null) {
       _selectedDob = DateTime.tryParse(_session.dateOfBirth!);
     }
+    // Fetch fresh data, điền lại form nếu có gì mới
     _loadFreshProfile();
   }
 
@@ -49,24 +51,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final user = await ProfileService.instance.getProfile();
       if (!mounted) return;
-      _nameCtrl.text = user.fullName;
-      _phoneCtrl.text = user.phone;
+      _nameCtrl.text    = user.fullName;
+      _phoneCtrl.text   = user.phone;
       _addressCtrl.text = user.address ?? '';
       setState(() => _selectedDob = user.dateOfBirth);
-    } catch (_) {}
+    } catch (_) {
+      // Giữ dữ liệu session
+    }
   }
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
-    _nameFocus.dispose();
-    _phoneCtrl.dispose();
-    _phoneFocus.dispose();
-    _addressCtrl.dispose();
-    _addressFocus.dispose();
+    _nameCtrl.dispose();    _nameFocus.dispose();
+    _phoneCtrl.dispose();   _phoneFocus.dispose();
+    _addressCtrl.dispose(); _addressFocus.dispose();
     super.dispose();
   }
 
+  // ── Validate ──────────────────────────────────────────────────
   bool _validate() {
     setState(() {
       _nameError = _nameCtrl.text.trim().isEmpty
@@ -79,6 +81,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return _nameError == null && _phoneError == null;
   }
 
+  // ── Save profile ───────────────────────────────────────────────
   Future<void> _onSave() async {
     FocusScope.of(context).unfocus();
     if (!_validate()) return;
@@ -86,40 +89,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isLoading = true);
     try {
       await ProfileService.instance.updateProfile(
-        fullName: _nameCtrl.text.trim(),
-        phone: _phoneCtrl.text.trim(),
+        fullName:    _nameCtrl.text.trim(),
+        phone:       _phoneCtrl.text.trim(),
         dateOfBirth: _selectedDob,
-        address: _addressCtrl.text.trim().isNotEmpty
+        address:     _addressCtrl.text.trim().isNotEmpty
             ? _addressCtrl.text.trim()
             : null,
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Hồ sơ đã được cập nhật thành công!'),
-            backgroundColor: AppColors.primary,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        context.pop();
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hồ sơ đã được cập nhật thành công!'),
+          backgroundColor: AppColors.primary,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      context.pop();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppColors.errorRed,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // ── CHỌN ẢNH ─────────────────────────────────────────────────────────────
+  // ── Pick & upload avatar ───────────────────────────────────────
   Future<void> _onPickAvatar() async {
-    // Hiện bottom sheet cho user chọn nguồn ảnh
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -131,6 +131,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Handle bar
               Container(
                 width: 40,
                 height: 4,
@@ -151,51 +152,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 12),
               ListTile(
-                leading: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryUltraLight,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.photo_library_outlined,
-                    color: AppColors.primary,
-                    size: 22,
-                  ),
-                ),
+                leading: _SheetIconBox(Icons.photo_library_outlined),
                 title: const Text(
                   'Chọn từ thư viện',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
                 subtitle: const Text(
                   'Chọn ảnh có sẵn trên thiết bị',
-                  style: TextStyle(fontSize: 12.5),
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textLight),
                 ),
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
               ),
               const Divider(indent: 70, endIndent: 16, height: 1),
               ListTile(
-                leading: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryUltraLight,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt_outlined,
-                    color: AppColors.primary,
-                    size: 22,
-                  ),
-                ),
+                leading: _SheetIconBox(Icons.camera_alt_outlined),
                 title: const Text(
                   'Chụp ảnh mới',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
                 subtitle: const Text(
                   'Dùng camera để chụp ảnh đại diện',
-                  style: TextStyle(fontSize: 12.5),
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textLight),
                 ),
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
               ),
@@ -208,13 +185,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (source == null || !mounted) return;
 
-    // Pick ảnh từ nguồn đã chọn
     final picker = ImagePicker();
-    final file = await picker.pickImage(
-      source: source,
-      imageQuality: 85, // nén nhẹ để giảm dung lượng upload
-      maxWidth: 1024,
-      maxHeight: 1024,
+    final file   = await picker.pickImage(
+      source:       source,
+      imageQuality: 85,
+      maxWidth:     1024,
+      maxHeight:    1024,
     );
 
     if (file == null || !mounted) return;
@@ -222,30 +198,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isUploadingAvatar = true);
     try {
       await ProfileService.instance.updateAvatar(file.path);
-      // session.avatarUrlNotifier đã được update trong service
-      // → ValueListenableBuilder tự rebuild avatar
+      // session.avatarUrlNotifier đã update trong service
+      // → ValueListenableBuilder tự rebuild
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Cập nhật ảnh thất bại: ${e.toString()}'),
-            backgroundColor: AppColors.errorRed,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cập nhật ảnh thất bại: ${e.toString()}'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isUploadingAvatar = false);
     }
   }
 
+  // ── Date picker ────────────────────────────────────────────────
   Future<void> _pickDob() async {
-    final now = DateTime.now();
+    final now    = DateTime.now();
     final picked = await showDatePicker(
-      context: context,
+      context:     context,
       initialDate: _selectedDob ?? DateTime(now.year - 20),
-      firstDate: DateTime(1940),
-      lastDate: DateTime(now.year - 5),
-      locale: const Locale('vi'),
+      firstDate:   DateTime(1940),
+      lastDate:    DateTime(now.year - 5),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(primary: AppColors.primary),
@@ -273,6 +248,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           title: const Text('Chỉnh sửa hồ sơ'),
           actions: [
+            // Nút Lưu nhanh trên AppBar
             GestureDetector(
               onTap: _isLoading ? null : _onSave,
               child: Padding(
@@ -304,13 +280,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               children: [
                 const SizedBox(height: 28),
 
+                // ── Avatar ──────────────────────────────────────
                 Center(
                   child: _AvatarSection(
                     isUploading: _isUploadingAvatar,
-                    onTap: _onPickAvatar,
+                    onTap:       _onPickAvatar,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
 
                 Center(
                   child: Text(
@@ -334,41 +311,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 const SizedBox(height: 30),
 
+                // ── Họ và tên ───────────────────────────────────
                 const SpFieldLabel('HỌ VÀ TÊN'),
                 const SizedBox(height: 8),
                 _ProfileField(
-                  controller: _nameCtrl,
-                  focusNode: _nameFocus,
+                  controller:    _nameCtrl,
+                  focusNode:     _nameFocus,
                   nextFocusNode: _phoneFocus,
-                  prefixIcon: Icons.person_outline_rounded,
-                  keyboardType: TextInputType.name,
-                  errorText: _nameError,
-                  onChanged: (_) => setState(() => _nameError = null),
+                  prefixIcon:    Icons.person_outline_rounded,
+                  keyboardType:  TextInputType.name,
+                  errorText:     _nameError,
+                  onChanged:     (_) => setState(() => _nameError = null),
                 ),
                 const SizedBox(height: 18),
 
+                // ── Email (read-only) ────────────────────────────
                 const SpFieldLabel('EMAIL'),
                 const SizedBox(height: 8),
                 _ReadOnlyField(
-                  value: _session.email ?? '',
+                  value:      _session.email ?? '',
                   prefixIcon: Icons.email_outlined,
-                  hint: 'Email không thể thay đổi',
+                  hint:       'Email không thể thay đổi',
                 ),
                 const SizedBox(height: 18),
 
+                // ── Số điện thoại ────────────────────────────────
                 const SpFieldLabel('SỐ ĐIỆN THOẠI'),
                 const SizedBox(height: 8),
                 _ProfileField(
-                  controller: _phoneCtrl,
-                  focusNode: _phoneFocus,
+                  controller:    _phoneCtrl,
+                  focusNode:     _phoneFocus,
                   nextFocusNode: _addressFocus,
-                  prefixIcon: Icons.phone_android_outlined,
-                  keyboardType: TextInputType.phone,
-                  errorText: _phoneError,
-                  onChanged: (_) => setState(() => _phoneError = null),
+                  prefixIcon:    Icons.phone_android_outlined,
+                  keyboardType:  TextInputType.phone,
+                  errorText:     _phoneError,
+                  onChanged:     (_) => setState(() => _phoneError = null),
                 ),
                 const SizedBox(height: 18),
 
+                // ── Ngày sinh ────────────────────────────────────
                 const SpFieldLabel('NGÀY SINH'),
                 const SizedBox(height: 8),
                 GestureDetector(
@@ -377,9 +358,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     height: 52,
                     decoration: BoxDecoration(
                       color: AppColors.fieldBg,
-                      borderRadius: BorderRadius.circular(
-                        AppSpacing.fieldRadius,
-                      ),
+                      borderRadius: BorderRadius.circular(AppSpacing.fieldRadius),
                       border: Border.all(color: AppColors.fieldBorder),
                     ),
                     child: Row(
@@ -416,21 +395,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 const SizedBox(height: 18),
 
+                // ── Địa chỉ ─────────────────────────────────────
                 const SpFieldLabel('ĐỊA CHỈ'),
                 const SizedBox(height: 8),
                 _ProfileField(
-                  controller: _addressCtrl,
-                  focusNode: _addressFocus,
-                  prefixIcon: Icons.location_on_outlined,
+                  controller:   _addressCtrl,
+                  focusNode:    _addressFocus,
+                  prefixIcon:   Icons.location_on_outlined,
                   keyboardType: TextInputType.streetAddress,
-                  maxLines: 2,
+                  maxLines:     2,
                 ),
                 const SizedBox(height: 28),
 
+                // ── Save button ──────────────────────────────────
                 SpPrimaryButton(
-                  label: 'LƯU THAY ĐỔI',
-                  isLoading: _isLoading,
-                  onTap: _onSave,
+                  label:        'LƯU THAY ĐỔI',
+                  isLoading:    _isLoading,
+                  onTap:        _onSave,
                   trailingIcon: Icons.check_circle_outline_rounded,
                 ),
                 const SizedBox(height: 32),
@@ -443,7 +424,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 }
 
-// ── AVATAR SECTION ─────────────────────────────────────────────────────────
+// ── AVATAR SECTION ────────────────────────────
 class _AvatarSection extends StatelessWidget {
   final VoidCallback onTap;
   final bool isUploading;
@@ -482,13 +463,13 @@ class _AvatarSection extends StatelessWidget {
                         ),
                       ),
                     )
-                  : avatarUrl != null && avatarUrl.isNotEmpty
-                  ? Image.network(
-                      avatarUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _fallback(),
-                    )
-                  : _fallback(),
+                  : (avatarUrl != null && avatarUrl.isNotEmpty)
+                      ? Image.network(
+                          avatarUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => _fallback(),
+                        )
+                      : _fallback(),
             ),
           ),
         ),
@@ -503,6 +484,13 @@ class _AvatarSection extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isUploading ? AppColors.primaryLight : AppColors.primary,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: const Icon(
                 Icons.camera_alt_outlined,
@@ -517,12 +505,31 @@ class _AvatarSection extends StatelessWidget {
   }
 
   Widget _fallback() => Container(
-    color: const Color(0xFF7B6052),
-    child: const Icon(Icons.person, color: Colors.white38, size: 56),
-  );
+        color: const Color(0xFF7B6052),
+        child: const Icon(Icons.person, color: Colors.white38, size: 56),
+      );
 }
 
-// ── READ-ONLY FIELD ────────────────────────────────────────────────────────
+// ── BOTTOM SHEET ICON BOX ─────────────────────
+class _SheetIconBox extends StatelessWidget {
+  final IconData icon;
+  const _SheetIconBox(this.icon);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: AppColors.primaryUltraLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: AppColors.primary, size: 22),
+    );
+  }
+}
+
+// ── READ-ONLY FIELD ───────────────────────────
 class _ReadOnlyField extends StatelessWidget {
   final String value;
   final IconData prefixIcon;
@@ -553,20 +560,14 @@ class _ReadOnlyField extends StatelessWidget {
             child: Text(
               value.isNotEmpty ? value : hint,
               style: TextStyle(
-                color: value.isNotEmpty
-                    ? AppColors.textMid
-                    : AppColors.textHint,
+                color: value.isNotEmpty ? AppColors.textMid : AppColors.textHint,
                 fontSize: 15,
               ),
             ),
           ),
           const Padding(
             padding: EdgeInsets.only(right: 14),
-            child: Icon(
-              Icons.lock_outline,
-              color: AppColors.textHint,
-              size: 16,
-            ),
+            child: Icon(Icons.lock_outline, color: AppColors.textHint, size: 16),
           ),
         ],
       ),
@@ -574,7 +575,8 @@ class _ReadOnlyField extends StatelessWidget {
   }
 }
 
-// ── PROFILE FIELD ──────────────────────────────────────────────────────────
+// ── PROFILE FIELD ─────────────────────────────
+// Animated border khi focus — dùng riêng vì SpTextField không có focus color
 class _ProfileField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -626,17 +628,17 @@ class _ProfileFieldState extends State<_ProfileField> {
               color: hasError
                   ? AppColors.errorRed
                   : _isFocused
-                  ? AppColors.primary
-                  : AppColors.fieldBorder,
+                      ? AppColors.primary
+                      : AppColors.fieldBorder,
               width: hasError || _isFocused ? 1.5 : 1.0,
             ),
           ),
           child: TextField(
-            controller: widget.controller,
-            focusNode: widget.focusNode,
-            keyboardType: widget.keyboardType,
-            maxLines: widget.maxLines,
-            onChanged: widget.onChanged,
+            controller:      widget.controller,
+            focusNode:       widget.focusNode,
+            keyboardType:    widget.keyboardType,
+            maxLines:        widget.maxLines,
+            onChanged:       widget.onChanged,
             textInputAction: widget.nextFocusNode != null
                 ? TextInputAction.next
                 : TextInputAction.done,

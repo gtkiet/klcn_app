@@ -2,6 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -13,23 +16,23 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final _emailController = TextEditingController();
+  final _emailCtrl = TextEditingController();
   String? _emailError;
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
   bool _validate() {
-    final input = _emailController.text.trim();
+    final input = _emailCtrl.text.trim();
     setState(() {
       if (input.isEmpty) {
-        _emailError = 'Vui lòng nhập email hoặc số điện thoại';
-      } else if (!input.contains('@') && input.length < 9) {
-        _emailError = 'Email hoặc số điện thoại không hợp lệ';
+        _emailError = 'Vui lòng nhập email';
+      } else if (!input.contains('@') || !input.contains('.')) {
+        _emailError = 'Email không hợp lệ';
       } else {
         _emailError = null;
       }
@@ -37,15 +40,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return _emailError == null;
   }
 
-  void _onSendCode() {
+  Future<void> _onSendCode() async {
+    FocusScope.of(context).unfocus();
     if (!_validate()) return;
-    // TODO: ForgotPasswordService.sendOtp(emailOrPhone)
+
     setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 1), () {
+    try {
+      final email = _emailCtrl.text.trim();
+      await AuthService.instance.forgotPassword(email);
+
       if (!mounted) return;
-      setState(() => _isLoading = false);
-      Navigator.pushNamed(context, '/otp_verification');
-    });
+      // Truyền email sang OTP screen để verify-otp biết gửi lên đâu
+      context.push('/auth/otp-verification', extra: {'email': email});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -57,24 +74,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.maybePop(context),
+            onPressed: () => context.pop(),
           ),
           title: const Text('Quên mật khẩu'),
         ),
         body: Column(
           children: [
-            // Upper section with brand info
             _UpperSection(),
-
-            // Lower card with form
             Expanded(
               child: _LowerCard(
-                emailController: _emailController,
-                emailError: _emailError,
-                isLoading: _isLoading,
+                emailCtrl:     _emailCtrl,
+                emailError:    _emailError,
+                isLoading:     _isLoading,
                 onEmailChanged: (_) => setState(() => _emailError = null),
-                onSendCode: _onSendCode,
-                onBackToLogin: () => Navigator.pop(context),
+                onSendCode:    _onSendCode,
+                onBackToLogin: () => context.pop(),
               ),
             ),
           ],
@@ -101,10 +115,24 @@ class _UpperSection extends StatelessWidget {
         ),
       ),
       child: Column(
-        children: const [
-          // SpBrandLogo(size: 108),
-          // SizedBox(height: 24),
-          Text(
+        children: [
+          // Icon minh họa
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.primaryUltraLight,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primaryLight, width: 1.5),
+            ),
+            child: const Icon(
+              Icons.lock_reset_rounded,
+              color: AppColors.primary,
+              size: 36,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
             'Quên mật khẩu?',
             style: TextStyle(
               color: AppColors.textDark,
@@ -112,9 +140,9 @@ class _UpperSection extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
-          SizedBox(height: 10),
-          Text(
-            'Nhập Email hoặc Số điện thoại để\nnhận mã xác minh thiết lập lại mật khẩu.',
+          const SizedBox(height: 10),
+          const Text(
+            'Nhập email đã đăng ký để nhận\nmã OTP thiết lập lại mật khẩu.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.textMid,
@@ -130,7 +158,7 @@ class _UpperSection extends StatelessWidget {
 
 // ── LOWER CARD ────────────────────────────────
 class _LowerCard extends StatelessWidget {
-  final TextEditingController emailController;
+  final TextEditingController emailCtrl;
   final String? emailError;
   final bool isLoading;
   final ValueChanged<String> onEmailChanged;
@@ -138,7 +166,7 @@ class _LowerCard extends StatelessWidget {
   final VoidCallback onBackToLogin;
 
   const _LowerCard({
-    required this.emailController,
+    required this.emailCtrl,
     required this.emailError,
     required this.isLoading,
     required this.onEmailChanged,
@@ -175,7 +203,7 @@ class _LowerCard extends StatelessWidget {
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(28),
+              topLeft:  Radius.circular(28),
               topRight: Radius.circular(28),
             ),
             boxShadow: [
@@ -194,25 +222,27 @@ class _LowerCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SpFieldLabel('EMAIL HOẶC SỐ ĐIỆN THOẠI'),
+                const SpFieldLabel('EMAIL'),
                 const SizedBox(height: 10),
                 SpTextField(
-                  controller: emailController,
-                  hintText: 'example@email.com',
+                  controller:   emailCtrl,
+                  hintText:     'example@email.com',
                   keyboardType: TextInputType.emailAddress,
-                  prefixIcon: Icons.email_outlined,
-                  errorText: emailError,
-                  onChanged: onEmailChanged,
+                  prefixIcon:   Icons.email_outlined,
+                  errorText:    emailError,
+                  onChanged:    onEmailChanged,
                 ),
                 const SizedBox(height: 24),
+
                 SpPrimaryButton(
-                  label: 'GỬI MÃ XÁC MINH',
+                  label:     'GỬI MÃ XÁC MINH',
                   isLoading: isLoading,
-                  onTap: onSendCode,
+                  onTap:     onSendCode,
                 ),
                 const SizedBox(height: 32),
                 const Divider(color: Color(0xFFE0E2E0), thickness: 1),
                 const SizedBox(height: 24),
+
                 GestureDetector(
                   onTap: onBackToLogin,
                   child: const Row(

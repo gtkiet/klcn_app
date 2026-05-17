@@ -3,52 +3,68 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:klcn_app/services/auth_service.dart';
 
 import '../../guards/auth_guard.dart';
 import '../../services/profile_service.dart';
 import '../../session/user_session.dart';
-import '../../network/api_client.dart';
 import '../../models/user.dart';
 import '../../theme/app_theme.dart';
 
-// ── HELPER ────────────────────────────────────
-String? _buildAvatarUrl(String? path) {
-  if (path == null || path.isEmpty) return null;
-  if (path.startsWith('http')) return path;
-  return '${ApiClient.baseUrl}$path';
-}
-
+// ── MENU CONFIG ───────────────────────────────
 class _MenuItem {
   final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
   final String label;
   final String route;
-  const _MenuItem(this.icon, this.label, this.route);
+  const _MenuItem({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.label,
+    required this.route,
+  });
 }
 
 final _accountItems = [
-  const _MenuItem(
-    Icons.person_outline_rounded,
-    'Thông tin cá nhân',
-    'edit_profile',
+  _MenuItem(
+    icon:      Icons.person_outline_rounded,
+    iconBg:    AppColors.primaryUltraLight,
+    iconColor: AppColors.primary,
+    label:     'Thông tin cá nhân',
+    route:     'edit_profile',
   ),
-  const _MenuItem(
-    Icons.lock_outline_rounded,
-    'Đổi mật khẩu',
-    'change_password',
+  _MenuItem(
+    icon:      Icons.lock_outline_rounded,
+    iconBg:    AppColors.primaryUltraLight,
+    iconColor: AppColors.primary,
+    label:     'Đổi mật khẩu',
+    route:     'change_password',
   ),
-  const _MenuItem(
-    Icons.history_rounded,
-    'Lịch sử đặt sân',
-    '/booking_history',
+  _MenuItem(
+    icon:      Icons.history_rounded,
+    iconBg:    AppColors.primaryUltraLight,
+    iconColor: AppColors.primary,
+    label:     'Lịch sử đặt sân',
+    route:     '/booking_history',
   ),
 ];
 
 final _supportItems = [
-  const _MenuItem(Icons.help_outline_rounded, 'Hỗ trợ & Liên hệ', '/support'),
-  const _MenuItem(
-    Icons.description_outlined,
-    'Điều khoản & Chính sách',
-    '/terms',
+  _MenuItem(
+    icon:      Icons.help_outline_rounded,
+    iconBg:    const Color(0xFFE3F2FD),
+    iconColor: AppColors.infoBlue,
+    label:     'Hỗ trợ & Liên hệ',
+    route:     '',
+  ),
+  _MenuItem(
+    icon:      Icons.description_outlined,
+    iconBg:    const Color(0xFFF3E5F5),
+    iconColor: const Color(0xFF7B1FA2),
+    label:     'Điều khoản & Chính sách',
+    route:     '',
   ),
 ];
 
@@ -66,7 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _session = UserSession.instance;
 
   UserModel? _user;
-  bool _isLoading = true;
+  bool _isLoading    = true;
   bool _isLoggingOut = false;
 
   @override
@@ -76,13 +92,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
-    // Hiển thị dữ liệu từ session ngay lập tức
+    // Hiển thị ngay từ session
     setState(() {
-      _user = _session.toUserModel();
+      _user      = _session.toUserModel();
       _isLoading = false;
     });
 
-    // Fetch fresh data từ API ở background
+    // Fetch fresh data ở background
     try {
       final user = await ProfileService.instance.getProfile();
       if (mounted) setState(() => _user = user);
@@ -92,6 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _onMenuItem(String route) {
+    if (route.isEmpty) return; // menu chưa có route thật
     if (route.startsWith('/')) {
       context.push(route);
     } else {
@@ -103,7 +120,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         title: const Text(
           'Đăng xuất',
           style: TextStyle(fontWeight: FontWeight.w700),
@@ -118,7 +137,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
+            // onPressed: () => Navigator.pop(ctx, true),
+            onPressed: () {
+              AuthService.instance.logout();
+              Navigator.pop(ctx, true);
+            } ,
             child: const Text(
               'Đăng xuất',
               style: TextStyle(
@@ -135,8 +158,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     setState(() => _isLoggingOut = true);
     try {
-      // FIX: gọi AuthGuard.logout() — nó gọi AuthService.logout() rồi
-      // tự set unauthenticated → GoRouter redirect về /auth/login
+      // AuthGuard.logout() → AuthService.logout() → clear session
+      // → setUnauthenticated() → GoRouter redirect về /auth/login
       await AuthGuard.instance.logout();
     } finally {
       if (mounted) setState(() => _isLoggingOut = false);
@@ -152,12 +175,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         appBar: AppBar(
           automaticallyImplyLeading: false,
           title: const Text('Hồ sơ'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: () {}, // TODO: settings
-            ),
-          ],
         ),
         body: _isLoading
             ? const Center(
@@ -176,29 +193,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       const SizedBox(height: 16),
 
+                      // ── Hero card ────────────────────────────────
                       _ProfileHeroCard(
                         user: _user,
-                        onEditAvatar: () =>
-                            context.push('/profile/edit_profile'),
+                        onEditTap: () => context.push('/profile/edit_profile'),
                       ),
                       const SizedBox(height: 24),
 
+                      // ── Account section ──────────────────────────
                       _SectionLabel('TÀI KHOẢN & THIẾT LẬP'),
                       const SizedBox(height: 8),
-                      _MenuGroup(items: _accountItems, onTap: _onMenuItem),
+                      _MenuGroup(
+                        items: _accountItems,
+                        onTap: _onMenuItem,
+                      ),
                       const SizedBox(height: 20),
 
-                      _SectionLabel('THÔNG TIN HỖ TRỢ'),
+                      // ── Support section ──────────────────────────
+                      _SectionLabel('THÔNG TIN & HỖ TRỢ'),
                       const SizedBox(height: 8),
-                      _MenuGroup(items: _supportItems, onTap: _onMenuItem),
+                      _MenuGroup(
+                        items: _supportItems,
+                        onTap: _onMenuItem,
+                      ),
                       const SizedBox(height: 24),
 
+                      // ── Logout ───────────────────────────────────
                       _LogoutButton(
-                        onTap: _isLoggingOut ? () {} : _onLogout,
+                        onTap:     _isLoggingOut ? () {} : _onLogout,
                         isLoading: _isLoggingOut,
                       ),
                       const SizedBox(height: 28),
 
+                      // ── Footer ───────────────────────────────────
                       Column(
                         children: [
                           Icon(
@@ -207,11 +234,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: AppColors.textHint.withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 6),
-                          const Text(
-                            'SPORT PLUS V2.4.0  •  PITCH PRECISION ENGINE',
+                          Text(
+                            'SPORT PLUS V1.0.0  •  PITCH PRECISION ENGINE',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: AppColors.textHint,
+                              color: AppColors.textHint.withValues(alpha: 0.7),
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.2,
@@ -229,12 +256,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// ── PROFILE HERO CARD ──────────────────────────────────────────────────────
+// ── PROFILE HERO CARD ─────────────────────────
 class _ProfileHeroCard extends StatelessWidget {
   final UserModel? user;
-  final VoidCallback onEditAvatar;
+  final VoidCallback onEditTap;
 
-  const _ProfileHeroCard({required this.user, required this.onEditAvatar});
+  const _ProfileHeroCard({required this.user, required this.onEditTap});
 
   @override
   Widget build(BuildContext context) {
@@ -260,47 +287,44 @@ class _ProfileHeroCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 28),
         child: Column(
           children: [
-            // Avatar — reactive với ValueListenableBuilder
+            // ── Avatar ─────────────────────────────────
             Stack(
               clipBehavior: Clip.none,
               children: [
                 ValueListenableBuilder<String?>(
                   valueListenable: session.avatarUrlNotifier,
-                  builder: (_, rawUrl, _) {
-                    // FIX: prefix base URL vì session lưu path "/Uploads/..."
-                    final url = _buildAvatarUrl(rawUrl);
-                    return Container(
-                      width: 96,
-                      height: 96,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.20),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: url != null
-                            ? Image.network(
-                                url,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) =>
-                                    _avatarFallback(),
-                              )
-                            : _avatarFallback(),
-                      ),
-                    );
-                  },
+                  builder: (_, avatarUrl, _) => Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.20),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: avatarUrl != null && avatarUrl.isNotEmpty
+                          ? Image.network(
+                              avatarUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => _avatarFallback(),
+                            )
+                          : _avatarFallback(),
+                    ),
+                  ),
                 ),
+
+                // Edit avatar shortcut
                 Positioned(
                   bottom: 0,
                   right: 0,
                   child: GestureDetector(
-                    onTap: onEditAvatar,
+                    onTap: onEditTap,
                     child: Container(
                       width: 28,
                       height: 28,
@@ -320,6 +344,7 @@ class _ProfileHeroCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
+            // ── Name ───────────────────────────────────
             Text(
               user?.fullName ?? session.fullName ?? '—',
               style: const TextStyle(
@@ -328,9 +353,14 @@ class _ProfileHeroCard extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
+
+            // ── Email + Phone ──────────────────────────
             Text(
-              '${user?.email ?? session.email ?? ''}  •  ${user?.phone ?? session.phone ?? ''}',
+              [
+                user?.email   ?? session.email   ?? '',
+                user?.phone   ?? session.phone   ?? '',
+              ].where((s) => s.isNotEmpty).join('  •  '),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.80),
                 fontSize: 12.5,
@@ -347,6 +377,7 @@ class _ProfileHeroCard extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
+            // ── Stats row ──────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
@@ -356,20 +387,12 @@ class _ProfileHeroCard extends StatelessWidget {
                     value: user?.role ?? session.role ?? '—',
                     label: 'VAI TRÒ',
                   ),
-                  Container(
-                    width: 1,
-                    height: 36,
-                    color: Colors.white.withValues(alpha: 0.25),
-                  ),
+                  _Divider(),
                   _StatItem(
                     value: user?.status ?? session.status ?? '—',
                     label: 'TRẠNG THÁI',
                   ),
-                  Container(
-                    width: 1,
-                    height: 36,
-                    color: Colors.white.withValues(alpha: 0.25),
-                  ),
+                  _Divider(),
                   _StatItem(
                     value: 'ID ${user?.userId ?? session.userId ?? '—'}',
                     label: 'TÀI KHOẢN',
@@ -402,7 +425,7 @@ class _StatItem extends StatelessWidget {
           value,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w900,
           ),
           maxLines: 1,
@@ -423,7 +446,16 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-// ── SECTION LABEL ──────────────────────────────────────────────────────────
+class _Divider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 1,
+        height: 36,
+        color: Colors.white.withValues(alpha: 0.25),
+      );
+}
+
+// ── SECTION LABEL ─────────────────────────────
 class _SectionLabel extends StatelessWidget {
   final String text;
   const _SectionLabel(this.text);
@@ -442,7 +474,7 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ── MENU GROUP ─────────────────────────────────────────────────────────────
+// ── MENU GROUP ────────────────────────────────
 class _MenuGroup extends StatelessWidget {
   final List<_MenuItem> items;
   final ValueChanged<String> onTap;
@@ -495,10 +527,10 @@ class _MenuRow extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: AppColors.primaryUltraLight,
+                color: item.iconBg,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(item.icon, color: AppColors.primary, size: 20),
+              child: Icon(item.icon, color: item.iconColor, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -523,7 +555,7 @@ class _MenuRow extends StatelessWidget {
   }
 }
 
-// ── LOGOUT BUTTON ──────────────────────────────────────────────────────────
+// ── LOGOUT BUTTON ─────────────────────────────
 class _LogoutButton extends StatelessWidget {
   final VoidCallback onTap;
   final bool isLoading;

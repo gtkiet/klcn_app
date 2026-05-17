@@ -10,24 +10,24 @@ import '../../services/field_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
-// ── CONSTANTS ─────────────────────────────────
+// ── CONSTANTS ──────────────────────────────────────────────────────────────────
 const _kPageSize = 10;
 
 const _filterChips = [
-  _ChipOption(label: 'Tất cả',  typeId: null),
-  _ChipOption(label: 'Sân 5',   typeId: 1),
-  _ChipOption(label: 'Sân 7',   typeId: 2),
+  _ChipOption(label: 'Tất cả', typeId: null),
+  _ChipOption(label: 'Sân 5',  typeId: 1),
+  _ChipOption(label: 'Sân 7',  typeId: 2),
 ];
 
 class _ChipOption {
   final String label;
-  final int? typeId;
+  final int?   typeId;
   const _ChipOption({required this.label, required this.typeId});
 }
 
-// ─────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────────
 //  FIELD LIST SCREEN
-// ─────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────────
 class FieldListScreen extends StatefulWidget {
   const FieldListScreen({super.key});
 
@@ -36,22 +36,22 @@ class FieldListScreen extends StatefulWidget {
 }
 
 class _FieldListScreenState extends State<FieldListScreen> {
-  // ── State ──────────────────────────────────
-  final _searchCtrl   = TextEditingController();
-  final _scrollCtrl   = ScrollController();
+  // ── State ───────────────────────────────────────────────────────────────────
+  final _searchCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
   Timer? _debounce;
 
-  int  _selectedChip  = 0;
-  String _query       = '';
+  int    _selectedChip = 0;
+  String _query        = '';
 
-  List<FieldModel> _fields    = [];
-  bool _isLoading             = false;
-  bool _isLoadingMore         = false;
-  bool _hasNextPage           = false;
-  int  _currentPage           = 1;
+  List<FieldModel> _fields       = [];
+  bool   _isLoading              = false;
+  bool   _isLoadingMore          = false;
+  bool   _hasNextPage            = false;
+  int    _currentPage            = 1;
   String? _errorMsg;
 
-  // ── Lifecycle ──────────────────────────────
+  // ── Lifecycle ───────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
@@ -67,14 +67,14 @@ class _FieldListScreenState extends State<FieldListScreen> {
     super.dispose();
   }
 
-  // ── API ────────────────────────────────────
+  // ── API ─────────────────────────────────────────────────────────────────────
   Future<void> _loadFields({bool reset = false}) async {
     if (reset) {
       setState(() {
-        _isLoading  = true;
-        _errorMsg   = null;
+        _isLoading   = true;
+        _errorMsg    = null;
         _currentPage = 1;
-        _fields     = [];
+        _fields      = [];
       });
     } else {
       if (_isLoadingMore || !_hasNextPage) return;
@@ -82,7 +82,7 @@ class _FieldListScreenState extends State<FieldListScreen> {
     }
 
     try {
-      final page = reset ? 1 : _currentPage;
+      final page   = reset ? 1 : _currentPage;
       final result = await FieldService.instance.getFields(
         search:   _query.isEmpty ? null : _query,
         typeId:   _filterChips[_selectedChip].typeId,
@@ -98,9 +98,9 @@ class _FieldListScreenState extends State<FieldListScreen> {
         } else {
           _fields.addAll(result.items);
         }
-        _hasNextPage  = result.hasNextPage;
-        _currentPage  = result.page + 1;
-        _isLoading    = false;
+        _hasNextPage   = result.hasNextPage;
+        _currentPage   = result.page + 1;
+        _isLoading     = false;
         _isLoadingMore = false;
       });
     } catch (e) {
@@ -113,22 +113,20 @@ class _FieldListScreenState extends State<FieldListScreen> {
     }
   }
 
-  // ── Events ─────────────────────────────────
+  // ── Events ──────────────────────────────────────────────────────────────────
   void _onScroll() {
-    if (_scrollCtrl.position.pixels >= _scrollCtrl.position.maxScrollExtent - 200) {
+    if (_scrollCtrl.position.pixels >=
+        _scrollCtrl.position.maxScrollExtent - 200) {
       _loadFields();
     }
   }
 
   void _onSearchChanged(String value) {
     _debounce?.cancel();
-    _debounce = Timer(
-      const Duration(milliseconds: 400),
-      () {
-        _query = value.trim();
-        _loadFields(reset: true);
-      },
-    );
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      _query = value.trim();
+      _loadFields(reset: true);
+    });
   }
 
   void _onChipSelect(int index) {
@@ -141,7 +139,7 @@ class _FieldListScreenState extends State<FieldListScreen> {
     context.push('/fields/detail', extra: field);
   }
 
-  // ── Build ──────────────────────────────────
+  // ── Build ───────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -158,10 +156,10 @@ class _FieldListScreenState extends State<FieldListScreen> {
         body: Column(
           children: [
             _StickyHeader(
-              controller:       _searchCtrl,
-              selectedChip:     _selectedChip,
-              onChipSelect:     _onChipSelect,
-              onSearchChanged:  _onSearchChanged,
+              controller:      _searchCtrl,
+              selectedChip:    _selectedChip,
+              onChipSelect:    _onChipSelect,
+              onSearchChanged: _onSearchChanged,
             ),
             Expanded(child: _buildBody()),
           ],
@@ -172,7 +170,9 @@ class _FieldListScreenState extends State<FieldListScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
 
     if (_errorMsg != null && _fields.isEmpty) {
@@ -187,7 +187,7 @@ class _FieldListScreenState extends State<FieldListScreen> {
     }
 
     return RefreshIndicator(
-      color: AppColors.primary,
+      color:     AppColors.primary,
       onRefresh: () => _loadFields(reset: true),
       child: ListView.builder(
         controller: _scrollCtrl,
@@ -219,12 +219,12 @@ class _FieldListScreenState extends State<FieldListScreen> {
   }
 }
 
-// ── STICKY HEADER ─────────────────────────────
+// ── STICKY HEADER ──────────────────────────────────────────────────────────────
 class _StickyHeader extends StatelessWidget {
   final TextEditingController controller;
-  final int selectedChip;
-  final ValueChanged<int> onChipSelect;
-  final ValueChanged<String> onSearchChanged;
+  final int                   selectedChip;
+  final ValueChanged<int>     onChipSelect;
+  final ValueChanged<String>  onSearchChanged;
 
   const _StickyHeader({
     required this.controller,
@@ -246,19 +246,19 @@ class _StickyHeader extends StatelessWidget {
             child: Container(
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color:        Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: AppShadow.card,
+                boxShadow:    AppShadow.card,
               ),
               child: TextField(
                 controller: controller,
-                onChanged: onSearchChanged,
+                onChanged:  onSearchChanged,
                 style: const TextStyle(color: AppColors.textDark, fontSize: 14),
                 decoration: const InputDecoration(
-                  hintText: 'Tìm sân theo tên...',
-                  hintStyle: TextStyle(color: AppColors.textHint, fontSize: 14),
-                  prefixIcon: Icon(Icons.search, color: AppColors.textHint),
-                  border: InputBorder.none,
+                  hintText:    'Tìm sân theo tên...',
+                  hintStyle:   TextStyle(color: AppColors.textHint, fontSize: 14),
+                  prefixIcon:  Icon(Icons.search, color: AppColors.textHint),
+                  border:      InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
@@ -276,10 +276,10 @@ class _StickyHeader extends StatelessWidget {
                   onTap: () => onChipSelect(i),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    margin: const EdgeInsets.only(right: 8),
+                    margin:  const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                     decoration: BoxDecoration(
-                      color:  selected ? AppColors.primary : Colors.white,
+                      color:        selected ? AppColors.primary : Colors.white,
                       borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                       border: Border.all(
                         color: selected ? AppColors.primary : AppColors.fieldBorder,
@@ -288,8 +288,8 @@ class _StickyHeader extends StatelessWidget {
                     child: Text(
                       _filterChips[i].label,
                       style: TextStyle(
-                        color: selected ? Colors.white : AppColors.textDark,
-                        fontSize: 13,
+                        color:      selected ? Colors.white : AppColors.textDark,
+                        fontSize:   13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -305,9 +305,9 @@ class _StickyHeader extends StatelessWidget {
   }
 }
 
-// ── FIELD CARD ────────────────────────────────
+// ── FIELD CARD ─────────────────────────────────────────────────────────────────
 class _FieldCard extends StatelessWidget {
-  final FieldModel field;
+  final FieldModel  field;
   final VoidCallback onTap;
 
   const _FieldCard({required this.field, required this.onTap});
@@ -321,7 +321,7 @@ class _FieldCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Image / placeholder
+            // ── Ảnh ────────────────────────────────────────────────────────
             ClipRRect(
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppSpacing.cardRadius),
@@ -332,13 +332,14 @@ class _FieldCard extends StatelessWidget {
                     ? Image.network(
                         field.imageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _FieldPlaceholder(name: field.name),
+                        errorBuilder: (_, _, _) =>
+                            _FieldPlaceholder(name: field.name),
                       )
                     : _FieldPlaceholder(name: field.name),
               ),
             ),
 
-            // Info
+            // ── Info ────────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -352,22 +353,24 @@ class _FieldCard extends StatelessWidget {
                           field.name,
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: AppColors.textDark,
+                            fontSize:   16,
+                            color:      AppColors.textDark,
                           ),
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryUltraLight,
+                          color:        AppColors.primaryUltraLight,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           field.fieldType,
                           style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 11,
+                            color:      AppColors.primary,
+                            fontSize:   11,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -381,7 +384,11 @@ class _FieldCard extends StatelessWidget {
                   if (field.avgRating != null)
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded, size: 14, color: AppColors.ratingGold),
+                        const Icon(
+                          Icons.star_rounded,
+                          size:  14,
+                          color: AppColors.ratingGold,
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           field.avgRating!.toStringAsFixed(1),
@@ -414,8 +421,8 @@ class _FieldCard extends StatelessWidget {
                             '${field.basePriceFmt}/giờ',
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                              fontSize: 15,
+                              color:      AppColors.primary,
+                              fontSize:   15,
                             ),
                           ),
                           if (field.peakPrice > field.basePrice)
@@ -430,17 +437,19 @@ class _FieldCard extends StatelessWidget {
                       GestureDetector(
                         onTap: onTap,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 9,
+                          ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary,
+                            color:        AppColors.primary,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Text(
                             'Đặt ngay',
                             style: TextStyle(
-                              color: Colors.white,
+                              color:      Colors.white,
                               fontWeight: FontWeight.w700,
-                              fontSize: 13.5,
+                              fontSize:   13.5,
                             ),
                           ),
                         ),
@@ -457,12 +466,11 @@ class _FieldCard extends StatelessWidget {
   }
 }
 
-// ── FIELD PLACEHOLDER IMAGE ───────────────────
+// ── FIELD PLACEHOLDER ──────────────────────────────────────────────────────────
 class _FieldPlaceholder extends StatelessWidget {
   final String name;
   const _FieldPlaceholder({required this.name});
 
-  // Hash màu từ tên sân để mỗi sân có màu riêng nhất quán
   Color get _color {
     const palette = [
       Color(0xFF1B5E20), Color(0xFF0D47A1), Color(0xFF4A148C),
@@ -482,7 +490,7 @@ class _FieldPlaceholder extends StatelessWidget {
   }
 }
 
-// ── EMPTY STATE ───────────────────────────────
+// ── EMPTY STATE ────────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final String query;
   const _EmptyState({required this.query});
@@ -495,7 +503,7 @@ class _EmptyState extends StatelessWidget {
         children: [
           Icon(
             Icons.search_off_rounded,
-            size: 64,
+            size:  64,
             color: AppColors.textLight.withValues(alpha: 0.4),
           ),
           const SizedBox(height: 16),
@@ -509,9 +517,9 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── ERROR STATE ───────────────────────────────
+// ── ERROR STATE ────────────────────────────────────────────────────────────────
 class _ErrorState extends StatelessWidget {
-  final String message;
+  final String       message;
   final VoidCallback onRetry;
   const _ErrorState({required this.message, required this.onRetry});
 
@@ -523,7 +531,11 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded, size: 56, color: AppColors.textLight),
+            const Icon(
+              Icons.wifi_off_rounded,
+              size:  56,
+              color: AppColors.textLight,
+            ),
             const SizedBox(height: 16),
             Text(
               message,
@@ -536,13 +548,15 @@ class _ErrorState extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color:        AppColors.primary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Text(
                   'Thử lại',
                   style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14,
+                    color:      Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize:   14,
                   ),
                 ),
               ),

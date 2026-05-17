@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-// import '../../services/auth_service.dart';
+import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -16,36 +16,36 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-  final _emailFocus = FocusNode();
-  final _passwordFocus = FocusNode();
+  final _identifierCtrl = TextEditingController();
+  final _passwordCtrl   = TextEditingController();
+  final _identifierFocus = FocusNode();
+  final _passwordFocus   = FocusNode();
 
   bool _obscurePassword = true;
-  bool _isLoading = false;
+  bool _isLoading       = false;
 
-  String? _emailError;
+  String? _identifierError;
   String? _passwordError;
 
   @override
   void dispose() {
-    _emailCtrl.dispose();
+    _identifierCtrl.dispose();
     _passwordCtrl.dispose();
-    _emailFocus.dispose();
+    _identifierFocus.dispose();
     _passwordFocus.dispose();
     super.dispose();
   }
 
   bool _validate() {
     setState(() {
-      _emailError = _emailCtrl.text.trim().isEmpty
-          ? 'Vui lòng nhập email'
+      _identifierError = _identifierCtrl.text.trim().isEmpty
+          ? 'Vui lòng nhập email hoặc số điện thoại'
           : null;
-      _passwordError = _passwordCtrl.text.trim().isEmpty
+      _passwordError = _passwordCtrl.text.isEmpty
           ? 'Vui lòng nhập mật khẩu'
           : null;
     });
-    return _emailError == null && _passwordError == null;
+    return _identifierError == null && _passwordError == null;
   }
 
   Future<void> _onLogin() async {
@@ -54,35 +54,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // await AuthService.instance.login(
-      //   email: _emailCtrl.text.trim(),
-      //   password: _passwordCtrl.text.trim(),
-      // );
-      // FIX: bỏ AuthGuard.instance.setAuthenticated() — AuthService.login()
-      // đã gọi nội bộ rồi. GoRouter tự redirect khi nhận notifyListeners().
+      await AuthService.instance.login(
+        identifier: _identifierCtrl.text.trim(),
+        password:   _passwordCtrl.text,
+      );
+      // AuthService.login() đã gọi _guard.setAuthenticated() nội bộ
+      // → GoRouter.redirect() tự chuyển về /home
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppColors.errorRed,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  void _onForgotPassword() => context.push('/auth/forgot-password');
-  // void _onRegister() => context.push('/auth/register');
-  void _onRegister() {
-    debugPrint('NAVIGATE: going to /auth/register');
-    context.push('/auth/register');
-  }
-
-  void _onGoogleLogin() {} // TODO: GoogleAuthService.signIn()
-  void _onFacebookLogin() {} // TODO: FacebookAuthService.signIn()
 
   @override
   Widget build(BuildContext context) {
@@ -128,28 +117,28 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 40),
 
-                        // Email
-                        const SpFieldLabel('EMAIL'),
+                        // ── Identifier ─────────────────────────────
+                        const SpFieldLabel('EMAIL HOẶC SỐ ĐIỆN THOẠI'),
                         const SizedBox(height: 8),
                         SpTextField(
-                          controller: _emailCtrl,
-                          focusNode: _emailFocus,
+                          controller:    _identifierCtrl,
+                          focusNode:     _identifierFocus,
                           nextFocusNode: _passwordFocus,
-                          hintText: 'example@gmail.com',
-                          keyboardType: TextInputType.emailAddress,
-                          prefixIcon: Icons.email_outlined,
-                          errorText: _emailError,
-                          onChanged: (_) => setState(() => _emailError = null),
+                          hintText:      'example@gmail.com hoặc 0xxxxxxxxx',
+                          keyboardType:  TextInputType.emailAddress,
+                          prefixIcon:    Icons.person_outline_rounded,
+                          errorText:     _identifierError,
+                          onChanged:     (_) => setState(() => _identifierError = null),
                         ),
                         const SizedBox(height: 20),
 
-                        // Password
+                        // ── Password ───────────────────────────────
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const SpFieldLabel('MẬT KHẨU'),
                             GestureDetector(
-                              onTap: _onForgotPassword,
+                              onTap: () => context.push('/auth/forgot-password'),
                               child: const Text(
                                 'Quên mật khẩu?',
                                 style: TextStyle(
@@ -164,50 +153,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 8),
                         SpPasswordField(
                           controller: _passwordCtrl,
-                          obscure: _obscurePassword,
-                          onToggle: () => setState(
+                          obscure:    _obscurePassword,
+                          onToggle:   () => setState(
                             () => _obscurePassword = !_obscurePassword,
                           ),
                           errorText: _passwordError,
-                          onChanged: (_) =>
-                              setState(() => _passwordError = null),
+                          onChanged: (_) => setState(() => _passwordError = null),
                         ),
                         const SizedBox(height: 28),
 
                         SpPrimaryButton(
-                          label: 'Đăng nhập',
+                          label:     'ĐĂNG NHẬP',
                           isLoading: _isLoading,
-                          onTap: _onLogin,
-                        ),
-                        const SizedBox(height: 32),
-
-                        const SpOrDivider(label: 'HOẶC ĐĂNG NHẬP VỚI'),
-                        const SizedBox(height: 20),
-
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SpSocialButton(
-                                label: 'Google',
-                                icon: const SpGoogleIcon(),
-                                onTap: _onGoogleLogin,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: SpSocialButton(
-                                label: 'Facebook',
-                                icon: const SpFacebookIcon(),
-                                onTap: _onFacebookLogin,
-                              ),
-                            ),
-                          ],
+                          onTap:     _onLogin,
                         ),
                         const SizedBox(height: 36),
 
+                        // ── Register link ──────────────────────────
                         Center(
                           child: GestureDetector(
-                            onTap: _onRegister,
+                            onTap: () => context.push('/auth/register'),
                             child: RichText(
                               text: const TextSpan(
                                 children: [
@@ -234,6 +199,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 24),
                         const Spacer(),
+
+                        // ── Footer ─────────────────────────────────
+                        const _FooterBadge(),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
@@ -243,6 +212,30 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FooterBadge extends StatelessWidget {
+  const _FooterBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.sports_soccer, size: 12, color: AppColors.textHint),
+        const SizedBox(width: 6),
+        Text(
+          'SPORT PLUS  •  SÂN CHƠI CHIẾN THUẬT',
+          style: TextStyle(
+            color: AppColors.textHint.withValues(alpha: 0.7),
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
     );
   }
 }

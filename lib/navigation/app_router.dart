@@ -17,13 +17,13 @@ import '../screens/auth/reset_password_screen.dart';
 import '../screens/home/home_screen.dart';
 
 import '../screens/field/field_list_screen.dart';
-// import '../screens/field/field_detail_screen.dart';
-// import '../screens/booking/booking_confirmation_screen.dart';
-// import '../screens/booking/booking_success_screen.dart';
-// import '../screens/booking/booking_failure_screen.dart';
+import '../screens/field/field_detail_screen.dart';
 
+import '../screens/booking/booking_confirmation_screen.dart';
+import '../screens/booking/booking_success_screen.dart';
+import '../screens/booking/booking_failure_screen.dart';
 import '../screens/booking/booking_history_screen.dart';
-import '../screens/booking/booking_detail_screen.dart';
+// import '../screens/booking/booking_detail_screen.dart';
 
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/edit_profile_screen.dart';
@@ -36,24 +36,20 @@ class AppRouter {
     initialLocation: '/splash',
     refreshListenable: AuthGuard.instance,
 
-    /// ================= REDIRECT =================
+    // ── REDIRECT ────────────────────────────────────────────────────────────
     redirect: (context, state) {
-      final status = AuthGuard.instance.status;
+      final status   = AuthGuard.instance.status;
       final location = state.uri.path;
-      debugPrint('REDIRECT: status=$status, location=$location');
 
       final isAuthRoute = location.startsWith('/auth');
-
-      final isSplash = location == '/splash';
+      final isSplash    = location == '/splash';
 
       if (status == AuthStatus.unknown) {
         return isSplash ? null : '/splash';
       }
 
       if (status == AuthStatus.unauthenticated) {
-        if (isAuthRoute) return null;
-        return '/auth/login';
-        // return isAuthRoute ? null : '/auth/login';
+        return isAuthRoute ? null : '/auth/login';
       }
 
       if (status == AuthStatus.authenticated) {
@@ -63,98 +59,154 @@ class AppRouter {
       return null;
     },
 
-    /// ================= ROUTES =================
+    // ── ROUTES ──────────────────────────────────────────────────────────────
     routes: [
-      GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
 
+      // ── Splash ────────────────────────────────────────────────────────────
       GoRoute(
-        path: '/auth',
-        redirect: (_, state) {
-          // Chỉ redirect khi path chính xác là /auth, không redirect subpath
-          if (state.uri.path == '/auth') return '/auth/login';
-          return null; // ← các subpath tự xử lý
-        },
+        path:    '/splash',
+        builder: (_, _) => const SplashScreen(),
+      ),
+
+      // ── Auth group ────────────────────────────────────────────────────────
+      GoRoute(
+        path:     '/auth',
+        redirect: (_, state) =>
+            state.uri.path == '/auth' ? '/auth/login' : null,
         routes: [
-          GoRoute(path: 'login', builder: (_, _) => const LoginScreen()),
-          GoRoute(path: 'register', builder: (_, _) => const RegisterScreen()),
           GoRoute(
-            path: 'forgot-password',
+            path:    'login',
+            builder: (_, _) => const LoginScreen(),
+          ),
+          GoRoute(
+            path:    'register',
+            builder: (_, _) => const RegisterScreen(),
+          ),
+          GoRoute(
+            path:    'forgot-password',
             builder: (_, _) => const ForgotPasswordScreen(),
           ),
           GoRoute(
             path: 'otp-verification',
-            builder: (_, _) => const OtpVerificationScreen(),
+            builder: (_, state) {
+              final extra = state.extra as Map<String, dynamic>? ?? {};
+              return OtpVerificationScreen(
+                email: extra['email'] as String? ?? '',
+              );
+            },
           ),
           GoRoute(
             path: 'reset-password',
-            builder: (_, _) => const ResetPasswordScreen(),
+            builder: (_, state) {
+              final extra = state.extra as Map<String, dynamic>? ?? {};
+              return ResetPasswordScreen(
+                resetToken: extra['resetToken'] as String? ?? '',
+              );
+            },
           ),
         ],
       ),
 
+      // ── Field detail + Booking flow (ngoài shell — không có bottom nav) ──
+      //
+      // Lý do để ngoài StatefulShellRoute:
+      //   • StatefulShellBranch chỉ navigate được trong branch của nó.
+      //   • Booking flow cần full-screen stack, không có bottom nav.
+      //   • extra được truyền qua context.push(..., extra: {...}) theo từng bước.
+      //
+      // Flow:
+      //   /fields/detail          ← extra: FieldModel
+      //     → /fields/confirm     ← extra: { field, date, slots }
+      //       → /fields/success   ← extra: { booking, remainderMethod }
+      //       → /fields/failure   ← extra: { error }
+      GoRoute(
+        path: '/fields/detail',
+        builder: (_, _) => const FieldDetailScreen(),
+      ),
+      GoRoute(
+        path:    '/fields/confirm',
+        builder: (_, _) => const BookingConfirmationScreen(),
+      ),
+      GoRoute(
+        path:    '/fields/success',
+        builder: (_, _) => const BookingSuccessScreen(),
+      ),
+      GoRoute(
+        path:    '/fields/failure',
+        builder: (_, _) => const BookingFailureScreen(),
+      ),
+
+      // ── Booking detail (ngoài shell — push từ booking history) ───────────
+      //
+      // extra: { 'bookingId': int }
+      // GoRoute(
+      //   path: '/booking_history/detail',
+      //   builder: (_, state) {
+      //     final extra     = state.extra as Map<String, dynamic>? ?? {};
+      //     final bookingId = extra['bookingId'] as int? ?? 0;
+      //     return BookingDetailScreen(bookingId: bookingId);
+      //   },
+      // ),
+
+      // ── Main shell — 4 tabs (có bottom nav) ──────────────────────────────
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             MainScreen(shell: navigationShell),
         branches: [
-          StatefulShellBranch(
-            routes: [
-              GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
-            ],
-          ),
+
+          // Tab 0 — Trang chủ
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/fields',
-                builder: (_, _) => const FieldListScreen(),
-                // routes: [
-                //   GoRoute(
-                //     path: 'detail',
-                //     builder: (_, _) => const FieldDetailScreen(),
-                //   ),
-                //   GoRoute(
-                //     path: 'booking_confirm',
-                //     builder: (_, _) => const BookingConfirmationScreen(),
-                //     routes: [
-                //       GoRoute(
-                //         path: 'booking_success',
-                //         builder: (_, _) => const BookingSuccessScreen(),
-                //       ),
-                //       GoRoute(
-                //         path: 'booking_failure',
-                //         builder: (_, _) => const BookingFailureScreen(),
-                //       ),
-                //     ],
-                //   ),
-                // ],
+                path:    '/home',
+                builder: (_, _) => const HomeScreen(),
               ),
             ],
           ),
+
+          // Tab 1 — Sân bóng
+          //   /fields           → FieldListScreen
+          //   Tap vào sân       → context.push('/fields/detail', extra: field)
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/booking_history',
-                builder: (_, _) => const BookingHistoryScreen(),
-                routes: [
+                path:    '/fields',
+                builder: (_, _) => const FieldListScreen(),
+                 routes: [
                   GoRoute(
                     path: 'detail',
-                    builder: (_, _) => const BookingDetailScreen(),
+                    builder: (_, _) => const FieldDetailScreen(),
                   ),
                 ],
               ),
             ],
           ),
+
+          // Tab 2 — Lịch sử đặt sân
+          //   /booking_history            → BookingHistoryScreen
+          //   Tap vào booking             → context.push('/booking_history/detail', extra: {'bookingId': id})
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/profile',
+                path:    '/booking_history',
+                builder: (_, _) => const BookingHistoryScreen(),
+              ),
+            ],
+          ),
+
+          // Tab 3 — Hồ sơ
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path:    '/profile',
                 builder: (_, _) => const ProfileScreen(),
                 routes: [
                   GoRoute(
-                    path: 'edit_profile',
+                    path:    'edit_profile',
                     builder: (_, _) => const EditProfileScreen(),
                   ),
                   GoRoute(
-                    path: 'change_password',
+                    path:    'change_password',
                     builder: (_, _) => const ChangePasswordScreen(),
                   ),
                 ],
@@ -165,8 +217,11 @@ class AppRouter {
       ),
     ],
 
-    /// ================= ERROR =================
-    errorBuilder: (context, state) =>
-        Scaffold(body: Center(child: Text('Không tìm thấy: ${state.uri}'))),
+    // ── ERROR PAGE ──────────────────────────────────────────────────────────
+    errorBuilder: (context, state) => Scaffold(
+      body: Center(
+        child: Text('Không tìm thấy trang: ${state.uri}'),
+      ),
+    ),
   );
 }

@@ -16,22 +16,22 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _nameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
+  final _nameCtrl     = TextEditingController();
+  final _emailCtrl    = TextEditingController();
+  final _phoneCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  final _confirmCtrl = TextEditingController();
+  final _confirmCtrl  = TextEditingController();
 
-  final _nameFocus = FocusNode();
-  final _emailFocus = FocusNode();
-  final _phoneFocus = FocusNode();
+  final _nameFocus     = FocusNode();
+  final _emailFocus    = FocusNode();
+  final _phoneFocus    = FocusNode();
   final _passwordFocus = FocusNode();
-  final _confirmFocus = FocusNode();
+  final _confirmFocus  = FocusNode();
 
   bool _obscurePassword = true;
-  bool _obscureConfirm = true;
-  bool _agreedToTerms = false;
-  bool _isLoading = false;
+  bool _obscureConfirm  = true;
+  bool _agreedToTerms   = false;
+  bool _isLoading       = false;
 
   String? _nameError;
   String? _emailError;
@@ -40,43 +40,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _confirmError;
 
   @override
-  void initState() {
-    super.initState();
-    debugPrint('REGISTER SCREEN: mounted');
-  }
-
-  @override
   void dispose() {
-    _nameCtrl.dispose();
-    _nameFocus.dispose();
-    _emailCtrl.dispose();
-    _emailFocus.dispose();
-    _phoneCtrl.dispose();
-    _phoneFocus.dispose();
-    _passwordCtrl.dispose();
-    _passwordFocus.dispose();
-    _confirmCtrl.dispose();
-    _confirmFocus.dispose();
+    _nameCtrl.dispose();     _nameFocus.dispose();
+    _emailCtrl.dispose();    _emailFocus.dispose();
+    _phoneCtrl.dispose();    _phoneFocus.dispose();
+    _passwordCtrl.dispose(); _passwordFocus.dispose();
+    _confirmCtrl.dispose();  _confirmFocus.dispose();
     super.dispose();
   }
 
   bool _validate() {
+    final name     = _nameCtrl.text.trim();
+    final email    = _emailCtrl.text.trim();
+    final phone    = _phoneCtrl.text.trim();
+    final password = _passwordCtrl.text;
+    final confirm  = _confirmCtrl.text;
+
     setState(() {
-      _nameError = _nameCtrl.text.trim().isEmpty
-          ? 'Vui lòng nhập họ và tên'
-          : null;
-      _emailError = !_emailCtrl.text.trim().contains('@')
-          ? 'Email không hợp lệ'
-          : null;
-      _phoneError = _phoneCtrl.text.trim().length < 9
-          ? 'Số điện thoại không hợp lệ'
-          : null;
-      _passwordError = _passwordCtrl.text.length < 6
-          ? 'Mật khẩu tối thiểu 6 ký tự'
-          : null;
-      _confirmError = _confirmCtrl.text != _passwordCtrl.text
-          ? 'Mật khẩu xác nhận không khớp'
-          : null;
+      _nameError = name.isEmpty ? 'Vui lòng nhập họ và tên' : null;
+
+      if (email.isEmpty) {
+        _emailError = 'Vui lòng nhập email';
+      } else if (!email.contains('@') || !email.contains('.')) {
+        _emailError = 'Email không hợp lệ';
+      } else {
+        _emailError = null;
+      }
+
+      if (phone.isEmpty) {
+        _phoneError = 'Vui lòng nhập số điện thoại';
+      } else if (phone.length < 9) {
+        _phoneError = 'Số điện thoại không hợp lệ';
+      } else {
+        _phoneError = null;
+      }
+
+      if (password.isEmpty) {
+        _passwordError = 'Vui lòng nhập mật khẩu';
+      } else if (password.length < 6) {
+        _passwordError = 'Mật khẩu tối thiểu 6 ký tự';
+      } else {
+        _passwordError = null;
+      }
+
+      if (confirm.isEmpty) {
+        _confirmError = 'Vui lòng xác nhận mật khẩu';
+      } else if (confirm != password) {
+        _confirmError = 'Mật khẩu xác nhận không khớp';
+      } else {
+        _confirmError = null;
+      }
     });
 
     return _nameError == null &&
@@ -88,6 +101,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _onRegister() async {
     FocusScope.of(context).unfocus();
+
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -97,36 +111,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       return;
     }
+
     if (!_validate()) return;
 
     setState(() => _isLoading = true);
     try {
       await AuthService.instance.register(
-        email: _emailCtrl.text.trim(),
-        phone: _phoneCtrl.text.trim(),
-        password: _passwordCtrl.text.trim(),
+        email:    _emailCtrl.text.trim(),
+        phone:    _phoneCtrl.text.trim(),
+        password: _passwordCtrl.text,
         fullName: _nameCtrl.text.trim(),
       );
-      // FIX: bỏ AuthGuard.instance.setAuthenticated() ở đây —
-      // AuthService.register() đã gọi nội bộ rồi (nhất quán với login).
-      // GoRouter tự redirect khi nhận notifyListeners().
+      // AuthService.register() đã gọi _guard.setAuthenticated() nội bộ
+      // → GoRouter.redirect() tự chuyển về /home
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppColors.errorRed,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  void _onLogin() => context.go('/auth/login');
-  void _onGoogleRegister() {} // TODO
-  void _onFacebookRegister() {} // TODO
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +168,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 12),
+
                   const Center(
                     child: Text(
                       'Gia nhập đội hình',
@@ -184,92 +194,94 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 32),
 
+                  // ── Họ và tên ──────────────────────────────────
                   const SpFieldLabel('HỌ VÀ TÊN'),
                   const SizedBox(height: 8),
                   SpTextField(
-                    controller: _nameCtrl,
-                    focusNode: _nameFocus,
+                    controller:    _nameCtrl,
+                    focusNode:     _nameFocus,
                     nextFocusNode: _emailFocus,
-                    hintText: 'Nhập họ và tên',
-                    keyboardType: TextInputType.name,
-                    prefixIcon: Icons.person_outline_rounded,
-                    errorText: _nameError,
-                    onChanged: (_) => setState(() => _nameError = null),
+                    hintText:      'Nhập họ và tên',
+                    keyboardType:  TextInputType.name,
+                    prefixIcon:    Icons.person_outline_rounded,
+                    errorText:     _nameError,
+                    onChanged:     (_) => setState(() => _nameError = null),
                   ),
                   const SizedBox(height: 18),
 
+                  // ── Email ──────────────────────────────────────
                   const SpFieldLabel('EMAIL'),
                   const SizedBox(height: 8),
                   SpTextField(
-                    controller: _emailCtrl,
-                    focusNode: _emailFocus,
+                    controller:    _emailCtrl,
+                    focusNode:     _emailFocus,
                     nextFocusNode: _phoneFocus,
-                    hintText: 'name@example.com',
-                    keyboardType: TextInputType.emailAddress,
-                    prefixIcon: Icons.email_outlined,
-                    errorText: _emailError,
-                    onChanged: (_) => setState(() => _emailError = null),
+                    hintText:      'name@example.com',
+                    keyboardType:  TextInputType.emailAddress,
+                    prefixIcon:    Icons.email_outlined,
+                    errorText:     _emailError,
+                    onChanged:     (_) => setState(() => _emailError = null),
                   ),
                   const SizedBox(height: 18),
 
+                  // ── Số điện thoại ──────────────────────────────
                   const SpFieldLabel('SỐ ĐIỆN THOẠI'),
                   const SizedBox(height: 8),
                   SpTextField(
-                    controller: _phoneCtrl,
-                    focusNode: _phoneFocus,
+                    controller:    _phoneCtrl,
+                    focusNode:     _phoneFocus,
                     nextFocusNode: _passwordFocus,
-                    hintText: '0xxxxxxxxx',
-                    keyboardType: TextInputType.phone,
-                    prefixIcon: Icons.phone_android_outlined,
-                    errorText: _phoneError,
-                    onChanged: (_) => setState(() => _phoneError = null),
+                    hintText:      '0xxxxxxxxx',
+                    keyboardType:  TextInputType.phone,
+                    prefixIcon:    Icons.phone_android_outlined,
+                    errorText:     _phoneError,
+                    onChanged:     (_) => setState(() => _phoneError = null),
                   ),
                   const SizedBox(height: 18),
 
+                  // ── Mật khẩu ───────────────────────────────────
                   const SpFieldLabel('MẬT KHẨU'),
                   const SizedBox(height: 8),
                   SpPasswordField(
                     controller: _passwordCtrl,
-                    obscure: _obscurePassword,
-                    onToggle: () =>
+                    obscure:    _obscurePassword,
+                    onToggle:   () =>
                         setState(() => _obscurePassword = !_obscurePassword),
-                    errorText: _passwordError,
-                    onChanged: (_) => setState(() => _passwordError = null),
+                    errorText:  _passwordError,
+                    onChanged:  (_) => setState(() => _passwordError = null),
                   ),
                   const SizedBox(height: 18),
 
+                  // ── Xác nhận mật khẩu ──────────────────────────
                   const SpFieldLabel('XÁC NHẬN MẬT KHẨU'),
                   const SizedBox(height: 8),
                   SpPasswordField(
                     controller: _confirmCtrl,
-                    obscure: _obscureConfirm,
-                    onToggle: () =>
+                    obscure:    _obscureConfirm,
+                    onToggle:   () =>
                         setState(() => _obscureConfirm = !_obscureConfirm),
-                    errorText: _confirmError,
-                    onChanged: (_) => setState(() => _confirmError = null),
+                    errorText:  _confirmError,
+                    onChanged:  (_) => setState(() => _confirmError = null),
                   ),
                   const SizedBox(height: 22),
 
+                  // ── Terms ──────────────────────────────────────
                   _TermsCheckbox(
-                    value: _agreedToTerms,
-                    onChanged: (v) =>
-                        setState(() => _agreedToTerms = v ?? false),
-                    onTermsTap: () {},
-                    onPrivacyTap: () {},
+                    value:     _agreedToTerms,
+                    onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
                   ),
                   const SizedBox(height: 28),
 
                   SpPrimaryButton(
-                    label: 'Đăng ký',
+                    label:     'ĐĂNG KÝ',
                     isLoading: _isLoading,
-                    onTap: _agreedToTerms ? _onRegister : null,
-                    trailingIcon: null,
+                    onTap:     _agreedToTerms ? _onRegister : null,
                   ),
                   const SizedBox(height: 20),
 
                   Center(
                     child: GestureDetector(
-                      onTap: _onLogin,
+                      onTap: () => context.go('/auth/login'),
                       child: RichText(
                         text: const TextSpan(
                           children: [
@@ -293,30 +305,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 28),
-
-                  const SpOrDivider(),
-                  const SizedBox(height: 20),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SpSocialButton(
-                          label: 'Google',
-                          icon: const SpGoogleIcon(),
-                          onTap: _onGoogleRegister,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: SpSocialButton(
-                          label: 'Facebook',
-                          icon: const SpFacebookIcon(),
-                          onTap: _onFacebookRegister,
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -328,19 +316,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-// ── TERMS CHECKBOX ─────────────────────────────────────────────────────────
+// ── TERMS CHECKBOX ────────────────────────────────────────────────
 class _TermsCheckbox extends StatelessWidget {
   final bool value;
   final ValueChanged<bool?> onChanged;
-  final VoidCallback onTermsTap;
-  final VoidCallback onPrivacyTap;
 
-  const _TermsCheckbox({
-    required this.value,
-    required this.onChanged,
-    required this.onTermsTap,
-    required this.onPrivacyTap,
-  });
+  const _TermsCheckbox({required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -367,45 +348,13 @@ class _TermsCheckbox extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: const TextStyle(
-                color: AppColors.textMid,
-                fontSize: 13.5,
-                height: 1.5,
-              ),
-              children: [
-                const TextSpan(text: 'Tôi đồng ý với các '),
-                WidgetSpan(
-                  child: GestureDetector(
-                    onTap: onTermsTap,
-                    child: const Text(
-                      'Điều khoản sử dụng',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ),
-                const TextSpan(text: ' và '),
-                WidgetSpan(
-                  child: GestureDetector(
-                    onTap: onPrivacyTap,
-                    child: const Text(
-                      'Chính sách bảo mật',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ),
-                const TextSpan(text: '.'),
-              ],
+        const Expanded(
+          child: Text(
+            'Tôi đồng ý với Điều khoản sử dụng và Chính sách bảo mật của Sport Plus.',
+            style: TextStyle(
+              color: AppColors.textMid,
+              fontSize: 13.5,
+              height: 1.5,
             ),
           ),
         ),
