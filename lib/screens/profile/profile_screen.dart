@@ -48,22 +48,22 @@ final _accountItems = [
   ),
 ];
 
-final _supportItems = [
-  _MenuItem(
-    icon: Icons.help_outline_rounded,
-    iconBg: const Color(0xFFE3F2FD),
-    iconColor: AppColors.infoBlue,
-    label: 'Hỗ trợ & Liên hệ',
-    route: '',
-  ),
-  _MenuItem(
-    icon: Icons.description_outlined,
-    iconBg: const Color(0xFFF3E5F5),
-    iconColor: const Color(0xFF7B1FA2),
-    label: 'Điều khoản & Chính sách',
-    route: '',
-  ),
-];
+// final _supportItems = [
+//   _MenuItem(
+//     icon: Icons.help_outline_rounded,
+//     iconBg: const Color(0xFFE3F2FD),
+//     iconColor: AppColors.infoBlue,
+//     label: 'Hỗ trợ & Liên hệ',
+//     route: '',
+//   ),
+//   _MenuItem(
+//     icon: Icons.description_outlined,
+//     iconBg: const Color(0xFFF3E5F5),
+//     iconColor: const Color(0xFF7B1FA2),
+//     label: 'Điều khoản & Chính sách',
+//     route: '',
+//   ),
+// ];
 
 // ─────────────────────────────────────────────
 //  PROFILE SCREEN
@@ -196,11 +196,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _MenuGroup(items: _accountItems, onTap: _onMenuItem),
                       const SizedBox(height: 20),
 
-                      // ── Support section ──────────────────────────
-                      _SectionLabel('THÔNG TIN & HỖ TRỢ'),
-                      const SizedBox(height: 8),
-                      _MenuGroup(items: _supportItems, onTap: _onMenuItem),
-                      const SizedBox(height: 24),
+                      // // ── Support section ──────────────────────────
+                      // _SectionLabel('THÔNG TIN & HỖ TRỢ'),
+                      // const SizedBox(height: 8),
+                      // _MenuGroup(items: _supportItems, onTap: _onMenuItem),
+                      // const SizedBox(height: 24),
 
                       // ── Logout ───────────────────────────────────
                       _LogoutButton(

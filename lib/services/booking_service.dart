@@ -14,17 +14,28 @@ class BookingService {
   // ── HOLD SLOTS ─────────────────────────────────────────────────
   /// POST /api/bookings/hold
   /// Body: { fieldSlotIds: [int] }
-  /// Giữ slot tạm thời (status = PendingPayment) trước khi tạo booking chính thức
+  ///
+  /// Bước bắt buộc trước createBooking trong Flow 1 và Flow 2.
+  /// Hold không trả booking object (data: null) — chỉ chiếm slot tạm.
+  /// Background job tự giải phóng slot nếu không hoàn tất trong thời hạn.
   Future<void> holdSlots(List<int> fieldSlotIds) async {
     await _api.post('/api/bookings/hold', body: {'fieldSlotIds': fieldSlotIds});
   }
 
   // ── CREATE BOOKING ─────────────────────────────────────────────
   /// POST /api/bookings
-  /// Body: { fieldSlotIds, services?, promotionCode?, note? }
-  /// Trả về BookingModel đầy đủ kèm deposit info
+  /// Body: { fieldSlotIds, isFullPayment, services?, promotionCode?, note? }
+  ///
+  /// isFullPayment=false (Flow 1 — mặc định):
+  ///   → statusId=5, depositAmount>0, deposit object tồn tại
+  ///   → Cần gọi VNPay lần 1 charge depositAmount, rồi lần 2 charge phần còn lại
+  ///
+  /// isFullPayment=true (Flow 2):
+  ///   → statusId=2, depositAmount=0, deposit=null
+  ///   → Gọi VNPay 1 lần duy nhất charge toàn bộ totalAmount
   Future<BookingModel> createBooking({
     required List<int> fieldSlotIds,
+    required bool isFullPayment,
     List<ServiceRequestItem> services = const [],
     String? promotionCode,
     String? note,
@@ -32,12 +43,14 @@ class BookingService {
     final res = await _api.post(
       '/api/bookings',
       body: {
-        'fieldSlotIds': fieldSlotIds,
+        'fieldSlotIds':  fieldSlotIds,
+        'isFullPayment': isFullPayment,
         if (services.isNotEmpty)
           'services': services.map((s) => s.toJson()).toList(),
         if (promotionCode != null && promotionCode.trim().isNotEmpty)
           'promotionCode': promotionCode.trim(),
-        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        if (note != null && note.trim().isNotEmpty)
+          'note': note.trim(),
       },
     );
     return res.item(BookingModel.fromJson);
@@ -48,14 +61,14 @@ class BookingService {
   /// Params: statusId?, page, pageSize
   Future<PagedBookingResult> getMyBookings({
     int? statusId,
-    int page = 1,
+    int page     = 1,
     int pageSize = 10,
   }) async {
     final res = await _api.get(
       '/api/bookings/my',
       queryParameters: {
         'statusId': ?statusId,
-        'page': page,
+        'page':     page,
         'pageSize': pageSize,
       },
     );
@@ -93,7 +106,7 @@ class BookingService {
       '/api/bookings/$bookingId/reschedule',
       body: {
         'bookingDetailId': bookingDetailId,
-        'newFieldSlotId': newFieldSlotId,
+        'newFieldSlotId':  newFieldSlotId,
       },
     );
   }
@@ -101,6 +114,9 @@ class BookingService {
   // ── APPLY VOUCHER ──────────────────────────────────────────────
   /// POST /api/bookings/{bookingId}/apply-voucher
   /// Body: { code }
+  ///
+  /// Chỉ áp được khi booking ở statusId == 1 hoặc 5.
+  /// Chỉ được gọi 1 lần — backend trả lỗi nếu đã có promotionCode.
   Future<void> applyVoucher({
     required int bookingId,
     required String code,

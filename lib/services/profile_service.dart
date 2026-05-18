@@ -90,7 +90,7 @@ class ProfileService {
   /// PUT /api/profile/avatar
   /// Body: multipart/form-data, field name = "file"
   /// Response data: String — relative path "/Uploads/avatar/..."
-  Future<String> updateAvatar(String filePath) async {
+  Future<void> updateAvatar(String filePath) async {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(filePath),
     });
@@ -100,6 +100,6 @@ class ProfileService {
     final fullUrl = rawUrl.toFullMediaUrl ?? rawUrl;
 
     await _session.updateAvatar(fullUrl);
-    return fullUrl;
+    // return fullUrl;
   }
 }

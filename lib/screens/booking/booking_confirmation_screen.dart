@@ -3,14 +3,14 @@
 // extra: { 'field': FieldModel, 'date': DateTime, 'slots': List<SlotModel> }
 //
 // FLOW:
-//   1. Hiển thị chi tiết sân + slot đã chọn
+//   1. Hiển thị thông tin sân + slot đã chọn
 //   2. Chọn dịch vụ đi kèm (optional)
 //   3. Nhập mã giảm giá (optional)
-//   4. Chọn cách thanh toán PHẦN CÒN LẠI sau khi cọc:
-//      • Thanh toán tại sân   → staff thu phần còn lại
-//      • Thanh toán qua MoMo → user tự thanh toán full qua MoMo
-//   5. Xác nhận → holdSlots → createBooking → createMoMoPayment
-//      → url_launcher mở MoMo → deep link → success / failure
+//   4. Tick "Thanh toán toàn bộ" nếu muốn trả full 1 lần qua VNPay
+//      (mặc định = false → chỉ cọc qua VNPay, phần còn lại trả tại sân)
+//   5. Bấm XÁC NHẬN:
+//        holdSlots → createBooking(isFullPayment) → createVnPayPayment
+//        → launchUrl VNPay → deep link xử lý kết quả cuối
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,20 +28,13 @@ import '../../widgets/shared_widgets.dart';
 // ── UTILS ──────────────────────────────────────────────────────────────────────
 String _fmtMoney(double amount) {
   if (amount == 0) return '0đ';
-  final s   = amount.toStringAsFixed(0);
+  final s = amount.toStringAsFixed(0);
   final buf = StringBuffer();
   for (int i = 0; i < s.length; i++) {
     if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
     buf.write(s[i]);
   }
   return '$bufđ';
-}
-
-// ── CONSTANTS ──────────────────────────────────────────────────────────────────
-// Cách thanh toán phần còn lại (sau khi đã cọc xong qua MoMo)
-enum _RemainderMethod {
-  atVenue,    // Trả tại sân — staff thu
-  fullOnline, // Thanh toán toàn bộ qua MoMo ngay bây giờ
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -55,45 +48,46 @@ class BookingConfirmationScreen extends StatefulWidget {
       _BookingConfirmationScreenState();
 }
 
-class _BookingConfirmationScreenState
-    extends State<BookingConfirmationScreen> {
+class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   // ── Input từ extra ──────────────────────────────────────────────────────────
-  late FieldModel       _field;
-  late DateTime         _date;
-  late List<SlotModel>  _slots;
+  late FieldModel _field;
+  late DateTime _date;
+  late List<SlotModel> _slots;
   bool _extraLoaded = false;
 
   // ── Services ────────────────────────────────────────────────────────────────
-  List<ServiceModel> _services        = [];
-  bool               _isLoadingServices = false;
+  List<ServiceModel> _services = [];
+  bool _isLoadingServices = false;
 
   // ── Selection ───────────────────────────────────────────────────────────────
-  final Map<int, int> _serviceQty     = {}; // serviceId → quantity
-  _RemainderMethod    _remainderMethod = _RemainderMethod.fullOnline;
+  final Map<int, int> _serviceQty = {}; // serviceId → quantity
+
+  // ── Payment mode ────────────────────────────────────────────────────────────
+  // false = chỉ cọc qua VNPay, còn lại trả tại sân (Flow 1 — mặc định)
+  // true  = trả toàn bộ ngay qua VNPay                (Flow 2)
+  bool _isFullPayment = false;
 
   // ── Voucher ─────────────────────────────────────────────────────────────────
-  final _voucherCtrl  = TextEditingController();
+  final _voucherCtrl = TextEditingController();
   PromotionModel? _promotion;
-  bool   _isCheckingVoucher = false;
+  bool _isCheckingVoucher = false;
   String? _voucherError;
 
   // ── Booking ─────────────────────────────────────────────────────────────────
-  bool   _isProcessing = false;
+  bool _isProcessing = false;
   String? _bookingError;
 
   // ── Derived ─────────────────────────────────────────────────────────────────
-  double get _slotTotal =>
-      _slots.fold(0.0, (s, slot) => s + slot.price);
+  double get _slotTotal => _slots.fold(0.0, (s, slot) => s + slot.price);
 
-  double get _serviceTotal =>
-      _services.fold(0.0, (s, svc) {
-        final qty = _serviceQty[svc.serviceId] ?? 0;
-        return s + svc.price * qty;
-      });
+  double get _serviceTotal => _services.fold(0.0, (s, svc) {
+    final qty = _serviceQty[svc.serviceId] ?? 0;
+    return s + svc.price * qty;
+  });
 
   double get _subTotal => _slotTotal + _serviceTotal;
   double get _discount => _promotion?.calcDiscount(_subTotal) ?? 0;
-  double get _total    => (_subTotal - _discount).clamp(0, double.infinity);
+  double get _total => (_subTotal - _discount).clamp(0, double.infinity);
 
   // ── Lifecycle ───────────────────────────────────────────────────────────────
   @override
@@ -102,9 +96,9 @@ class _BookingConfirmationScreenState
     if (!_extraLoaded) {
       final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
       if (extra != null) {
-        _field       = extra['field'] as FieldModel;
-        _date        = extra['date']  as DateTime;
-        _slots       = List<SlotModel>.from(extra['slots'] as List);
+        _field = extra['field'] as FieldModel;
+        _date = extra['date'] as DateTime;
+        _slots = List<SlotModel>.from(extra['slots'] as List);
         _extraLoaded = true;
         _loadServices();
       }
@@ -124,7 +118,7 @@ class _BookingConfirmationScreenState
       final list = await BookingService.instance.getServices(isAvailable: true);
       if (!mounted) return;
       setState(() {
-        _services          = list;
+        _services = list;
         _isLoadingServices = false;
       });
     } catch (_) {
@@ -138,20 +132,20 @@ class _BookingConfirmationScreenState
     if (code.isEmpty) return;
     setState(() {
       _isCheckingVoucher = true;
-      _voucherError      = null;
-      _promotion         = null;
+      _voucherError = null;
+      _promotion = null;
     });
     try {
       final promo = await BookingService.instance.getPromotion(code);
       if (!mounted) return;
       setState(() {
-        _promotion         = promo;
+        _promotion = promo;
         _isCheckingVoucher = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _voucherError      = e.toString();
+        _voucherError = e.toString();
         _isCheckingVoucher = false;
       });
     }
@@ -166,47 +160,59 @@ class _BookingConfirmationScreenState
     try {
       final slotIds = _slots.map((s) => s.fieldSlotId).toList();
 
-      // 1. Hold slots
-      await BookingService.instance.holdSlots(slotIds);
+      // 1. Hold slots (bắt buộc trước createBooking)
+      // await BookingService.instance.holdSlots(slotIds);
 
-      // 2. Build service items
+      // 2. Build service items (chỉ những item có qty > 0)
       final serviceItems = _services
           .where((s) => (_serviceQty[s.serviceId] ?? 0) > 0)
-          .map((s) => ServiceRequestItem(
-                serviceId: s.serviceId,
-                quantity:  _serviceQty[s.serviceId]!,
-              ))
+          .map(
+            (s) => ServiceRequestItem(
+              serviceId: s.serviceId,
+              quantity: _serviceQty[s.serviceId]!,
+            ),
+          )
           .toList();
 
       // 3. Tạo booking
+      //    isFullPayment=false → statusId=5, tạo deposit object  (Flow 1)
+      //    isFullPayment=true  → statusId=2, không tạo deposit   (Flow 2)
       final booking = await BookingService.instance.createBooking(
-        fieldSlotIds:  slotIds,
-        services:      serviceItems,
+        fieldSlotIds: slotIds,
+        services: serviceItems,
         promotionCode: _promotion?.code,
+        isFullPayment: _isFullPayment,
       );
 
       if (!mounted) return;
 
-      // 4. Tạo MoMo payment URL (bắt buộc cho deposit)
-      final payUrl = await PaymentService.instance.createMoMoPayment(
+      // 4. Tạo VNPay URL
+      //    Backend tự detect context từ bookingStatus:
+      //      statusId==5 → charge depositAmount   (Flow 1, bước 1)
+      //      statusId==2 → charge toàn bộ total   (Flow 2)
+      final payResult = await PaymentService.instance.createVnPayPayment(
         booking.bookingId,
       );
 
       if (!mounted) return;
 
-      // 5. Mở MoMo
-      final uri = Uri.parse(payUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      // 5. Mở VNPay trong browser ngoài
+      // final uri = Uri.parse(payResult.paymentUrl);
+      // if (await canLaunchUrl(uri)) {
+      //   await launchUrl(uri, mode: LaunchMode.externalApplication);
+      // }
+      final uri = Uri.parse(payResult.paymentUrl);
+
+      try {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      } catch (e) {
+        debugPrint("Cannot launch: $e");
       }
 
-      // 6. Chuyển sang success screen — deep link sẽ xử lý kết quả thực tế
-      //    nhưng ta vẫn push success để user thấy trạng thái "đang chờ"
+      // 6. Chuyển sang success screen để user thấy trạng thái "đang xử lý"
+      //    Deep link (sportplus://payment/result) sẽ xử lý kết quả VNPay thực tế
       if (!mounted) return;
-      context.pushReplacement('/fields/success', extra: {
-        'booking':         booking,
-        'remainderMethod': _remainderMethod,
-      });
+      context.pushReplacement('/booking/success', extra: {'booking': booking});
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -234,29 +240,32 @@ class _BookingConfirmationScreenState
         appBar: AppBar(
           title: const Text('Xác nhận đặt sân'),
           leading: IconButton(
-            icon:     const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back),
             onPressed: () => context.pop(),
           ),
         ),
         bottomNavigationBar: _CtaBar(
-          total:     _fmtMoney(_total),
+          total: _fmtMoney(_total),
           isLoading: _isProcessing,
           onConfirm: _confirm,
         ),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.pagePadH, 16, AppSpacing.pagePadH, 24,
+            AppSpacing.pagePadH,
+            16,
+            AppSpacing.pagePadH,
+            24,
           ),
           children: [
-            // ── Hero sân ──────────────────────────────────────────────────
+            // ── Hero sân ────────────────────────────────────────────────────
             _FieldHeroCard(field: _field),
             const SizedBox(height: 14),
 
-            // ── Chi tiết slot ──────────────────────────────────────────────
+            // ── Chi tiết slot ───────────────────────────────────────────────
             _SlotDetailCard(slots: _slots, date: _date),
             const SizedBox(height: 20),
 
-            // ── Dịch vụ đi kèm ────────────────────────────────────────────
+            // ── Dịch vụ đi kèm ─────────────────────────────────────────────
             const _SectionLabel('Dịch vụ đi kèm'),
             const SizedBox(height: 10),
             if (_isLoadingServices)
@@ -264,71 +273,65 @@ class _BookingConfirmationScreenState
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: CircularProgressIndicator(
-                    color: AppColors.primary, strokeWidth: 2,
+                    color: AppColors.primary,
+                    strokeWidth: 2,
                   ),
                 ),
               )
             else if (_services.isEmpty)
               const _EmptyServices()
             else
-              ..._services.map((svc) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _ServiceTile(
-                      service:  svc,
-                      quantity: _serviceQty[svc.serviceId] ?? 0,
-                      onChanged: (qty) =>
-                          setState(() => _serviceQty[svc.serviceId] = qty),
-                    ),
-                  )),
+              ..._services.map(
+                (svc) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _ServiceTile(
+                    service: svc,
+                    quantity: _serviceQty[svc.serviceId] ?? 0,
+                    onChanged: (qty) =>
+                        setState(() => _serviceQty[svc.serviceId] = qty),
+                  ),
+                ),
+              ),
 
-            // ── Mã giảm giá ───────────────────────────────────────────────
+            // ── Mã giảm giá ─────────────────────────────────────────────────
             const SizedBox(height: 6),
             const _SectionLabel('Mã giảm giá'),
             const SizedBox(height: 10),
             _VoucherRow(
               controller: _voucherCtrl,
-              isLoading:  _isCheckingVoucher,
-              promotion:  _promotion,
-              error:      _voucherError,
-              onApply:    _checkVoucher,
-              onRemove:   () => setState(() {
-                _promotion    = null;
+              isLoading: _isCheckingVoucher,
+              promotion: _promotion,
+              error: _voucherError,
+              onApply: _checkVoucher,
+              onRemove: () => setState(() {
+                _promotion = null;
                 _voucherError = null;
                 _voucherCtrl.clear();
               }),
             ),
 
-            // ── Thanh toán phần còn lại ───────────────────────────────────
+            // ── Tổng tiền ───────────────────────────────────────────────────
             const SizedBox(height: 20),
-            const _SectionLabel('Thanh toán phần còn lại'),
-            const SizedBox(height: 6),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 10),
-              child: Text(
-                'Tiền cọc sẽ được thanh toán qua MoMo ngay sau khi xác nhận.',
-                style: TextStyle(color: AppColors.textLight, fontSize: 13),
-              ),
-            ),
-            _RemainderMethodCard(
-              selected:  _remainderMethod,
-              onChanged: (m) => setState(() => _remainderMethod = m),
-            ),
-
-            // ── Tổng tiền ─────────────────────────────────────────────────
-            const SizedBox(height: 14),
             _PriceSummaryCard(
-              slotTotal:    _slotTotal,
+              slotTotal: _slotTotal,
               serviceTotal: _serviceTotal,
-              discount:     _discount,
-              total:        _total,
-              promotion:    _promotion,
+              discount: _discount,
+              total: _total,
+              promotion: _promotion,
             ),
 
-            // ── Lưu ý MoMo ───────────────────────────────────────────────
+            // ── Tùy chọn thanh toán ─────────────────────────────────────────
+            const SizedBox(height: 20),
+            const _SectionLabel('Tùy chọn thanh toán'),
+            const SizedBox(height: 10),
+            _FullPaymentToggle(
+              value: _isFullPayment,
+              onChanged: (v) => setState(() => _isFullPayment = v),
+            ),
             const SizedBox(height: 12),
-            const _MomoNote(),
+            _PaymentNote(isFullPayment: _isFullPayment),
 
-            // ── Error banner ──────────────────────────────────────────────
+            // ── Error banner ────────────────────────────────────────────────
             if (_bookingError != null) ...[
               const SizedBox(height: 12),
               _ErrorBanner(message: _bookingError!),
@@ -349,10 +352,14 @@ class _FieldHeroCard extends StatelessWidget {
 
   Color get _placeholderColor {
     const palette = [
-      Color(0xFF1B5E20), Color(0xFF0D47A1), Color(0xFF4A148C),
-      Color(0xFF00695C), Color(0xFF4E342E),
+      Color(0xFF1B5E20),
+      Color(0xFF0D47A1),
+      Color(0xFF4A148C),
+      Color(0xFF00695C),
+      Color(0xFF4E342E),
     ];
-    return palette[field.name.codeUnits.fold(0, (a, b) => a + b) % palette.length];
+    return palette[field.name.codeUnits.fold(0, (a, b) => a + b) %
+        palette.length];
   }
 
   @override
@@ -364,32 +371,14 @@ class _FieldHeroCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Ảnh / placeholder
             field.imageUrl != null
                 ? Image.network(
                     field.imageUrl!,
-                    fit:          BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                      color: _placeholderColor,
-                      child: const Center(
-                        child: Icon(
-                          Icons.sports_soccer,
-                          color: Colors.white12,
-                          size:  64,
-                        ),
-                      ),
-                    ),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) =>
+                        _Placeholder(color: _placeholderColor),
                   )
-                : Container(
-                    color: _placeholderColor,
-                    child: const Center(
-                      child: Icon(
-                        Icons.sports_soccer,
-                        color: Colors.white12,
-                        size:  64,
-                      ),
-                    ),
-                  ),
+                : _Placeholder(color: _placeholderColor),
             // Gradient overlay
             Positioned.fill(
               child: DecoratedBox(
@@ -400,30 +389,33 @@ class _FieldHeroCard extends StatelessWidget {
                       Colors.black.withValues(alpha: 0.65),
                     ],
                     begin: Alignment.topCenter,
-                    end:   Alignment.bottomCenter,
+                    end: Alignment.bottomCenter,
                   ),
                 ),
               ),
             ),
             // Tên sân + loại
             Positioned(
-              left: 14, right: 14, bottom: 14,
+              left: 14,
+              right: 14,
+              bottom: 14,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3,
+                      horizontal: 8,
+                      vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color:        AppColors.primary,
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       field.fieldType.toUpperCase(),
                       style: const TextStyle(
-                        color:      Colors.white,
-                        fontSize:   10,
+                        color: Colors.white,
+                        fontSize: 10,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -432,8 +424,8 @@ class _FieldHeroCard extends StatelessWidget {
                   Text(
                     field.name,
                     style: const TextStyle(
-                      color:      Colors.white,
-                      fontSize:   20,
+                      color: Colors.white,
+                      fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -447,10 +439,23 @@ class _FieldHeroCard extends StatelessWidget {
   }
 }
 
+class _Placeholder extends StatelessWidget {
+  final Color color;
+  const _Placeholder({required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    color: color,
+    child: const Center(
+      child: Icon(Icons.sports_soccer, color: Colors.white12, size: 64),
+    ),
+  );
+}
+
 // ── SLOT DETAIL CARD ───────────────────────────────────────────────────────────
 class _SlotDetailCard extends StatelessWidget {
   final List<SlotModel> slots;
-  final DateTime        date;
+  final DateTime date;
   const _SlotDetailCard({required this.slots, required this.date});
 
   String get _dateStr =>
@@ -459,7 +464,7 @@ class _SlotDetailCard extends StatelessWidget {
       '${date.year}';
 
   String get _timeRange {
-    if (slots.isEmpty)  return '--';
+    if (slots.isEmpty) return '--';
     if (slots.length == 1) return slots.first.displayTime;
     return '${slots.first.startTime} - ${slots.last.endTime}';
   }
@@ -473,9 +478,9 @@ class _SlotDetailCard extends StatelessWidget {
           const Text(
             'CHI TIẾT ĐẶT SÂN',
             style: TextStyle(
-              color:         AppColors.textHint,
-              fontSize:      10.5,
-              fontWeight:    FontWeight.w700,
+              color: AppColors.textHint,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
             ),
           ),
@@ -484,7 +489,7 @@ class _SlotDetailCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _DetailCell(
-                  icon:  Icons.calendar_today_outlined,
+                  icon: Icons.calendar_today_outlined,
                   label: 'NGÀY',
                   value: _dateStr,
                 ),
@@ -492,37 +497,43 @@ class _SlotDetailCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _DetailCell(
-                  icon:       Icons.access_time_rounded,
-                  label:      slots.length > 1
+                  icon: Icons.access_time_rounded,
+                  label: slots.length > 1
                       ? 'KHUNG GIỜ (${slots.length} slot)'
                       : 'KHUNG GIỜ',
-                  value:      _timeRange,
+                  value: _timeRange,
                   valueColor: AppColors.primary,
                 ),
               ),
             ],
           ),
-          // Chip từng slot nếu nhiều hơn 1
           if (slots.length > 1) ...[
             const SizedBox(height: 10),
             Wrap(
-              spacing:    6,
+              spacing: 6,
               runSpacing: 6,
-              children: slots.map((s) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color:        AppColors.primaryUltraLight,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${s.displayTime}  ${s.isPeakHour ? '⚡' : ''}${s.priceFmt}',
-                  style: const TextStyle(
-                    color:      AppColors.primary,
-                    fontSize:   12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              )).toList(),
+              children: slots
+                  .map(
+                    (s) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryUltraLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${s.displayTime}  ${s.isPeakHour ? '⚡ ' : ''}${s.priceFmt}',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ],
@@ -533,9 +544,9 @@ class _SlotDetailCard extends StatelessWidget {
 
 class _DetailCell extends StatelessWidget {
   final IconData icon;
-  final String   label;
-  final String   value;
-  final Color?   valueColor;
+  final String label;
+  final String value;
+  final Color? valueColor;
   const _DetailCell({
     required this.icon,
     required this.label,
@@ -557,9 +568,9 @@ class _DetailCell extends StatelessWidget {
               Text(
                 label,
                 style: const TextStyle(
-                  color:         AppColors.textHint,
-                  fontSize:      10,
-                  fontWeight:    FontWeight.w700,
+                  color: AppColors.textHint,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
                 ),
               ),
@@ -567,8 +578,8 @@ class _DetailCell extends StatelessWidget {
               Text(
                 value,
                 style: TextStyle(
-                  color:      valueColor ?? AppColors.textDark,
-                  fontSize:   13.5,
+                  color: valueColor ?? AppColors.textDark,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -582,8 +593,8 @@ class _DetailCell extends StatelessWidget {
 
 // ── SERVICE TILE ───────────────────────────────────────────────────────────────
 class _ServiceTile extends StatelessWidget {
-  final ServiceModel      service;
-  final int               quantity;
+  final ServiceModel service;
+  final int quantity;
   final ValueChanged<int> onChanged;
 
   const _ServiceTile({
@@ -597,9 +608,9 @@ class _ServiceTile extends StatelessWidget {
     final selected = quantity > 0;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
-      padding:  const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color:        Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         border: Border.all(
           color: selected ? AppColors.primary : AppColors.fieldBorder,
@@ -609,21 +620,20 @@ class _ServiceTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Icon
           Container(
-            width: 42, height: 42,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
-              color:        AppColors.primaryUltraLight,
+              color: AppColors.primaryUltraLight,
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
               Icons.sports_soccer_outlined,
               color: AppColors.primary,
-              size:  20,
+              size: 20,
             ),
           ),
           const SizedBox(width: 12),
-          // Tên + mô tả
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -632,7 +642,7 @@ class _ServiceTile extends StatelessWidget {
                   service.name,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
-                    color:      AppColors.textDark,
+                    color: AppColors.textDark,
                   ),
                 ),
                 if (service.description != null &&
@@ -640,29 +650,27 @@ class _ServiceTile extends StatelessWidget {
                   Text(
                     service.description!,
                     style: const TextStyle(
-                      color:    AppColors.textLight,
+                      color: AppColors.textLight,
                       fontSize: 12.5,
                     ),
                   ),
               ],
             ),
           ),
-          // Giá
           Text(
             service.priceFmt,
             style: const TextStyle(
-              color:      AppColors.textMid,
+              color: AppColors.textMid,
               fontWeight: FontWeight.w600,
-              fontSize:   13,
+              fontSize: 13,
             ),
           ),
           const SizedBox(width: 10),
-          // Stepper
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               _StepBtn(
-                icon:  Icons.remove,
+                icon: Icons.remove,
                 onTap: quantity > 0 ? () => onChanged(quantity - 1) : null,
               ),
               SizedBox(
@@ -672,14 +680,11 @@ class _ServiceTile extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
-                    fontSize:   15,
+                    fontSize: 15,
                   ),
                 ),
               ),
-              _StepBtn(
-                icon:  Icons.add,
-                onTap: () => onChanged(quantity + 1),
-              ),
+              _StepBtn(icon: Icons.add, onTap: () => onChanged(quantity + 1)),
             ],
           ),
         ],
@@ -689,8 +694,8 @@ class _ServiceTile extends StatelessWidget {
 }
 
 class _StepBtn extends StatelessWidget {
-  final IconData       icon;
-  final VoidCallback?  onTap;
+  final IconData icon;
+  final VoidCallback? onTap;
   const _StepBtn({required this.icon, this.onTap});
 
   @override
@@ -698,16 +703,16 @@ class _StepBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width:  28,
+        width: 28,
         height: 28,
         decoration: BoxDecoration(
-          color:        onTap != null ? AppColors.primary : AppColors.fieldBg,
+          color: onTap != null ? AppColors.primary : AppColors.fieldBg,
           borderRadius: BorderRadius.circular(7),
         ),
         child: Icon(
           icon,
           color: onTap != null ? Colors.white : AppColors.textHint,
-          size:  16,
+          size: 16,
         ),
       ),
     );
@@ -722,9 +727,9 @@ class _EmptyServices extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color:        Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        boxShadow:    AppShadow.card,
+        boxShadow: AppShadow.card,
       ),
       child: const Center(
         child: Text(
@@ -739,11 +744,11 @@ class _EmptyServices extends StatelessWidget {
 // ── VOUCHER ROW ────────────────────────────────────────────────────────────────
 class _VoucherRow extends StatelessWidget {
   final TextEditingController controller;
-  final bool                  isLoading;
-  final PromotionModel?       promotion;
-  final String?               error;
-  final VoidCallback          onApply;
-  final VoidCallback          onRemove;
+  final bool isLoading;
+  final PromotionModel? promotion;
+  final String? error;
+  final VoidCallback onApply;
+  final VoidCallback onRemove;
 
   const _VoucherRow({
     required this.controller,
@@ -756,23 +761,20 @@ class _VoucherRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Đã áp dụng voucher thành công
     if (promotion != null) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color:        AppColors.primaryUltraLight,
+          color: AppColors.primaryUltraLight,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.4),
-          ),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
             const Icon(
               Icons.local_offer_outlined,
               color: AppColors.primary,
-              size:  18,
+              size: 18,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -782,15 +784,15 @@ class _VoucherRow extends StatelessWidget {
                   Text(
                     promotion!.code,
                     style: const TextStyle(
-                      color:      AppColors.primary,
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w800,
-                      fontSize:   14,
+                      fontSize: 14,
                     ),
                   ),
                   Text(
                     'Giảm ${promotion!.discountLabel}',
                     style: const TextStyle(
-                      color:    AppColors.textMid,
+                      color: AppColors.textMid,
                       fontSize: 12.5,
                     ),
                   ),
@@ -802,7 +804,7 @@ class _VoucherRow extends StatelessWidget {
               child: const Icon(
                 Icons.close,
                 color: AppColors.textLight,
-                size:  18,
+                size: 18,
               ),
             ),
           ],
@@ -810,7 +812,6 @@ class _VoucherRow extends StatelessWidget {
       );
     }
 
-    // Input voucher
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -820,7 +821,7 @@ class _VoucherRow extends StatelessWidget {
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color:        Colors.white,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: error != null
@@ -829,26 +830,27 @@ class _VoucherRow extends StatelessWidget {
                   ),
                 ),
                 child: TextField(
-                  controller:          controller,
-                  textCapitalization:  TextCapitalization.characters,
+                  controller: controller,
+                  textCapitalization: TextCapitalization.characters,
                   style: const TextStyle(
-                    fontSize:   14,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                   decoration: const InputDecoration(
                     hintText: 'Nhập mã giảm giá',
                     hintStyle: TextStyle(
-                      color:      AppColors.textHint,
+                      color: AppColors.textHint,
                       fontWeight: FontWeight.normal,
                     ),
-                    border:         InputBorder.none,
+                    border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 14,
+                      horizontal: 14,
+                      vertical: 14,
                     ),
                     prefixIcon: Icon(
                       Icons.local_offer_outlined,
                       color: AppColors.textHint,
-                      size:  18,
+                      size: 18,
                     ),
                   ),
                 ),
@@ -858,24 +860,26 @@ class _VoucherRow extends StatelessWidget {
             GestureDetector(
               onTap: isLoading ? null : onApply,
               child: Container(
-                height:  48,
+                height: 48,
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 decoration: BoxDecoration(
-                  color:        AppColors.primary,
+                  color: AppColors.primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: isLoading
                       ? const SizedBox(
-                          width: 18, height: 18,
+                          width: 18,
+                          height: 18,
                           child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2,
+                            color: Colors.white,
+                            strokeWidth: 2,
                           ),
                         )
                       : const Text(
                           'Áp dụng',
                           style: TextStyle(
-                            color:      Colors.white,
+                            color: Colors.white,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -889,10 +893,7 @@ class _VoucherRow extends StatelessWidget {
             padding: const EdgeInsets.only(top: 6, left: 4),
             child: Text(
               error!,
-              style: const TextStyle(
-                color:    AppColors.errorRed,
-                fontSize: 12.5,
-              ),
+              style: const TextStyle(color: AppColors.errorRed, fontSize: 12.5),
             ),
           ),
       ],
@@ -900,133 +901,12 @@ class _VoucherRow extends StatelessWidget {
   }
 }
 
-// ── REMAINDER METHOD CARD ──────────────────────────────────────────────────────
-class _RemainderMethodCard extends StatelessWidget {
-  final _RemainderMethod          selected;
-  final ValueChanged<_RemainderMethod> onChanged;
-
-  const _RemainderMethodCard({
-    required this.selected,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SpCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          _MethodTile(
-            icon:     Icons.payments_outlined,
-            title:    'Thanh toán tại sân',
-            subtitle: 'Cọc qua MoMo, phần còn lại trả staff tại sân',
-            value:    _RemainderMethod.atVenue,
-            selected: selected,
-            isFirst:  true,
-            isLast:   false,
-            onTap:    () => onChanged(_RemainderMethod.atVenue),
-          ),
-          const Divider(height: 1, color: AppColors.fieldBorder),
-          _MethodTile(
-            icon:     Icons.account_balance_wallet_outlined,
-            title:    'Thanh toán đầy đủ qua MoMo',
-            subtitle: 'Thanh toán toàn bộ ngay bây giờ qua MoMo',
-            value:    _RemainderMethod.fullOnline,
-            selected: selected,
-            isFirst:  false,
-            isLast:   true,
-            onTap:    () => onChanged(_RemainderMethod.fullOnline),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MethodTile extends StatelessWidget {
-  final IconData              icon;
-  final String                title;
-  final String                subtitle;
-  final _RemainderMethod      value;
-  final _RemainderMethod      selected;
-  final bool                  isFirst;
-  final bool                  isLast;
-  final VoidCallback          onTap;
-
-  const _MethodTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.value,
-    required this.selected,
-    required this.isFirst,
-    required this.isLast,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = value == selected;
-    return InkWell(
-      onTap:        onTap,
-      borderRadius: BorderRadius.vertical(
-        top:    isFirst ? const Radius.circular(AppSpacing.cardRadius) : Radius.zero,
-        bottom: isLast  ? const Radius.circular(AppSpacing.cardRadius) : Radius.zero,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Icon(
-              isSelected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_off,
-              color: isSelected ? AppColors.primary : AppColors.textLight,
-              size:  22,
-            ),
-            const SizedBox(width: 12),
-            Icon(icon, color: AppColors.textMid, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color:      isSelected
-                          ? AppColors.textDark
-                          : AppColors.textMid,
-                      fontSize:   14.5,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.normal,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color:    AppColors.textLight,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ── PRICE SUMMARY CARD ─────────────────────────────────────────────────────────
 class _PriceSummaryCard extends StatelessWidget {
-  final double         slotTotal;
-  final double         serviceTotal;
-  final double         discount;
-  final double         total;
+  final double slotTotal;
+  final double serviceTotal;
+  final double discount;
+  final double total;
   final PromotionModel? promotion;
 
   const _PriceSummaryCard({
@@ -1057,13 +937,9 @@ class _PriceSummaryCard extends StatelessWidget {
           ],
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
-            child:   Divider(color: AppColors.fieldBorder),
+            child: Divider(color: AppColors.fieldBorder),
           ),
-          _PriceRow(
-            'Tổng cộng',
-            _fmtMoney(total),
-            isTotal: true,
-          ),
+          _PriceRow('Tổng cộng', _fmtMoney(total), isTotal: true),
         ],
       ),
     );
@@ -1073,9 +949,14 @@ class _PriceSummaryCard extends StatelessWidget {
 class _PriceRow extends StatelessWidget {
   final String label;
   final String value;
-  final bool   isTotal;
+  final bool isTotal;
   final Color? valueColor;
-  const _PriceRow(this.label, this.value, {this.isTotal = false, this.valueColor});
+  const _PriceRow(
+    this.label,
+    this.value, {
+    this.isTotal = false,
+    this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1085,17 +966,18 @@ class _PriceRow extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color:      isTotal ? AppColors.textDark : AppColors.textMid,
-            fontSize:   isTotal ? 15 : 14,
+            color: isTotal ? AppColors.textDark : AppColors.textMid,
+            fontSize: isTotal ? 15 : 14,
             fontWeight: isTotal ? FontWeight.w700 : FontWeight.normal,
           ),
         ),
         Text(
           value,
           style: TextStyle(
-            color:      valueColor ??
+            color:
+                valueColor ??
                 (isTotal ? AppColors.primary : AppColors.textDark),
-            fontSize:   isTotal ? 18 : 14,
+            fontSize: isTotal ? 18 : 14,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -1104,38 +986,124 @@ class _PriceRow extends StatelessWidget {
   }
 }
 
-// ── MOMO NOTE ──────────────────────────────────────────────────────────────────
-class _MomoNote extends StatelessWidget {
-  const _MomoNote();
+// ── FULL PAYMENT TOGGLE ────────────────────────────────────────────────────────
+// Toggle đơn giản thay cho _RemainderMethodCard 2 lựa chọn cũ
+class _FullPaymentToggle extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  const _FullPaymentToggle({required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: value ? AppColors.primaryUltraLight : Colors.white,
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          border: Border.all(
+            color: value
+                ? AppColors.primary.withValues(alpha: 0.6)
+                : AppColors.fieldBorder,
+            width: value ? 1.8 : 1,
+          ),
+          boxShadow: AppShadow.card,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: value ? AppColors.primary : AppColors.fieldBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.account_balance_wallet_outlined,
+                color: value ? Colors.white : AppColors.textHint,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Thanh toán toàn bộ qua VNPay',
+                    style: TextStyle(
+                      color: value ? AppColors.textDark : AppColors.textMid,
+                      fontSize: 14.5,
+                      fontWeight: value ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value
+                        ? 'Thanh toán 100% ngay bây giờ — không cần trả thêm'
+                        : 'Tắt: chỉ cọc qua VNPay, còn lại trả tại sân',
+                    style: const TextStyle(
+                      color: AppColors.textLight,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: AppColors.primary,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── PAYMENT NOTE ───────────────────────────────────────────────────────────────
+// Hiển thị ghi chú khác nhau tùy flow được chọn
+class _PaymentNote extends StatelessWidget {
+  final bool isFullPayment;
+  const _PaymentNote({required this.isFullPayment});
+
+  @override
+  Widget build(BuildContext context) {
+    final text = isFullPayment
+        ? 'Bạn sẽ thanh toán toàn bộ ${''} qua VNPay ngay sau khi xác nhận. '
+              'Slot được xác nhận ngay khi thanh toán thành công.'
+        : 'Bạn sẽ cọc qua VNPay ngay sau khi xác nhận. '
+              'Phần còn lại thanh toán tại sân trước khi thi đấu.';
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color:        const Color(0xFFFFF8E1),
+        color: const Color(0xFFFFF8E1),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: AppColors.warningOrange.withValues(alpha: 0.35),
         ),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
+          const Icon(
             Icons.info_outline_rounded,
             color: AppColors.warningOrange,
-            size:  16,
+            size: 16,
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Sau khi xác nhận, ứng dụng MoMo sẽ được mở để bạn thanh toán tiền cọc. '
-              'Slot sẽ được giữ trong thời gian giới hạn.',
-              style: TextStyle(
-                color:    AppColors.warningOrange,
+              text,
+              style: const TextStyle(
+                color: AppColors.warningOrange,
                 fontSize: 12.5,
-                height:   1.45,
+                height: 1.45,
               ),
             ),
           ),
@@ -1155,7 +1123,7 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color:        AppColors.badgeCancelBg,
+        color: AppColors.badgeCancelBg,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: AppColors.badgeCancelText.withValues(alpha: 0.3),
@@ -1166,14 +1134,14 @@ class _ErrorBanner extends StatelessWidget {
           const Icon(
             Icons.error_outline,
             color: AppColors.badgeCancelText,
-            size:  18,
+            size: 18,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
               style: const TextStyle(
-                color:    AppColors.badgeCancelText,
+                color: AppColors.badgeCancelText,
                 fontSize: 13,
               ),
             ),
@@ -1186,8 +1154,8 @@ class _ErrorBanner extends StatelessWidget {
 
 // ── CTA BAR ────────────────────────────────────────────────────────────────────
 class _CtaBar extends StatelessWidget {
-  final String       total;
-  final bool         isLoading;
+  final String total;
+  final bool isLoading;
   final VoidCallback onConfirm;
   const _CtaBar({
     required this.total,
@@ -1202,9 +1170,9 @@ class _CtaBar extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color:      Colors.black.withValues(alpha: 0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 12,
-            offset:     const Offset(0, -3),
+            offset: const Offset(0, -3),
           ),
         ],
       ),
@@ -1216,16 +1184,20 @@ class _CtaBar extends StatelessWidget {
             child: Container(
               height: 54,
               decoration: BoxDecoration(
-                color:        AppColors.primary,
+                color: isLoading
+                    ? AppColors.primary.withValues(alpha: 0.7)
+                    : AppColors.primary,
                 borderRadius: BorderRadius.circular(14),
-                boxShadow:    isLoading ? [] : AppShadow.btn,
+                boxShadow: isLoading ? [] : AppShadow.btn,
               ),
               child: Center(
                 child: isLoading
                     ? const SizedBox(
-                        width: 22, height: 22,
+                        width: 22,
+                        height: 22,
                         child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2.5,
+                          color: Colors.white,
+                          strokeWidth: 2.5,
                         ),
                       )
                     : Row(
@@ -1234,17 +1206,17 @@ class _CtaBar extends StatelessWidget {
                           Text(
                             'XÁC NHẬN  •  $total',
                             style: const TextStyle(
-                              color:         Colors.white,
-                              fontSize:      16,
-                              fontWeight:    FontWeight.w900,
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
                               letterSpacing: 0.8,
                             ),
                           ),
                           const SizedBox(width: 10),
                           const Icon(
-                            Icons.account_balance_wallet_outlined,
+                            Icons.chevron_right_rounded,
                             color: Colors.white,
-                            size:  18,
+                            size: 20,
                           ),
                         ],
                       ),
@@ -1267,9 +1239,9 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-        fontSize:   16,
+        fontSize: 16,
         fontWeight: FontWeight.w800,
-        color:      AppColors.textDark,
+        color: AppColors.textDark,
       ),
     );
   }

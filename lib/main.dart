@@ -2,13 +2,14 @@
 
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:app_links/app_links.dart';
-// import 'package:go_router/go_router.dart';
 
-import 'session/user_session.dart';
+import 'models/booking.dart';
 import 'navigation/app_router.dart';
+import 'services/booking_service.dart';
+import 'session/user_session.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -18,8 +19,8 @@ Future<void> main() async {
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor:           Colors.transparent,
-      statusBarIconBrightness:  Brightness.dark,
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
     ),
   );
 
@@ -36,79 +37,169 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-  final _appLinks        = AppLinks();
+  final AppLinks _appLinks = AppLinks();
+
   StreamSubscription<Uri>? _linkSub;
+
+  bool _handlingDeepLink = false;
 
   @override
   void initState() {
     super.initState();
+
     _initDeepLinks();
   }
 
   @override
   void dispose() {
     _linkSub?.cancel();
+
     super.dispose();
   }
 
-  // ── Deep link handler ─────────────────────────────────────────
+  // =========================================================
+  // DEEP LINK
   //
-  // Scheme: sportplus://payment/result?status=success&bookingId=88
-  //                                 hoặc ?status=failed&bookingId=88
+  // sportplus://payment/result
   //
-  // Backend VNPay MobileDeepLinkUrl = "sportplus://payment/result"
+  // Example:
   //
-  // Khi user hoàn tất thanh toán trên trình duyệt VNPay, backend
-  // redirect về deep link này. app_links bắt và xử lý tại đây.
-  void _initDeepLinks() {
-    // Xử lý link khi app đang chạy (foreground / background)
-    _linkSub = _appLinks.uriLinkStream.listen(
-      _handleUri,
-      onError: (_) {}, // bỏ qua lỗi parse
-    );
+  // sportplus://payment/result
+  //      ?status=success
+  //      &bookingId=88
+  //
+  // Backend flow:
+  //
+  // VNPay
+  //   -> ReturnUrl backend
+  //   -> verify checksum
+  //   -> update database
+  //   -> redirect deep link
+  //
+  // =========================================================
 
-    // Xử lý link khởi động app từ terminated state
-    _appLinks.getInitialLink().then((uri) {
-      if (uri != null) _handleUri(uri);
-    });
+  void _initDeepLinks() {
+    // App đang mở
+    _linkSub = _appLinks.uriLinkStream.listen((uri) async {
+      await _handleUri(uri);
+    }, onError: (_) {});
+
+    // App cold start
+    _handleInitialUri();
   }
 
-  void _handleUri(Uri uri) {
-    // Chỉ xử lý scheme sportplus://payment/result
+  Future<void> _handleInitialUri() async {
+    try {
+      final uri = await _appLinks.getInitialLink();
+
+      if (uri != null) {
+        await _handleUri(uri);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _handleUri(Uri uri) async {
+    // Tránh duplicate callback
+    if (_handlingDeepLink) return;
+
+    // =====================================================
+    // VALIDATE URI
+    // =====================================================
+
     if (uri.scheme != 'sportplus') return;
+
     if (uri.host != 'payment') return;
+
     if (uri.path != '/result') return;
 
-    final status    = uri.queryParameters['status']    ?? '';
-    final bookingId = int.tryParse(
-      uri.queryParameters['bookingId'] ?? '',
-    );
+    final status = uri.queryParameters['status'] ?? '';
+
+    final bookingId = int.tryParse(uri.queryParameters['bookingId'] ?? '');
 
     if (bookingId == null) return;
 
-    final router = AppRouter.router;
+    _handlingDeepLink = true;
 
-    if (status == 'success') {
-      // Navigate về booking detail để user xem trạng thái mới nhất
-      // BookingDetailScreen sẽ gọi API và hiển thị Confirmed
-      router.go('/booking_history/detail', extra: {'bookingId': bookingId});
-    } else {
-      // Thanh toán thất bại — về failure screen
-      router.go(
-        '/fields/failure',
-        extra: {'error': 'Thanh toán không thành công. Vui lòng thử lại.'},
-      );
+    try {
+      final router = AppRouter.router;
+
+      // ===================================================
+      // PAYMENT FAILED
+      // ===================================================
+
+      if (status != 'success') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          router.go(
+            '/booking/failure',
+            extra: {'error': 'Thanh toán không thành công. Vui lòng thử lại.'},
+          );
+        });
+
+        return;
+      }
+
+      // ===================================================
+      // PAYMENT SUCCESS
+      // ===================================================
+
+      BookingModel? booking;
+
+      try {
+        // ===============================================
+        // CALL API GET BOOKING DETAIL
+        // ===============================================
+
+        booking = await BookingService.instance.getBookingDetail(bookingId);
+      } catch (_) {
+        // Nếu API fail vẫn fallback được
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // ===============================================
+        // SUCCESS SCREEN
+        // ===============================================
+
+        if (booking != null) {
+          router.go('/booking/success', extra: {'booking': booking});
+
+          return;
+        }
+
+        // ===============================================
+        // FALLBACK
+        // ===============================================
+
+        router.go('/booking_history/detail', extra: {'bookingId': bookingId});
+      });
+    } catch (_) {
+      // ===================================================
+      // UNEXPECTED ERROR
+      // ===================================================
+
+      final router = AppRouter.router;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        router.go(
+          '/booking/failure',
+          extra: {'error': 'Có lỗi xảy ra khi xử lý thanh toán.'},
+        );
+      });
+    } finally {
+      // Delay nhỏ tránh duplicate event
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      _handlingDeepLink = false;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title:                    'Sport Plus',
+      title: 'Sport Plus',
       debugShowCheckedModeBanner: false,
-      routerConfig:             AppRouter.router,
-      theme:                    buildAppTheme(),
-      themeMode:                ThemeMode.light,
+      routerConfig: AppRouter.router,
+      theme: buildAppTheme(),
+      themeMode: ThemeMode.light,
     );
   }
 }

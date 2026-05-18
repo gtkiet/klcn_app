@@ -8,7 +8,7 @@ import 'package:klcn_app/guards/auth_guard.dart';
 import '../../theme/app_theme.dart';
 
 // ── CONSTANTS ─────────────────────────────────
-const _kFadeDuration  = Duration(milliseconds: 800);
+const _kFadeDuration = Duration(milliseconds: 800);
 const _kScaleDuration = Duration(milliseconds: 700);
 const _kSpinDuration = Duration(milliseconds: 1000);
 
@@ -28,17 +28,19 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<double> _scaleAnim;
 
   @override
-  Future<void> initState() async {
+  void initState() {
     super.initState();
     _initAnimations();
+    _initAsync();
+  }
+
+  Future<void> _initAsync() async {
     await AuthGuard.instance.init();
   }
 
   void _initAnimations() {
-    _spinnerCtrl = AnimationController(
-      vsync: this,
-      duration: _kSpinDuration,
-    )..repeat();
+    _spinnerCtrl = AnimationController(vsync: this, duration: _kSpinDuration)
+      ..repeat();
 
     _fadeCtrl = AnimationController(vsync: this, duration: _kFadeDuration);
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);

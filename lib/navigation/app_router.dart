@@ -118,12 +118,24 @@ class AppRouter {
         builder: (_, _) => const BookingConfirmationScreen(),
       ),
       GoRoute(
-        path: '/fields/success',
-        builder: (_, _) => const BookingSuccessScreen(),
+        path: '/booking/success',
+        builder: (_, state) {
+          final _ = state.extra as Map<String, dynamic>? ?? {};
+
+          return BookingSuccessScreen(key: state.pageKey);
+        },
       ),
+      // Payment failure
       GoRoute(
-        path: '/fields/failure',
-        builder: (_, _) => const BookingFailureScreen(),
+        path: '/booking/failure',
+        builder: (_, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+
+          return BookingFailureScreen(
+            key: state.pageKey,
+            errorMessage: extra['error'] as String?,
+          );
+        },
       ),
 
       // ── Booking detail (ngoài shell — push từ booking history hoặc deep link) ──
