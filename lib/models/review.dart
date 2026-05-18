@@ -13,7 +13,7 @@ class ReviewModel {
   final String? avatarUrl;
   final int fieldId;
   final String fieldName;
-  final int rating;         // 1–5
+  final int rating; // 1–5
   final String? comment;
   final String? imageUrl;
   final bool isVisible;
@@ -35,19 +35,19 @@ class ReviewModel {
   });
 
   factory ReviewModel.fromJson(Map<String, dynamic> json) => ReviewModel(
-        reviewId:  json['reviewId']  as int,
-        bookingId: json['bookingId'] as int,
-        userId:    json['userId']    as int,
-        userName:  json['userName']  as String,
-        avatarUrl: json['avatarUrl'] as String?,
-        fieldId:   json['fieldId']   as int,
-        fieldName: json['fieldName'] as String,
-        rating:    json['rating']    as int,
-        comment:   json['comment']   as String?,
-        imageUrl:  json['imageUrl']  as String?,
-        isVisible: json['isVisible'] as bool,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-      );
+    reviewId: json['reviewId'] as int,
+    bookingId: json['bookingId'] as int,
+    userId: json['userId'] as int,
+    userName: json['userName'] as String,
+    avatarUrl: json['avatarUrl'] as String?,
+    fieldId: json['fieldId'] as int,
+    fieldName: json['fieldName'] as String,
+    rating: json['rating'] as int,
+    comment: json['comment'] as String?,
+    imageUrl: json['imageUrl'] as String?,
+    isVisible: json['isVisible'] as bool,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+  );
 }
 
 // ── FIELD REVIEW SUMMARY ──────────────────────────────────────────
@@ -95,17 +95,19 @@ class FieldReviewSummary {
   factory FieldReviewSummary.fromJson(Map<String, dynamic> json) {
     final rawReviews = json['reviews'] as List<dynamic>? ?? [];
     return FieldReviewSummary(
-      fieldId:      json['fieldId']      as int,
-      fieldName:    json['fieldName']    as String,
-      fieldType:    json['fieldType']    as String,
-      avgRating:    (json['avgRating']   as num).toDouble(),
+      fieldId: json['fieldId'] as int,
+      fieldName: json['fieldName'] as String,
+      fieldType: json['fieldType'] as String,
+      avgRating: (json['avgRating'] as num?)?.toDouble() ?? 0,
       totalReviews: json['totalReviews'] as int,
-      stars5:       json['stars5']       as int? ?? 0,
-      stars4:       json['stars4']       as int? ?? 0,
-      stars3:       json['stars3']       as int? ?? 0,
-      stars2:       json['stars2']       as int? ?? 0,
-      stars1:       json['stars1']       as int? ?? 0,
-      reviews:      rawReviews.map((e) => ReviewModel.fromJson(e as Map<String, dynamic>)).toList(),
+      stars5: json['stars5'] as int? ?? 0,
+      stars4: json['stars4'] as int? ?? 0,
+      stars3: json['stars3'] as int? ?? 0,
+      stars2: json['stars2'] as int? ?? 0,
+      stars1: json['stars1'] as int? ?? 0,
+      reviews: rawReviews
+          .map((e) => ReviewModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

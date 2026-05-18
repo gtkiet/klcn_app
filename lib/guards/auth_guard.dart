@@ -60,6 +60,7 @@ class AuthGuard extends ChangeNotifier {
   // ===================== LOGOUT =====================
   Future<void> logout() async {
     await AuthService.instance.logout();
+    setUnauthenticated(); // notify GoRouter → redirect về /auth/login
   }
 
   // ===================== SET STATUS =====================

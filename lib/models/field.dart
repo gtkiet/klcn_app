@@ -50,20 +50,20 @@ class FieldModel {
   }
 
   factory FieldModel.fromJson(Map<String, dynamic> json) => FieldModel(
-        fieldId:      json['fieldId']      as int,
-        name:         json['name']         as String,
-        description:  json['description']  as String?,
-        basePrice:    (json['basePrice']   as num).toDouble(),
-        peakPrice:    (json['peakPrice']   as num).toDouble(),
-        imageUrl:     json['imageUrl']     as String?,
-        fieldType:    json['fieldType']    as String,
-        typeId:       json['typeId']       as int,
-        status:       json['status']       as String,
-        statusId:     json['statusId']     as int,
-        avgRating:    (json['avgRating']   as num?)?.toDouble(),
-        totalReviews: json['totalReviews'] as int?,
-        createdAt:    DateTime.parse(json['createdAt'] as String),
-      );
+    fieldId: json['fieldId'] as int,
+    name: json['name'] as String,
+    description: json['description'] as String?,
+    basePrice: (json['basePrice'] as num?)?.toDouble() ?? 0,
+    peakPrice: (json['peakPrice'] as num?)?.toDouble() ?? 0,
+    imageUrl: json['imageUrl'] as String?,
+    fieldType: json['fieldType'] as String,
+    typeId: json['typeId'] as int,
+    status: json['status'] as String,
+    statusId: json['statusId'] as int,
+    avgRating: (json['avgRating'] as num?)?.toDouble(),
+    totalReviews: json['totalReviews'] as int?,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+  );
 }
 
 // ── SLOT MODEL ────────────────────────────────────────────────────
@@ -71,8 +71,8 @@ class FieldModel {
 class SlotModel {
   final int fieldSlotId;
   final int slotId;
-  final String startTime;         // "HH:mm"
-  final String endTime;           // "HH:mm"
+  final String startTime; // "HH:mm"
+  final String endTime; // "HH:mm"
   final double price;
   final bool isPeakHour;
   final String status;
@@ -92,8 +92,8 @@ class SlotModel {
   });
 
   bool get isAvailable => statusId == 1;
-  bool get isHolding   => statusId == 2;
-  bool get isBooked    => statusId == 3;
+  bool get isHolding => statusId == 2;
+  bool get isBooked => statusId == 3;
 
   String get displayTime => '$startTime - $endTime';
 
@@ -105,22 +105,22 @@ class SlotModel {
   // Server trả "HH:mm:ss.sssZ" hoặc "HH:mm:ss" — chuẩn hoá về "HH:mm"
   static String _parseTime(String raw) {
     final clean = raw.contains('T') ? raw.split('T').last : raw;
-    final parts  = clean.split(':');
+    final parts = clean.split(':');
     if (parts.length < 2) return raw;
     return '${parts[0]}:${parts[1]}';
   }
 
   factory SlotModel.fromJson(Map<String, dynamic> json) => SlotModel(
-        fieldSlotId:          json['fieldSlotId']          as int,
-        slotId:               json['slotId']               as int,
-        startTime:            _parseTime(json['startTime'] as String),
-        endTime:              _parseTime(json['endTime']   as String),
-        price:                (json['price']               as num).toDouble(),
-        isPeakHour:           json['isPeakHour']           as bool,
-        status:               json['status']               as String,
-        statusId:             json['statusId']             as int,
-        holdRemainingSeconds: json['holdRemainingSeconds'] as int?,
-      );
+    fieldSlotId: json['fieldSlotId'] as int,
+    slotId: json['slotId'] as int,
+    startTime: _parseTime(json['startTime'] as String),
+    endTime: _parseTime(json['endTime'] as String),
+    price: (json['price'] as num?)?.toDouble() ?? 0,
+    isPeakHour: json['isPeakHour'] as bool? ?? false,
+    status: json['status'] as String,
+    statusId: json['statusId'] as int,
+    holdRemainingSeconds: json['holdRemainingSeconds'] as int?,
+  );
 }
 
 // ── FIELD SCHEDULE MODEL ──────────────────────────────────────────
@@ -145,12 +145,14 @@ class FieldScheduleModel {
   factory FieldScheduleModel.fromJson(Map<String, dynamic> json) {
     final rawSlots = json['slots'] as List<dynamic>? ?? [];
     return FieldScheduleModel(
-      fieldId:   json['fieldId']   as int,
+      fieldId: json['fieldId'] as int,
       fieldName: json['fieldName'] as String,
       fieldType: json['fieldType'] as String,
-      imageUrl:  json['imageUrl']  as String?,
-      slotDate:  DateTime.parse(json['slotDate'] as String),
-      slots:     rawSlots.map((e) => SlotModel.fromJson(e as Map<String, dynamic>)).toList(),
+      imageUrl: json['imageUrl'] as String?,
+      slotDate: DateTime.parse(json['slotDate'] as String),
+      slots: rawSlots
+          .map((e) => SlotModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -179,12 +181,14 @@ class PagedFieldResult {
   factory PagedFieldResult.fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'] as List<dynamic>? ?? [];
     return PagedFieldResult(
-      items:           rawItems.map((e) => FieldModel.fromJson(e as Map<String, dynamic>)).toList(),
-      totalCount:      json['totalCount']      as int?  ?? 0,
-      page:            json['page']            as int?  ?? 1,
-      pageSize:        json['pageSize']        as int?  ?? 10,
-      totalPages:      json['totalPages']      as int?  ?? 0,
-      hasNextPage:     json['hasNextPage']     as bool? ?? false,
+      items: rawItems
+          .map((e) => FieldModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      totalCount: json['totalCount'] as int? ?? 0,
+      page: json['page'] as int? ?? 1,
+      pageSize: json['pageSize'] as int? ?? 10,
+      totalPages: json['totalPages'] as int? ?? 0,
+      hasNextPage: json['hasNextPage'] as bool? ?? false,
       hasPreviousPage: json['hasPreviousPage'] as bool? ?? false,
     );
   }

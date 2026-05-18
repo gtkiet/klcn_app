@@ -3,11 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:klcn_app/services/auth_service.dart';
 
-import '../../guards/auth_guard.dart';
 import '../../services/profile_service.dart';
-import '../../session/user_session.dart';
 import '../../models/user.dart';
 import '../../theme/app_theme.dart';
 
@@ -29,42 +26,42 @@ class _MenuItem {
 
 final _accountItems = [
   _MenuItem(
-    icon:      Icons.person_outline_rounded,
-    iconBg:    AppColors.primaryUltraLight,
+    icon: Icons.person_outline_rounded,
+    iconBg: AppColors.primaryUltraLight,
     iconColor: AppColors.primary,
-    label:     'Thông tin cá nhân',
-    route:     'edit_profile',
+    label: 'Thông tin cá nhân',
+    route: 'edit_profile',
   ),
   _MenuItem(
-    icon:      Icons.lock_outline_rounded,
-    iconBg:    AppColors.primaryUltraLight,
+    icon: Icons.lock_outline_rounded,
+    iconBg: AppColors.primaryUltraLight,
     iconColor: AppColors.primary,
-    label:     'Đổi mật khẩu',
-    route:     'change_password',
+    label: 'Đổi mật khẩu',
+    route: 'change_password',
   ),
   _MenuItem(
-    icon:      Icons.history_rounded,
-    iconBg:    AppColors.primaryUltraLight,
+    icon: Icons.history_rounded,
+    iconBg: AppColors.primaryUltraLight,
     iconColor: AppColors.primary,
-    label:     'Lịch sử đặt sân',
-    route:     '/booking_history',
+    label: 'Lịch sử đặt sân',
+    route: '/booking_history',
   ),
 ];
 
 final _supportItems = [
   _MenuItem(
-    icon:      Icons.help_outline_rounded,
-    iconBg:    const Color(0xFFE3F2FD),
+    icon: Icons.help_outline_rounded,
+    iconBg: const Color(0xFFE3F2FD),
     iconColor: AppColors.infoBlue,
-    label:     'Hỗ trợ & Liên hệ',
-    route:     '',
+    label: 'Hỗ trợ & Liên hệ',
+    route: '',
   ),
   _MenuItem(
-    icon:      Icons.description_outlined,
-    iconBg:    const Color(0xFFF3E5F5),
+    icon: Icons.description_outlined,
+    iconBg: const Color(0xFFF3E5F5),
     iconColor: const Color(0xFF7B1FA2),
-    label:     'Điều khoản & Chính sách',
-    route:     '',
+    label: 'Điều khoản & Chính sách',
+    route: '',
   ),
 ];
 
@@ -79,10 +76,10 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _session = UserSession.instance;
+  final _service = ProfileService.instance;
 
   UserModel? _user;
-  bool _isLoading    = true;
+  bool _isLoading = true;
   bool _isLoggingOut = false;
 
   @override
@@ -94,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadProfile() async {
     // Hiển thị ngay từ session
     setState(() {
-      _user      = _session.toUserModel();
+      _user = _service.getCachedUser();
       _isLoading = false;
     });
 
@@ -120,9 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Đăng xuất',
           style: TextStyle(fontWeight: FontWeight.w700),
@@ -137,11 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           TextButton(
-            // onPressed: () => Navigator.pop(ctx, true),
-            onPressed: () {
-              AuthService.instance.logout();
-              Navigator.pop(ctx, true);
-            } ,
+            onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
               'Đăng xuất',
               style: TextStyle(
@@ -158,9 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     setState(() => _isLoggingOut = true);
     try {
-      // AuthGuard.logout() → AuthService.logout() → clear session
-      // → setUnauthenticated() → GoRouter redirect về /auth/login
-      await AuthGuard.instance.logout();
+      await ProfileService.instance.logout();
     } finally {
       if (mounted) setState(() => _isLoggingOut = false);
     }
@@ -197,30 +186,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _ProfileHeroCard(
                         user: _user,
                         onEditTap: () => context.push('/profile/edit_profile'),
+                        avatarUrlNotifier: _service.avatarUrlNotifier,
                       ),
                       const SizedBox(height: 24),
 
                       // ── Account section ──────────────────────────
                       _SectionLabel('TÀI KHOẢN & THIẾT LẬP'),
                       const SizedBox(height: 8),
-                      _MenuGroup(
-                        items: _accountItems,
-                        onTap: _onMenuItem,
-                      ),
+                      _MenuGroup(items: _accountItems, onTap: _onMenuItem),
                       const SizedBox(height: 20),
 
                       // ── Support section ──────────────────────────
                       _SectionLabel('THÔNG TIN & HỖ TRỢ'),
                       const SizedBox(height: 8),
-                      _MenuGroup(
-                        items: _supportItems,
-                        onTap: _onMenuItem,
-                      ),
+                      _MenuGroup(items: _supportItems, onTap: _onMenuItem),
                       const SizedBox(height: 24),
 
                       // ── Logout ───────────────────────────────────
                       _LogoutButton(
-                        onTap:     _isLoggingOut ? () {} : _onLogout,
+                        onTap: _isLoggingOut ? () {} : _onLogout,
                         isLoading: _isLoggingOut,
                       ),
                       const SizedBox(height: 28),
@@ -260,13 +244,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 class _ProfileHeroCard extends StatelessWidget {
   final UserModel? user;
   final VoidCallback onEditTap;
+  final ValueNotifier<String?> avatarUrlNotifier;
 
-  const _ProfileHeroCard({required this.user, required this.onEditTap});
+  const _ProfileHeroCard({
+    required this.user,
+    required this.onEditTap,
+    required this.avatarUrlNotifier,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final session = UserSession.instance;
-
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
@@ -292,7 +279,7 @@ class _ProfileHeroCard extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 ValueListenableBuilder<String?>(
-                  valueListenable: session.avatarUrlNotifier,
+                  valueListenable: avatarUrlNotifier,
                   builder: (_, avatarUrl, _) => Container(
                     width: 96,
                     height: 96,
@@ -346,7 +333,7 @@ class _ProfileHeroCard extends StatelessWidget {
 
             // ── Name ───────────────────────────────────
             Text(
-              user?.fullName ?? session.fullName ?? '—',
+              user?.fullName ?? '—',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -358,8 +345,8 @@ class _ProfileHeroCard extends StatelessWidget {
             // ── Email + Phone ──────────────────────────
             Text(
               [
-                user?.email   ?? session.email   ?? '',
-                user?.phone   ?? session.phone   ?? '',
+                user?.email ?? '',
+                user?.phone ?? '',
               ].where((s) => s.isNotEmpty).join('  •  '),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.80),
@@ -383,18 +370,12 @@ class _ProfileHeroCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _StatItem(
-                    value: user?.role ?? session.role ?? '—',
-                    label: 'VAI TRÒ',
-                  ),
+                  _StatItem(value: user?.role ?? '—', label: 'VAI TRÒ'),
+                  _Divider(),
+                  _StatItem(value: user?.status ?? '—', label: 'TRẠNG THÁI'),
                   _Divider(),
                   _StatItem(
-                    value: user?.status ?? session.status ?? '—',
-                    label: 'TRẠNG THÁI',
-                  ),
-                  _Divider(),
-                  _StatItem(
-                    value: 'ID ${user?.userId ?? session.userId ?? '—'}',
+                    value: 'ID ${user?.userId ?? '—'}',
                     label: 'TÀI KHOẢN',
                   ),
                 ],
@@ -407,9 +388,9 @@ class _ProfileHeroCard extends StatelessWidget {
   }
 
   Widget _avatarFallback() => Container(
-        color: const Color(0xFF8D6E63),
-        child: const Icon(Icons.person, color: Colors.white54, size: 52),
-      );
+    color: const Color(0xFF8D6E63),
+    child: const Icon(Icons.person, color: Colors.white54, size: 52),
+  );
 }
 
 class _StatItem extends StatelessWidget {
@@ -449,10 +430,10 @@ class _StatItem extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
-        width: 1,
-        height: 36,
-        color: Colors.white.withValues(alpha: 0.25),
-      );
+    width: 1,
+    height: 36,
+    color: Colors.white.withValues(alpha: 0.25),
+  );
 }
 
 // ── SECTION LABEL ─────────────────────────────

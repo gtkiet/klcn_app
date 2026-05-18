@@ -8,9 +8,9 @@
 //   3. Nhập mã giảm giá (optional)
 //   4. Chọn cách thanh toán PHẦN CÒN LẠI sau khi cọc:
 //      • Thanh toán tại sân   → staff thu phần còn lại
-//      • Thanh toán qua VNPay → user tự thanh toán full qua VNPay
-//   5. Xác nhận → holdSlots → createBooking → createVnPayPayment
-//      → url_launcher mở VNPay → deep link → success / failure
+//      • Thanh toán qua MoMo → user tự thanh toán full qua MoMo
+//   5. Xác nhận → holdSlots → createBooking → createMoMoPayment
+//      → url_launcher mở MoMo → deep link → success / failure
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -41,7 +41,7 @@ String _fmtMoney(double amount) {
 // Cách thanh toán phần còn lại (sau khi đã cọc xong qua MoMo)
 enum _RemainderMethod {
   atVenue,    // Trả tại sân — staff thu
-  fullVnpay,  // Thanh toán toàn bộ qua VNPay ngay bây giờ
+  fullOnline, // Thanh toán toàn bộ qua MoMo ngay bây giờ
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -69,7 +69,7 @@ class _BookingConfirmationScreenState
 
   // ── Selection ───────────────────────────────────────────────────────────────
   final Map<int, int> _serviceQty     = {}; // serviceId → quantity
-  _RemainderMethod    _remainderMethod = _RemainderMethod.fullVnpay;
+  _RemainderMethod    _remainderMethod = _RemainderMethod.fullOnline;
 
   // ── Voucher ─────────────────────────────────────────────────────────────────
   final _voucherCtrl  = TextEditingController();
@@ -187,14 +187,14 @@ class _BookingConfirmationScreenState
 
       if (!mounted) return;
 
-      // 4. Tạo VNPay payment URL (bắt buộc cho deposit)
-      final payUrl = await PaymentService.instance.createVnPayPayment(
+      // 4. Tạo MoMo payment URL (bắt buộc cho deposit)
+      final payUrl = await PaymentService.instance.createMoMoPayment(
         booking.bookingId,
       );
 
       if (!mounted) return;
 
-      // 5. Mở VNPay
+      // 5. Mở MoMo
       final uri = Uri.parse(payUrl);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -929,13 +929,13 @@ class _RemainderMethodCard extends StatelessWidget {
           const Divider(height: 1, color: AppColors.fieldBorder),
           _MethodTile(
             icon:     Icons.account_balance_wallet_outlined,
-            title:    'Thanh toán đầy đủ qua VNPay',
-            subtitle: 'Thanh toán toàn bộ ngay bây giờ qua VNPay',
-            value:    _RemainderMethod.fullVnpay,
+            title:    'Thanh toán đầy đủ qua MoMo',
+            subtitle: 'Thanh toán toàn bộ ngay bây giờ qua MoMo',
+            value:    _RemainderMethod.fullOnline,
             selected: selected,
             isFirst:  false,
             isLast:   true,
-            onTap:    () => onChanged(_RemainderMethod.fullVnpay),
+            onTap:    () => onChanged(_RemainderMethod.fullOnline),
           ),
         ],
       ),
@@ -1130,7 +1130,7 @@ class _MomoNote extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Sau khi xác nhận, trình duyệt sẽ được mở để bạn thanh toán tiền cọc qua VNPay. '
+              'Sau khi xác nhận, ứng dụng MoMo sẽ được mở để bạn thanh toán tiền cọc. '
               'Slot sẽ được giữ trong thời gian giới hạn.',
               style: TextStyle(
                 color:    AppColors.warningOrange,

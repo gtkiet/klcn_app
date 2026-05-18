@@ -407,7 +407,7 @@ class _FeaturedRow extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
           itemCount: 3,
-          itemBuilder: (_, __) => const _FeaturedSkeleton(),
+          itemBuilder: (_, _) => const _FeaturedSkeleton(),
         ),
       );
     }

@@ -23,7 +23,7 @@ import '../screens/booking/booking_confirmation_screen.dart';
 import '../screens/booking/booking_success_screen.dart';
 import '../screens/booking/booking_failure_screen.dart';
 import '../screens/booking/booking_history_screen.dart';
-// import '../screens/booking/booking_detail_screen.dart';
+import '../screens/booking/booking_detail_screen.dart';
 
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/edit_profile_screen.dart';
@@ -38,11 +38,11 @@ class AppRouter {
 
     // ── REDIRECT ────────────────────────────────────────────────────────────
     redirect: (context, state) {
-      final status   = AuthGuard.instance.status;
+      final status = AuthGuard.instance.status;
       final location = state.uri.path;
 
       final isAuthRoute = location.startsWith('/auth');
-      final isSplash    = location == '/splash';
+      final isSplash = location == '/splash';
 
       if (status == AuthStatus.unknown) {
         return isSplash ? null : '/splash';
@@ -61,29 +61,19 @@ class AppRouter {
 
     // ── ROUTES ──────────────────────────────────────────────────────────────
     routes: [
-
       // ── Splash ────────────────────────────────────────────────────────────
-      GoRoute(
-        path:    '/splash',
-        builder: (_, _) => const SplashScreen(),
-      ),
+      GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
 
       // ── Auth group ────────────────────────────────────────────────────────
       GoRoute(
-        path:     '/auth',
+        path: '/auth',
         redirect: (_, state) =>
             state.uri.path == '/auth' ? '/auth/login' : null,
         routes: [
+          GoRoute(path: 'login', builder: (_, _) => const LoginScreen()),
+          GoRoute(path: 'register', builder: (_, _) => const RegisterScreen()),
           GoRoute(
-            path:    'login',
-            builder: (_, _) => const LoginScreen(),
-          ),
-          GoRoute(
-            path:    'register',
-            builder: (_, _) => const RegisterScreen(),
-          ),
-          GoRoute(
-            path:    'forgot-password',
+            path: 'forgot-password',
             builder: (_, _) => const ForgotPasswordScreen(),
           ),
           GoRoute(
@@ -124,43 +114,35 @@ class AppRouter {
         builder: (_, _) => const FieldDetailScreen(),
       ),
       GoRoute(
-        path:    '/fields/confirm',
+        path: '/fields/confirm',
         builder: (_, _) => const BookingConfirmationScreen(),
       ),
       GoRoute(
-        path:    '/fields/success',
+        path: '/fields/success',
         builder: (_, _) => const BookingSuccessScreen(),
       ),
       GoRoute(
-        path:    '/fields/failure',
+        path: '/fields/failure',
         builder: (_, _) => const BookingFailureScreen(),
       ),
 
-      // ── Booking detail (ngoài shell — push từ booking history) ───────────
+      // ── Booking detail (ngoài shell — push từ booking history hoặc deep link) ──
       //
-      // extra: { 'bookingId': int }
-      // GoRoute(
-      //   path: '/booking_history/detail',
-      //   builder: (_, state) {
-      //     final extra     = state.extra as Map<String, dynamic>? ?? {};
-      //     final bookingId = extra['bookingId'] as int? ?? 0;
-      //     return BookingDetailScreen(bookingId: bookingId);
-      //   },
-      // ),
+      // extra: BookingSummary | BookingModel | { 'bookingId': int }
+      GoRoute(
+        path: '/booking_history/detail',
+        builder: (_, _) => const BookingDetailScreen(),
+      ),
 
       // ── Main shell — 4 tabs (có bottom nav) ──────────────────────────────
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             MainScreen(shell: navigationShell),
         branches: [
-
           // Tab 0 — Trang chủ
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path:    '/home',
-                builder: (_, _) => const HomeScreen(),
-              ),
+              GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
             ],
           ),
 
@@ -170,9 +152,9 @@ class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path:    '/fields',
+                path: '/fields',
                 builder: (_, _) => const FieldListScreen(),
-                 routes: [
+                routes: [
                   GoRoute(
                     path: 'detail',
                     builder: (_, _) => const FieldDetailScreen(),
@@ -188,7 +170,7 @@ class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path:    '/booking_history',
+                path: '/booking_history',
                 builder: (_, _) => const BookingHistoryScreen(),
               ),
             ],
@@ -198,15 +180,15 @@ class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path:    '/profile',
+                path: '/profile',
                 builder: (_, _) => const ProfileScreen(),
                 routes: [
                   GoRoute(
-                    path:    'edit_profile',
+                    path: 'edit_profile',
                     builder: (_, _) => const EditProfileScreen(),
                   ),
                   GoRoute(
-                    path:    'change_password',
+                    path: 'change_password',
                     builder: (_, _) => const ChangePasswordScreen(),
                   ),
                 ],
@@ -219,9 +201,7 @@ class AppRouter {
 
     // ── ERROR PAGE ──────────────────────────────────────────────────────────
     errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text('Không tìm thấy trang: ${state.uri}'),
-      ),
+      body: Center(child: Text('Không tìm thấy trang: ${state.uri}')),
     ),
   );
 }

@@ -9,10 +9,10 @@ class PromotionModel {
   final String code;
   final String? name;
   final String? description;
-  final String discountType;      // "percent" | "fixed"
-  final double discountValue;     // phần trăm hoặc số tiền cố định
-  final double? minOrderAmount;   // đơn tối thiểu để áp dụng
-  final double? maxDiscount;      // giảm tối đa (dùng khi type = "percent")
+  final String discountType; // "percent" | "fixed"
+  final double discountValue; // phần trăm hoặc số tiền cố định
+  final double? minOrderAmount; // đơn tối thiểu để áp dụng
+  final double? maxDiscount; // giảm tối đa (dùng khi type = "percent")
   final DateTime? expiresAt;
   final bool isActive;
 
@@ -48,16 +48,16 @@ class PromotionModel {
   }
 
   factory PromotionModel.fromJson(Map<String, dynamic> json) => PromotionModel(
-        code:           json['code']           as String,
-        name:           json['name']           as String?,
-        description:    json['description']    as String?,
-        discountType:   json['discountType']   as String,
-        discountValue:  (json['discountValue'] as num).toDouble(),
-        minOrderAmount: (json['minOrderAmount'] as num?)?.toDouble(),
-        maxDiscount:    (json['maxDiscount']   as num?)?.toDouble(),
-        expiresAt:      json['expiresAt'] != null
-            ? DateTime.parse(json['expiresAt'] as String)
-            : null,
-        isActive: json['isActive'] as bool? ?? true,
-      );
+    code: json['code'] as String,
+    name: json['name'] as String?,
+    description: json['description'] as String?,
+    discountType: json['discountType'] as String,
+    discountValue: (json['discountValue'] as num?)?.toDouble() ?? 0,
+    minOrderAmount: (json['minOrderAmount'] as num?)?.toDouble(),
+    maxDiscount: (json['maxDiscount'] as num?)?.toDouble(),
+    expiresAt: json['expiresAt'] != null
+        ? DateTime.parse(json['expiresAt'] as String)
+        : null,
+    isActive: json['isActive'] as bool? ?? true,
+  );
 }

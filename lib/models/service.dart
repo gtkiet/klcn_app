@@ -31,7 +31,7 @@ class ServiceModel {
         serviceId:   json['serviceId']   as int,
         name:        json['name']        as String,
         description: json['description'] as String?,
-        price:       (json['price']      as num).toDouble(),
+        price:       (json['price']      as num?)?.toDouble() ?? 0,
         imageUrl:    json['imageUrl']    as String?,
         isAvailable: json['isAvailable'] as bool? ?? true,
       );

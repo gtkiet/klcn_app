@@ -1,7 +1,10 @@
 // lib/services/payment_service.dart
 //
-// VNPay: đang sử dụng.
-// MoMo:  comment out — bật lại khi có tài khoản doanh nghiệp MoMo.
+// Theo Enums.cs — PaymentMethodEnum chỉ có 2 loại:
+//   Direct (1): Trực tiếp tại quầy — Staff dùng, app không cần gọi
+//   MoMo   (2): Bắt buộc dùng để đặt cọc online
+//
+// VNPay KHÔNG tồn tại trong hệ thống backend này.
 
 import 'package:klcn_app/network/api_client.dart';
 
@@ -11,22 +14,12 @@ class PaymentService {
 
   final _api = ApiClient.instance;
 
-  // ── VNPAY ────────────────────────────────────────────────────────
-  /// POST /api/payments/vnpay/create/{bookingId}
+  // ── MOMO ──────────────────────────────────────────────────────────
+  /// POST /api/payments/momo/create/{bookingId}
   /// Trả về paymentUrl (String) — mở bằng url_launcher
-  Future<String> createVnPayPayment(int bookingId) async {
-    final res = await _api.post('/api/payments/vnpay/create/$bookingId');
+  /// Bắt buộc dùng để đặt cọc, booking mới được Confirmed
+  Future<String> createMoMoPayment(int bookingId) async {
+    final res = await _api.post('/api/payments/momo/create/$bookingId');
     return res.raw<String>();
   }
-
-  // ── MOMO (chưa dùng) ─────────────────────────────────────────────
-  // Lỗi do chưa có tài khoản doanh nghiệp MoMo.
-  // Thay thế createVnPayPayment bằng createMoMoPayment khi đã có tài khoản.
-  //
-  // /// POST /api/payments/momo/create/{bookingId}
-  // /// Trả về paymentUrl (String) — mở bằng url_launcher
-  // Future<String> createMoMoPayment(int bookingId) async {
-  //   final res = await _api.post('/api/payments/momo/create/$bookingId');
-  //   return res.raw<String>();
-  // }
 }

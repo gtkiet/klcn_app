@@ -9,19 +9,21 @@ import '../../services/booking_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
-// statusId filter: null=Tất cả | 1=Đã đặt | 2=Hoàn thành | 3=Đã hủy
-const _tabs = [
-  _Tab('Tất cả',    null),
-  _Tab('Đã đặt',    1),
-  _Tab('Hoàn thành',2),
-  _Tab('Đã hủy',    3),
-];
-
+// Tab filter — statusId null = Tất cả (API không truyền statusId)
+// Mỗi tab truyền thẳng statusId lên API, không cần filter client-side
 class _Tab {
   final String label;
-  final int? statusId;
+  final int?   statusId;
   const _Tab(this.label, this.statusId);
 }
+
+const _tabs = [
+  _Tab('Tất cả',       null),
+  _Tab('Chờ đặt cọc',  5),   // PendingDeposit
+  _Tab('Đã xác nhận',  2),   // Confirmed
+  _Tab('Hoàn thành',   4),   // Completed
+  _Tab('Đã hủy',       3),   // Cancelled
+];
 
 const _kPageSize = 10;
 
@@ -36,11 +38,11 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
   final _scrollCtrl = ScrollController();
   int _selectedTab  = 0;
 
-  List<BookingSummary> _items    = [];
-  bool _isLoading                = false;
-  bool _isLoadingMore            = false;
-  bool _hasNextPage              = false;
-  int  _currentPage              = 1;
+  List<BookingSummary> _items     = [];
+  bool _isLoading                 = false;
+  bool _isLoadingMore             = false;
+  bool _hasNextPage               = false;
+  int  _currentPage               = 1;
   String? _errorMsg;
 
   @override
@@ -57,8 +59,15 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
   }
 
   Future<void> _load({bool reset = false}) async {
+    final tab = _tabs[_selectedTab];
+
     if (reset) {
-      setState(() { _isLoading = true; _errorMsg = null; _currentPage = 1; _items = []; });
+      setState(() {
+        _isLoading   = true;
+        _errorMsg    = null;
+        _currentPage = 1;
+        _items       = [];
+      });
     } else {
       if (_isLoadingMore || !_hasNextPage) return;
       setState(() => _isLoadingMore = true);
@@ -66,7 +75,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
 
     try {
       final result = await BookingService.instance.getMyBookings(
-        statusId: _tabs[_selectedTab].statusId,
+        statusId: tab.statusId,
         page:     reset ? 1 : _currentPage,
         pageSize: _kPageSize,
       );
@@ -77,9 +86,9 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
         } else {
           _items.addAll(result.items);
         }
-        _hasNextPage  = result.hasNextPage;
-        _currentPage  = result.page + 1;
-        _isLoading    = false;
+        _hasNextPage   = result.hasNextPage;
+        _currentPage   = result.page + 1;
+        _isLoading     = false;
         _isLoadingMore = false;
       });
     } catch (e) {
@@ -278,9 +287,10 @@ class _BookingCard extends StatelessWidget {
   const _BookingCard({required this.booking, required this.onDetail});
 
   ({String text, Color textColor, Color bgColor}) get _badge => switch (booking.statusId) {
-    1 => (text: 'ĐÃ ĐẶT',    textColor: AppColors.badgeBookedText, bgColor: AppColors.badgeBookedBg),
-    2 => (text: 'HOÀN THÀNH', textColor: AppColors.badgeDoneText,  bgColor: AppColors.badgeDoneBg),
-    3 => (text: 'ĐÃ HỦY',    textColor: AppColors.badgeCancelText, bgColor: AppColors.badgeCancelBg),
+    2 => (text: 'ĐÃ XÁC NHẬN',   textColor: AppColors.badgeBookedText,  bgColor: AppColors.badgeBookedBg),
+    3 => (text: 'ĐÃ HỦY',        textColor: AppColors.badgeCancelText,  bgColor: AppColors.badgeCancelBg),
+    4 => (text: 'HOÀN THÀNH',    textColor: AppColors.badgeDoneText,    bgColor: AppColors.badgeDoneBg),
+    5 => (text: 'CHỜ THANH TOÁN', textColor: AppColors.warningOrange,   bgColor: const Color(0xFFFFF3E0)),
     _ => (text: booking.status.toUpperCase(), textColor: AppColors.textMid, bgColor: AppColors.fieldBg),
   };
 

@@ -1,7 +1,9 @@
 // lib/services/profile_service.dart
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
+import 'package:klcn_app/guards/auth_guard.dart';
 import 'package:klcn_app/models/user.dart';
 import 'package:klcn_app/network/api_client.dart';
 import 'package:klcn_app/network/media_url.dart';
@@ -11,14 +13,28 @@ class ProfileService {
   ProfileService._();
   static final ProfileService instance = ProfileService._();
 
-  final _api     = ApiClient.instance;
+  final _api = ApiClient.instance;
   final _session = UserSession.instance;
+
+  // ── CACHE & REACTIVE ───────────────────────────────────────────
+
+  /// Trả về UserModel từ session cache — không gọi API.
+  /// Dùng để hiển thị ngay khi màn hình mở, trước khi [getProfile()] xong.
+  UserModel? getCachedUser() => _session.toUserModel();
+
+  /// Notifier avatar — widget dùng [ValueListenableBuilder] để cập nhật real-time.
+  ValueNotifier<String?> get avatarUrlNotifier => _session.avatarUrlNotifier;
+
+  // ── LOGOUT ─────────────────────────────────────────────────────
+
+  /// Đăng xuất: gọi API logout, clear session, GoRouter redirect về /auth/login.
+  Future<void> logout() => AuthGuard.instance.logout();
 
   // ── GET PROFILE ────────────────────────────────────────────────
   /// GET /api/profile
   /// Trả về UserModel (có nested profile{})
   Future<UserModel> getProfile() async {
-    final res  = await _api.get('/api/profile');
+    final res = await _api.get('/api/profile');
     final user = res.item(UserModel.fromJson).withFullAvatarUrl;
     await _session.updateUser(user);
     return user;
@@ -36,7 +52,7 @@ class ProfileService {
   }) async {
     final body = <String, dynamic>{
       'fullName': fullName.trim(),
-      'phone':    phone.trim(),
+      'phone': phone.trim(),
       if (dateOfBirth != null)
         'dateOfBirth':
             '${dateOfBirth.year.toString().padLeft(4, '0')}-'
@@ -46,7 +62,7 @@ class ProfileService {
         'address': address.trim(),
     };
 
-    final res  = await _api.put('/api/profile', body: body);
+    final res = await _api.put('/api/profile', body: body);
     final user = res.item(UserModel.fromJson).withFullAvatarUrl;
     await _session.updateUser(user);
     return user;
@@ -64,7 +80,7 @@ class ProfileService {
       '/api/profile/change-password',
       body: {
         'currentPassword': currentPassword,
-        'newPassword':     newPassword,
+        'newPassword': newPassword,
         'confirmPassword': confirmPassword,
       },
     );
@@ -79,7 +95,7 @@ class ProfileService {
       'file': await MultipartFile.fromFile(filePath),
     });
 
-    final res    = await _api.putForm('/api/profile/avatar', formData);
+    final res = await _api.putForm('/api/profile/avatar', formData);
     final rawUrl = res.raw<String>();
     final fullUrl = rawUrl.toFullMediaUrl ?? rawUrl;
 

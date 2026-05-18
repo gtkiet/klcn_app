@@ -12,7 +12,7 @@
 // Server trả "HH:mm:ss.sssZ" hoặc "HH:mm:ss" — chuẩn hoá về "HH:mm"
 String _parseTime(String raw) {
   final clean = raw.contains('T') ? raw.split('T').last : raw;
-  final parts  = clean.split(':');
+  final parts = clean.split(':');
   if (parts.length < 2) return raw;
   return '${parts[0]}:${parts[1]}';
 }
@@ -22,7 +22,8 @@ String _fmtDate(DateTime dt) =>
     '${dt.month.toString().padLeft(2, '0')}/'
     '${dt.year}';
 
-double _toDouble(dynamic v) => (v as num).toDouble();
+// Safe parse — trả 0 nếu server trả null hoặc kiểu không phải num
+double _toDouble(dynamic v) => (v as num?)?.toDouble() ?? 0.0;
 
 // ── BOOKING CUSTOMER ──────────────────────────────────────────────
 // Nhúng trong BookingModel.customer — trả về từ POST + GET booking
@@ -51,17 +52,20 @@ class BookingCustomer {
     required this.createdAt,
   });
 
-  factory BookingCustomer.fromJson(Map<String, dynamic> json) => BookingCustomer(
-        userId:    json['userId']    as int,
-        fullName:  json['fullName']  as String,
-        email:     json['email']     as String,
-        phone:     json['phone']     as String,
-        role:      json['role']      as String,
-        roleId:    json['roleId']    as int,
-        status:    json['status']    as String,
-        statusId:  json['statusId']  as int,
+  factory BookingCustomer.fromJson(Map<String, dynamic> json) =>
+      BookingCustomer(
+        userId: json['userId'] as int,
+        fullName: json['fullName'] as String? ?? '',
+        email: json['email'] as String? ?? '',
+        phone: json['phone'] as String? ?? '',
+        role: json['role'] as String? ?? '',
+        roleId: json['roleId'] as int,
+        status: json['status'] as String? ?? '',
+        statusId: json['statusId'] as int,
         avatarUrl: json['avatarUrl'] as String?,
-        createdAt: DateTime.parse(json['createdAt'] as String),
+        createdAt:
+            DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -73,8 +77,8 @@ class BookingDetailItem {
   final String fieldName;
   final String fieldType;
   final DateTime slotDate;
-  final String startTime;   // "HH:mm"
-  final String endTime;     // "HH:mm"
+  final String startTime; // "HH:mm"
+  final String endTime; // "HH:mm"
   final double price;
 
   const BookingDetailItem({
@@ -96,15 +100,18 @@ class BookingDetailItem {
     return '${(price / 1000).toStringAsFixed(0)}k';
   }
 
-  factory BookingDetailItem.fromJson(Map<String, dynamic> json) => BookingDetailItem(
+  factory BookingDetailItem.fromJson(Map<String, dynamic> json) =>
+      BookingDetailItem(
         bookingDetailId: json['bookingDetailId'] as int,
-        fieldId:         json['fieldId']         as int,
-        fieldName:       json['fieldName']        as String,
-        fieldType:       json['fieldType']        as String,
-        slotDate:        DateTime.parse(json['slotDate'] as String),
-        startTime:       _parseTime(json['startTime']    as String),
-        endTime:         _parseTime(json['endTime']      as String),
-        price:           _toDouble(json['price']),
+        fieldId: json['fieldId'] as int,
+        fieldName: json['fieldName'] as String? ?? '',
+        fieldType: json['fieldType'] as String? ?? '',
+        slotDate:
+            DateTime.tryParse(json['slotDate'] as String? ?? '') ??
+            DateTime.now(),
+        startTime: _parseTime(json['startTime'] as String? ?? ''),
+        endTime: _parseTime(json['endTime'] as String? ?? ''),
+        price: _toDouble(json['price']),
       );
 }
 
@@ -130,12 +137,13 @@ class BookingServiceItem {
     return '${(total / 1000).toStringAsFixed(0)}k';
   }
 
-  factory BookingServiceItem.fromJson(Map<String, dynamic> json) => BookingServiceItem(
-        serviceId:   json['serviceId']   as int,
-        serviceName: json['serviceName'] as String,
-        quantity:    json['quantity']    as int,
-        unitPrice:   _toDouble(json['unitPrice']),
-        total:       _toDouble(json['total']),
+  factory BookingServiceItem.fromJson(Map<String, dynamic> json) =>
+      BookingServiceItem(
+        serviceId: json['serviceId'] as int,
+        serviceName: json['serviceName'] as String? ?? '',
+        quantity: json['quantity'] as int? ?? 0,
+        unitPrice: _toDouble(json['unitPrice']),
+        total: _toDouble(json['total']),
       );
 }
 
@@ -164,7 +172,7 @@ class DepositModel {
     this.paidAt,
   });
 
-  bool get isPaid    => paidAt != null;
+  bool get isPaid => paidAt != null;
   bool get isExpired => minutesLeft <= 0 && !isPaid;
 
   String get requiredFmt {
@@ -175,18 +183,20 @@ class DepositModel {
   }
 
   factory DepositModel.fromJson(Map<String, dynamic> json) => DepositModel(
-        depositId:      json['depositId']      as int,
-        bookingId:      json['bookingId']      as int,
-        requiredAmount: _toDouble(json['requiredAmount']),
-        paidAmount:     _toDouble(json['paidAmount']),
-        status:         json['status']         as String,
-        statusId:       json['statusId']       as int,
-        deadlineAt:     DateTime.parse(json['deadlineAt'] as String),
-        minutesLeft:    json['minutesLeft']    as int? ?? 0,
-        paidAt:         json['paidAt'] != null
-            ? DateTime.parse(json['paidAt'] as String)
-            : null,
-      );
+    depositId: json['depositId'] as int,
+    bookingId: json['bookingId'] as int,
+    requiredAmount: _toDouble(json['requiredAmount']),
+    paidAmount: _toDouble(json['paidAmount']),
+    status: json['status'] as String? ?? '',
+    statusId: json['statusId'] as int,
+    deadlineAt:
+        DateTime.tryParse(json['deadlineAt'] as String? ?? '') ??
+        DateTime.now(),
+    minutesLeft: json['minutesLeft'] as int? ?? 0,
+    paidAt: json['paidAt'] != null
+        ? DateTime.tryParse(json['paidAt'] as String)
+        : null,
+  );
 }
 
 // ── BOOKING MODEL (full) ──────────────────────────────────────────
@@ -234,9 +244,9 @@ class BookingModel {
 
   // ── Status helpers ────────────────────────────────────────────
   bool get isPendingPayment => statusId == 1;
-  bool get isConfirmed      => statusId == 2;
-  bool get isCancelled      => statusId == 3;
-  bool get isCompleted      => statusId == 4;
+  bool get isConfirmed => statusId == 2;
+  bool get isCancelled => statusId == 3;
+  bool get isCompleted => statusId == 4;
   bool get isPendingDeposit => statusId == 5;
 
   /// True nếu đang chờ cọc và chưa hết hạn
@@ -244,9 +254,12 @@ class BookingModel {
       isPendingDeposit && (deposit?.isExpired == false || deposit == null);
 
   // ── Display helpers ───────────────────────────────────────────
-  String get primaryDate  => details.isNotEmpty ? details.first.displayDate : '--';
-  String get primaryTime  => details.isNotEmpty ? details.first.displayTime : '--';
-  String get primaryField => details.isNotEmpty ? details.first.fieldName   : '--';
+  String get primaryDate =>
+      details.isNotEmpty ? details.first.displayDate : '--';
+  String get primaryTime =>
+      details.isNotEmpty ? details.first.displayTime : '--';
+  String get primaryField =>
+      details.isNotEmpty ? details.first.fieldName : '--';
 
   String get totalAmountFmt {
     if (totalAmount >= 1000000) {
@@ -256,29 +269,39 @@ class BookingModel {
   }
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
-    final rawDetails  = json['details']  as List<dynamic>? ?? [];
+    final rawDetails = json['details'] as List<dynamic>? ?? [];
     final rawServices = json['services'] as List<dynamic>? ?? [];
     return BookingModel(
-      bookingId:       json['bookingId']       as int,
-      customer:        BookingCustomer.fromJson(json['customer'] as Map<String, dynamic>),
-      status:          json['status']          as String,
-      statusId:        json['statusId']        as int,
-      subTotal:        _toDouble(json['subTotal']),
-      discountAmount:  _toDouble(json['discountAmount']),
-      taxAmount:       _toDouble(json['taxAmount']),
-      totalAmount:     _toDouble(json['totalAmount']),
-      depositAmount:   _toDouble(json['depositAmount']),
-      promotionCode:   json['promotionCode']   as String?,
-      note:            json['note']            as String?,
-      cancelReason:    json['cancelReason']    as String?,
+      bookingId: json['bookingId'] as int,
+      customer: BookingCustomer.fromJson(
+        json['customer'] as Map<String, dynamic>,
+      ),
+      status: json['status'] as String? ?? '',
+      statusId: json['statusId'] as int,
+      subTotal: _toDouble(json['subTotal']),
+      discountAmount: _toDouble(json['discountAmount']),
+      taxAmount: _toDouble(json['taxAmount']),
+      totalAmount: _toDouble(json['totalAmount']),
+      depositAmount: _toDouble(json['depositAmount']),
+      promotionCode: json['promotionCode'] as String?,
+      note: json['note'] as String?,
+      cancelReason: json['cancelReason'] as String?,
       rescheduleCount: json['rescheduleCount'] as int? ?? 0,
-      details:         rawDetails.map((e) => BookingDetailItem.fromJson(e as Map<String, dynamic>)).toList(),
-      services:        rawServices.map((e) => BookingServiceItem.fromJson(e as Map<String, dynamic>)).toList(),
-      deposit:         json['deposit'] != null
+      details: rawDetails
+          .map((e) => BookingDetailItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      services: rawServices
+          .map((e) => BookingServiceItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      deposit: json['deposit'] != null
           ? DepositModel.fromJson(json['deposit'] as Map<String, dynamic>)
           : null,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.now(),
+      updatedAt:
+          DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
 }
@@ -295,7 +318,7 @@ class BookingSummary {
   final double totalAmount;
   final int slotCount;
   final DateTime earliestSlotDate;
-  final String earliestSlotTime;   // "HH:mm"
+  final String earliestSlotTime; // "HH:mm"
   final String fieldName;
   final DateTime createdAt;
 
@@ -315,9 +338,9 @@ class BookingSummary {
 
   // ── Status helpers ────────────────────────────────────────────
   bool get isPendingPayment => statusId == 1;
-  bool get isConfirmed      => statusId == 2;
-  bool get isCancelled      => statusId == 3;
-  bool get isCompleted      => statusId == 4;
+  bool get isConfirmed => statusId == 2;
+  bool get isCancelled => statusId == 3;
+  bool get isCompleted => statusId == 4;
   bool get isPendingDeposit => statusId == 5;
 
   String get displayDate => _fmtDate(earliestSlotDate);
@@ -330,18 +353,21 @@ class BookingSummary {
   }
 
   factory BookingSummary.fromJson(Map<String, dynamic> json) => BookingSummary(
-        bookingId:         json['bookingId']         as int,
-        customerName:      json['customerName']      as String,
-        customerPhone:     json['customerPhone']     as String,
-        status:            json['status']            as String,
-        statusId:          json['statusId']          as int,
-        totalAmount:       _toDouble(json['totalAmount']),
-        slotCount:         json['slotCount']         as int,
-        earliestSlotDate:  DateTime.parse(json['earliestSlotDate'] as String),
-        earliestSlotTime:  _parseTime(json['earliestSlotTime']     as String),
-        fieldName:         json['fieldName']         as String,
-        createdAt:         DateTime.parse(json['createdAt']        as String),
-      );
+    bookingId: json['bookingId'] as int,
+    customerName: json['customerName'] as String? ?? '',
+    customerPhone: json['customerPhone'] as String? ?? '',
+    status: json['status'] as String? ?? '',
+    statusId: json['statusId'] as int,
+    totalAmount: _toDouble(json['totalAmount']),
+    slotCount: json['slotCount'] as int? ?? 0,
+    earliestSlotDate:
+        DateTime.tryParse(json['earliestSlotDate'] as String? ?? '') ??
+        DateTime.now(),
+    earliestSlotTime: _parseTime(json['earliestSlotTime'] as String? ?? ''),
+    fieldName: json['fieldName'] as String? ?? '',
+    createdAt:
+        DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+  );
 }
 
 // ── PAGED BOOKING RESULT ──────────────────────────────────────────
@@ -368,12 +394,14 @@ class PagedBookingResult {
   factory PagedBookingResult.fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'] as List<dynamic>? ?? [];
     return PagedBookingResult(
-      items:           rawItems.map((e) => BookingSummary.fromJson(e as Map<String, dynamic>)).toList(),
-      totalCount:      json['totalCount']      as int?  ?? 0,
-      page:            json['page']            as int?  ?? 1,
-      pageSize:        json['pageSize']        as int?  ?? 10,
-      totalPages:      json['totalPages']      as int?  ?? 0,
-      hasNextPage:     json['hasNextPage']     as bool? ?? false,
+      items: rawItems
+          .map((e) => BookingSummary.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      totalCount: json['totalCount'] as int? ?? 0,
+      page: json['page'] as int? ?? 1,
+      pageSize: json['pageSize'] as int? ?? 10,
+      totalPages: json['totalPages'] as int? ?? 0,
+      hasNextPage: json['hasNextPage'] as bool? ?? false,
       hasPreviousPage: json['hasPreviousPage'] as bool? ?? false,
     );
   }
@@ -414,18 +442,19 @@ class PaymentModel {
   }
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) => PaymentModel(
-        paymentId:       json['paymentId']       as int,
-        bookingId:       json['bookingId']        as int,
-        amount:          _toDouble(json['amount']),
-        status:          json['status']           as String,
-        statusId:        json['statusId']         as int,
-        paymentMethod:   json['paymentMethod']    as String,
-        methodId:        json['methodId']         as int,
-        transactionCode: json['transactionCode']  as String?,
-        note:            json['note']             as String?,
-        paidAt:          json['paidAt'] != null
-            ? DateTime.parse(json['paidAt'] as String)
-            : null,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-      );
+    paymentId: json['paymentId'] as int,
+    bookingId: json['bookingId'] as int,
+    amount: _toDouble(json['amount']),
+    status: json['status'] as String? ?? '',
+    statusId: json['statusId'] as int,
+    paymentMethod: json['paymentMethod'] as String? ?? '',
+    methodId: json['methodId'] as int,
+    transactionCode: json['transactionCode'] as String?,
+    note: json['note'] as String?,
+    paidAt: json['paidAt'] != null
+        ? DateTime.tryParse(json['paidAt'] as String)
+        : null,
+    createdAt:
+        DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+  );
 }
