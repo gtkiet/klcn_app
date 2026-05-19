@@ -194,7 +194,10 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
 
-      if (mounted) setState(() => _isProcessing = false);
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        context.go('/booking_history');
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
