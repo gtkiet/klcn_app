@@ -160,10 +160,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     try {
       final slotIds = _slots.map((s) => s.fieldSlotId).toList();
 
-      // 1. Hold slots (bắt buộc trước createBooking)
-      // await BookingService.instance.holdSlots(slotIds);
-
-      // 2. Build service items (chỉ những item có qty > 0)
+      // 1. Build service items (chỉ những item có qty > 0)
       final serviceItems = _services
           .where((s) => (_serviceQty[s.serviceId] ?? 0) > 0)
           .map(
@@ -174,9 +171,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
           )
           .toList();
 
-      // 3. Tạo booking
-      //    isFullPayment=false → statusId=5, tạo deposit object  (Flow 1)
-      //    isFullPayment=true  → statusId=2, không tạo deposit   (Flow 2)
+      // 2. Tạo booking
       final booking = await BookingService.instance.createBooking(
         fieldSlotIds: slotIds,
         services: serviceItems,
@@ -186,33 +181,20 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
 
       if (!mounted) return;
 
-      // 4. Tạo VNPay URL
-      //    Backend tự detect context từ bookingStatus:
-      //      statusId==5 → charge depositAmount   (Flow 1, bước 1)
-      //      statusId==2 → charge toàn bộ total   (Flow 2)
+      // 3. Tạo VNPay URL
       final payResult = await PaymentService.instance.createVnPayPayment(
         booking.bookingId,
       );
 
       if (!mounted) return;
 
-      // 5. Mở VNPay trong browser ngoài
-      // final uri = Uri.parse(payResult.paymentUrl);
-      // if (await canLaunchUrl(uri)) {
-      //   await launchUrl(uri, mode: LaunchMode.externalApplication);
-      // }
+      // 4. Mở VNPay
       final uri = Uri.parse(payResult.paymentUrl);
-
-      try {
-        await launchUrl(uri, mode: LaunchMode.platformDefault);
-      } catch (e) {
-        debugPrint("Cannot launch: $e");
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
 
-      // 6. Chuyển sang success screen để user thấy trạng thái "đang xử lý"
-      //    Deep link (sportplus://payment/result) sẽ xử lý kết quả VNPay thực tế
-      if (!mounted) return;
-      context.pushReplacement('/booking/success', extra: {'booking': booking});
+      if (mounted) setState(() => _isProcessing = false);
     } catch (e) {
       if (!mounted) return;
       setState(() {

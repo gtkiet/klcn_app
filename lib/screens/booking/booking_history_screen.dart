@@ -13,16 +13,16 @@ import '../../widgets/shared_widgets.dart';
 // Mỗi tab truyền thẳng statusId lên API, không cần filter client-side
 class _Tab {
   final String label;
-  final int?   statusId;
+  final int? statusId;
   const _Tab(this.label, this.statusId);
 }
 
 const _tabs = [
-  _Tab('Tất cả',       null),
-  _Tab('Chờ đặt cọc',  5),   // PendingDeposit
-  _Tab('Đã xác nhận',  2),   // Confirmed
-  _Tab('Hoàn thành',   4),   // Completed
-  _Tab('Đã hủy',       3),   // Cancelled
+  _Tab('Tất cả', null),
+  _Tab('Chờ đặt cọc', 5), // PendingDeposit
+  _Tab('Đã xác nhận', 2), // Confirmed
+  _Tab('Hoàn thành', 4), // Completed
+  _Tab('Đã hủy', 3), // Cancelled
 ];
 
 const _kPageSize = 10;
@@ -36,13 +36,13 @@ class BookingHistoryScreen extends StatefulWidget {
 
 class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
   final _scrollCtrl = ScrollController();
-  int _selectedTab  = 0;
+  int _selectedTab = 0;
 
-  List<BookingSummary> _items     = [];
-  bool _isLoading                 = false;
-  bool _isLoadingMore             = false;
-  bool _hasNextPage               = false;
-  int  _currentPage               = 1;
+  List<BookingSummary> _items = [];
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasNextPage = false;
+  int _currentPage = 1;
   String? _errorMsg;
 
   @override
@@ -63,10 +63,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
 
     if (reset) {
       setState(() {
-        _isLoading   = true;
-        _errorMsg    = null;
+        _isLoading = true;
+        _errorMsg = null;
         _currentPage = 1;
-        _items       = [];
+        _items = [];
       });
     } else {
       if (_isLoadingMore || !_hasNextPage) return;
@@ -76,7 +76,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     try {
       final result = await BookingService.instance.getMyBookings(
         statusId: tab.statusId,
-        page:     reset ? 1 : _currentPage,
+        page: reset ? 1 : _currentPage,
         pageSize: _kPageSize,
       );
       if (!mounted) return;
@@ -86,23 +86,24 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
         } else {
           _items.addAll(result.items);
         }
-        _hasNextPage   = result.hasNextPage;
-        _currentPage   = result.page + 1;
-        _isLoading     = false;
+        _hasNextPage = result.hasNextPage;
+        _currentPage = result.page + 1;
+        _isLoading = false;
         _isLoadingMore = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMsg      = e.toString();
-        _isLoading     = false;
+        _errorMsg = e.toString();
+        _isLoading = false;
         _isLoadingMore = false;
       });
     }
   }
 
   void _onScroll() {
-    if (_scrollCtrl.position.pixels >= _scrollCtrl.position.maxScrollExtent - 200) {
+    if (_scrollCtrl.position.pixels >=
+        _scrollCtrl.position.maxScrollExtent - 200) {
       _load();
     }
   }
@@ -126,13 +127,11 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
         appBar: AppBar(title: const Text('Lịch sử đặt sân')),
         body: Column(
           children: [
-            // Tab chips
             _TabChipRow(
-              tabs:          _tabs,
+              tabs: _tabs,
               selectedIndex: _selectedTab,
-              onTap:         _onTabSelect,
+              onTap: _onTabSelect,
             ),
-
             Expanded(child: _buildBody()),
           ],
         ),
@@ -154,22 +153,36 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi_off_rounded, size: 52, color: AppColors.textLight),
+              const Icon(
+                Icons.wifi_off_rounded,
+                size: 52,
+                color: AppColors.textLight,
+              ),
               const SizedBox(height: 16),
-              Text(_errorMsg!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.textMid, fontSize: 14)),
+              Text(
+                _errorMsg!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textMid, fontSize: 14),
+              ),
               const SizedBox(height: 20),
               GestureDetector(
                 onTap: () => _load(reset: true),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text('Thử lại',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                  child: const Text(
+                    'Thử lại',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -183,11 +196,16 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.event_busy_outlined,
-                size: 64, color: AppColors.textLight.withValues(alpha: 0.4)),
+            Icon(
+              Icons.event_busy_outlined,
+              size: 64,
+              color: AppColors.textLight.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 16),
-            const Text('Không có lịch sử đặt sân',
-                style: TextStyle(color: AppColors.textLight, fontSize: 15)),
+            const Text(
+              'Không có lịch sử đặt sân',
+              style: TextStyle(color: AppColors.textLight, fontSize: 15),
+            ),
           ],
         ),
       );
@@ -199,16 +217,22 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
       child: ListView.builder(
         controller: _scrollCtrl,
         padding: const EdgeInsets.fromLTRB(
-          AppSpacing.pagePadH, 16, AppSpacing.pagePadH, 24,
+          AppSpacing.pagePadH,
+          16,
+          AppSpacing.pagePadH,
+          24,
         ),
         itemCount: _items.length + (_isLoadingMore ? 1 : 0),
         itemBuilder: (context, i) {
           if (i == _items.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(child: CircularProgressIndicator(
-                color: AppColors.primary, strokeWidth: 2.5,
-              )),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                  strokeWidth: 2.5,
+                ),
+              ),
             );
           }
           return Padding(
@@ -254,9 +278,12 @@ class _TabChipRow extends StatelessWidget {
               onTap: () => onTap(i),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 9,
+                ),
                 decoration: BoxDecoration(
-                  color:  sel ? AppColors.primary : Colors.white,
+                  color: sel ? AppColors.primary : Colors.white,
                   borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
                   border: Border.all(
                     color: sel ? AppColors.primary : AppColors.fieldBorder,
@@ -267,7 +294,8 @@ class _TabChipRow extends StatelessWidget {
                   tabs[i].label,
                   style: TextStyle(
                     color: sel ? Colors.white : AppColors.textDark,
-                    fontSize: 13.5, fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -286,13 +314,34 @@ class _BookingCard extends StatelessWidget {
 
   const _BookingCard({required this.booking, required this.onDetail});
 
-  ({String text, Color textColor, Color bgColor}) get _badge => switch (booking.statusId) {
-    2 => (text: 'ĐÃ XÁC NHẬN',   textColor: AppColors.badgeBookedText,  bgColor: AppColors.badgeBookedBg),
-    3 => (text: 'ĐÃ HỦY',        textColor: AppColors.badgeCancelText,  bgColor: AppColors.badgeCancelBg),
-    4 => (text: 'HOÀN THÀNH',    textColor: AppColors.badgeDoneText,    bgColor: AppColors.badgeDoneBg),
-    5 => (text: 'CHỜ THANH TOÁN', textColor: AppColors.warningOrange,   bgColor: const Color(0xFFFFF3E0)),
-    _ => (text: booking.status.toUpperCase(), textColor: AppColors.textMid, bgColor: AppColors.fieldBg),
-  };
+  ({String text, Color textColor, Color bgColor}) get _badge =>
+      switch (booking.statusId) {
+        2 => (
+          text: 'ĐÃ XÁC NHẬN',
+          textColor: AppColors.badgeBookedText,
+          bgColor: AppColors.badgeBookedBg,
+        ),
+        3 => (
+          text: 'ĐÃ HỦY',
+          textColor: AppColors.badgeCancelText,
+          bgColor: AppColors.badgeCancelBg,
+        ),
+        4 => (
+          text: 'HOÀN THÀNH',
+          textColor: AppColors.badgeDoneText,
+          bgColor: AppColors.badgeDoneBg,
+        ),
+        5 => (
+          text: 'CHỜ THANH TOÁN',
+          textColor: AppColors.warningOrange,
+          bgColor: const Color(0xFFFFF3E0),
+        ),
+        _ => (
+          text: booking.status.toUpperCase(),
+          textColor: AppColors.textMid,
+          bgColor: AppColors.fieldBg,
+        ),
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -309,27 +358,42 @@ class _BookingCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('MÃ ĐẶT SÂN',
-                      style: TextStyle(color: AppColors.textHint, fontSize: 9.5,
-                          fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                  const Text(
+                    'MÃ ĐẶT SÂN',
+                    style: TextStyle(
+                      color: AppColors.textHint,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     '#${booking.bookingId}',
-                    style: TextStyle(
-                      // color: booking.isBooked ? AppColors.primary : AppColors.textDark,
-                      fontSize: 18, fontWeight: FontWeight.w900,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: badge.bgColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(badge.text,
-                    style: TextStyle(color: badge.textColor, fontSize: 11, fontWeight: FontWeight.w800)),
+                child: Text(
+                  badge.text,
+                  style: TextStyle(
+                    color: badge.textColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ],
           ),
@@ -338,16 +402,22 @@ class _BookingCard extends StatelessWidget {
           const Divider(height: 1, color: AppColors.fieldBorder),
           const SizedBox(height: 12),
 
-          // Field name
+          // Field name + slot count
           Row(
             children: [
-              const Icon(Icons.sports_soccer, size: 15, color: AppColors.textLight),
+              const Icon(
+                Icons.sports_soccer,
+                size: 15,
+                color: AppColors.textLight,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   booking.fieldName,
                   style: const TextStyle(
-                    color: AppColors.textDark, fontWeight: FontWeight.w700, fontSize: 15,
+                    color: AppColors.textDark,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
                   ),
                 ),
               ),
@@ -360,7 +430,11 @@ class _BookingCard extends StatelessWidget {
                 ),
                 child: Text(
                   '${booking.slotCount} slot',
-                  style: const TextStyle(color: AppColors.textMid, fontSize: 12, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    color: AppColors.textMid,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -368,7 +442,7 @@ class _BookingCard extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // Date + time + amount
+          // Date + time | Amount
           IntrinsicHeight(
             child: Row(
               children: [
@@ -376,32 +450,55 @@ class _BookingCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('THỜI GIAN',
-                          style: TextStyle(color: AppColors.textHint, fontSize: 9.5,
-                              fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                      const Text(
+                        'THỜI GIAN',
+                        style: TextStyle(
+                          color: AppColors.textHint,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(Icons.calendar_today_outlined,
-                              size: 13, color: AppColors.textMid),
+                          const Icon(
+                            Icons.calendar_today_outlined,
+                            size: 13,
+                            color: AppColors.textMid,
+                          ),
                           const SizedBox(width: 5),
-                          Text(booking.displayDate,
-                              style: const TextStyle(
-                                color: AppColors.textDark, fontSize: 13.5, fontWeight: FontWeight.w700,
-                              )),
+                          Text(
+                            booking.displayDate,
+                            style: const TextStyle(
+                              color: AppColors.textDark,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 3),
                       Padding(
                         padding: const EdgeInsets.only(left: 18),
-                        child: Text(booking.earliestSlotTime,
-                            style: const TextStyle(color: AppColors.textMid, fontSize: 12.5)),
+                        child: Text(
+                          booking.earliestSlotTime,
+                          style: const TextStyle(
+                            color: AppColors.textMid,
+                            fontSize: 12.5,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
 
-                const VerticalDivider(width: 1, color: AppColors.fieldBorder, indent: 4, endIndent: 4),
+                const VerticalDivider(
+                  width: 1,
+                  color: AppColors.fieldBorder,
+                  indent: 4,
+                  endIndent: 4,
+                ),
 
                 Expanded(
                   child: Padding(
@@ -411,30 +508,27 @@ class _BookingCard extends StatelessWidget {
                       children: [
                         Text(
                           booking.isCancelled ? 'HOÀN TIỀN' : 'THANH TOÁN',
-                          style: const TextStyle(color: AppColors.textHint, fontSize: 9.5,
-                              fontWeight: FontWeight.w700, letterSpacing: 0.8),
+                          style: const TextStyle(
+                            color: AppColors.textHint,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           booking.totalAmountFmt,
                           style: TextStyle(
-                            color: booking.isCancelled ? AppColors.textHint : AppColors.textDark,
-                            fontSize: 14, fontWeight: FontWeight.w800,
-                            decoration: booking.isCancelled ? TextDecoration.lineThrough : null,
+                            color: booking.isCancelled
+                                ? AppColors.textHint
+                                : AppColors.textDark,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            decoration: booking.isCancelled
+                                ? TextDecoration.lineThrough
+                                : null,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        // Text(
-                        //   booking.isBooked    ? 'Chưa thanh toán'
-                        //   : booking.isCompleted ? 'Đã thanh toán'
-                        //   : 'Hoàn tiền 100%',
-                        //   style: TextStyle(
-                        //     color: booking.isBooked    ? AppColors.textLight
-                        //          : booking.isCompleted ? AppColors.primaryLight
-                        //          : AppColors.badgeCancelText,
-                        //     fontSize: 12,
-                        //   ),
-                        // ),
                       ],
                     ),
                   ),
@@ -458,17 +552,19 @@ class _BookingCard extends StatelessWidget {
                   primary: true,
                 ),
               ),
-              if (booking.isCompleted) ...[
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _ActionBtn(
-                    label: 'Đánh giá',
-                    icon: Icons.star_outline_rounded,
-                    onTap: () => context.push('/booking_history/detail', extra: booking),
-                    primary: false,
-                  ),
-                ),
-              ],
+              // if (booking.isCompleted) ...[
+              //   const SizedBox(width: 10),
+              //   Expanded(
+              //     child: _ActionBtn(
+              //       label: 'Đánh giá',
+              //       icon: Icons.star_outline_rounded,
+              //       // TODO: thay bằng route review khi có
+              //       // context.push('/reviews/create', extra: booking.bookingId)
+              //       onTap: onDetail,
+              //       primary: false,
+              //     ),
+              //   ),
+              // ],
             ],
           ),
         ],
@@ -477,6 +573,7 @@ class _BookingCard extends StatelessWidget {
   }
 }
 
+// ── ACTION BTN ────────────────────────────────
 class _ActionBtn extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -499,22 +596,36 @@ class _ActionBtn extends StatelessWidget {
         decoration: BoxDecoration(
           color: primary ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: primary ? null : Border.all(color: AppColors.fieldBorder, width: 1.5),
-          boxShadow: primary ? [
-            BoxShadow(color: AppColors.primary.withValues(alpha: 0.2),
-                blurRadius: 8, offset: const Offset(0, 3)),
-          ] : [],
+          border: primary
+              ? null
+              : Border.all(color: AppColors.fieldBorder, width: 1.5),
+          boxShadow: primary
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : [],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: primary ? Colors.white : AppColors.textMid, size: 16),
+            Icon(
+              icon,
+              color: primary ? Colors.white : AppColors.textMid,
+              size: 16,
+            ),
             const SizedBox(width: 6),
-            Text(label,
-                style: TextStyle(
-                  color: primary ? Colors.white : AppColors.textMid,
-                  fontSize: 13.5, fontWeight: FontWeight.w700,
-                )),
+            Text(
+              label,
+              style: TextStyle(
+                color: primary ? Colors.white : AppColors.textMid,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
       ),

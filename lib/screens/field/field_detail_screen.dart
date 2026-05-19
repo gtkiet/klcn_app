@@ -29,27 +29,27 @@ class FieldDetailScreen extends StatefulWidget {
 class _FieldDetailScreenState extends State<FieldDetailScreen> {
   // ── Field data ──────────────────────────────────────────────────────────────
   FieldModel? _field;
-  bool _isRefreshing = false;
+  bool    _isRefreshing = false;
   String? _detailError;
 
   // ── Schedule ────────────────────────────────────────────────────────────────
   late final List<DateTime> _dates;
   int _selectedDateIdx = 0;
 
-  List<SlotModel> _slots = [];
-  bool _isLoadingSlots = false;
+  List<SlotModel> _slots       = [];
+  bool    _isLoadingSlots      = false;
   String? _slotError;
 
   // ── Selection ───────────────────────────────────────────────────────────────
   final Set<int> _selectedSlotIds = {}; // fieldSlotId
 
   // ── Hold state ──────────────────────────────────────────────────────────────
-  bool _isHolding = false; // đang gọi holdSlots API
-  String? _holdError; // lỗi hold nếu có
+  bool    _isHolding  = false;  // đang gọi holdSlots API
+  String? _holdError;           // lỗi hold nếu có
 
   // ── Reviews ─────────────────────────────────────────────────────────────────
   FieldReviewSummary? _reviewSummary;
-  bool _isLoadingReviews = false;
+  bool    _isLoadingReviews = false;
   String? _reviewError;
 
   // ── Derived ─────────────────────────────────────────────────────────────────
@@ -86,19 +86,19 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
     if (_field == null) return;
     setState(() {
       _isRefreshing = true;
-      _detailError = null;
+      _detailError  = null;
     });
     try {
       final fresh = await FieldService.instance.getFieldDetail(_field!.fieldId);
       if (!mounted) return;
       setState(() {
-        _field = fresh;
+        _field        = fresh;
         _isRefreshing = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _detailError = e.toString();
+        _detailError  = e.toString();
         _isRefreshing = false;
       });
     }
@@ -108,13 +108,13 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
     if (_field == null) return;
     setState(() {
       _isLoadingSlots = true;
-      _slotError = null;
+      _slotError      = null;
       _selectedSlotIds.clear();
-      _holdError = null; // xoá lỗi hold khi đổi ngày
+      _holdError      = null;   // xoá lỗi hold khi đổi ngày
     });
     try {
       final schedules = await FieldService.instance.getSchedule(
-        date: _selectedDate,
+        date:    _selectedDate,
         fieldId: _field!.fieldId,
       );
       if (!mounted) return;
@@ -122,13 +122,13 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
           .where((s) => s.fieldId == _field!.fieldId)
           .firstOrNull;
       setState(() {
-        _slots = match?.slots ?? [];
+        _slots          = match?.slots ?? [];
         _isLoadingSlots = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _slotError = e.toString();
+        _slotError      = e.toString();
         _isLoadingSlots = false;
       });
     }
@@ -138,21 +138,20 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
     if (_field == null) return;
     setState(() {
       _isLoadingReviews = true;
-      _reviewError = null;
+      _reviewError      = null;
     });
     try {
-      final summary = await ReviewService.instance.getFieldReviews(
-        _field!.fieldId,
-      );
+      final summary =
+          await ReviewService.instance.getFieldReviews(_field!.fieldId);
       if (!mounted) return;
       setState(() {
-        _reviewSummary = summary;
+        _reviewSummary    = summary;
         _isLoadingReviews = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _reviewError = e.toString();
+        _reviewError      = e.toString();
         _isLoadingReviews = false;
       });
     }
@@ -211,10 +210,11 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
       if (!mounted) return;
 
       // Hold thành công → navigate
-      context.push(
-        '/fields/confirm',
-        extra: {'field': _field, 'date': _selectedDate, 'slots': selectedSlots},
-      );
+      context.push('/fields/confirm', extra: {
+        'field': _field,
+        'date':  _selectedDate,
+        'slots': selectedSlots,
+      });
     } catch (e) {
       if (!mounted) return;
 
@@ -248,7 +248,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
         appBar: AppBar(
           title: const Text('Chi tiết sân'),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon:     const Icon(Icons.arrow_back),
             onPressed: () => context.pop(),
           ),
           actions: [
@@ -256,11 +256,9 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
               const Padding(
                 padding: EdgeInsets.all(14),
                 child: SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: 20, height: 20,
                   child: CircularProgressIndicator(
-                    color: AppColors.primary,
-                    strokeWidth: 2,
+                    color: AppColors.primary, strokeWidth: 2,
                   ),
                 ),
               ),
@@ -268,13 +266,13 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
         ),
         bottomNavigationBar: _BottomBar(
           totalPrice: _totalPrice,
-          slotCount: _selectedSlotIds.length,
-          enabled: _selectedSlotIds.isNotEmpty && !_isHolding,
-          isLoading: _isHolding,
-          onTap: _onBook,
+          slotCount:  _selectedSlotIds.length,
+          enabled:    _selectedSlotIds.isNotEmpty && !_isHolding,
+          isLoading:  _isHolding,
+          onTap:      _onBook,
         ),
         body: RefreshIndicator(
-          color: AppColors.primary,
+          color:     AppColors.primary,
           onRefresh: () async {
             await _refreshDetail();
             await _loadSlots();
@@ -303,9 +301,9 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                             child: Text(
                               field.name,
                               style: const TextStyle(
-                                fontSize: 20,
+                                fontSize:   20,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textDark,
+                                color:      AppColors.textDark,
                               ),
                             ),
                           ),
@@ -316,7 +314,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                       const SizedBox(height: 8),
                       if (field.avgRating != null)
                         _RatingRow(
-                          rating: field.avgRating!,
+                          rating:       field.avgRating!,
                           totalReviews: field.totalReviews,
                         ),
                       const Divider(height: 20),
@@ -326,20 +324,19 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                             child: _PriceItem(
                               label: 'Giờ thường',
                               value: field.basePriceFmt,
-                              icon: Icons.access_time_rounded,
+                              icon:  Icons.access_time_rounded,
                             ),
                           ),
                           if (field.peakPrice > field.basePrice) ...[
                             Container(
-                              width: 1,
-                              height: 36,
+                              width: 1, height: 36,
                               color: AppColors.divider,
                             ),
                             Expanded(
                               child: _PriceItem(
-                                label: 'Cao điểm',
-                                value: field.peakPriceFmt,
-                                icon: Icons.bolt_rounded,
+                                label:  'Cao điểm',
+                                value:  field.peakPriceFmt,
+                                icon:   Icons.bolt_rounded,
                                 isPeak: true,
                               ),
                             ),
@@ -365,7 +362,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                     child: Text(
                       field.description!,
                       style: const TextStyle(
-                        color: AppColors.textMid,
+                        color:  AppColors.textMid,
                         fontSize: 14,
                         height: 1.55,
                       ),
@@ -380,9 +377,9 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
               const _SectionTitle('Chọn ngày'),
               const SizedBox(height: 10),
               _DatePicker(
-                dates: _dates,
+                dates:       _dates,
                 selectedIdx: _selectedDateIdx,
-                onSelect: _onDateSelect,
+                onSelect:    _onDateSelect,
               ),
 
               const SizedBox(height: 20),
@@ -396,8 +393,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                   padding: EdgeInsets.symmetric(vertical: 32),
                   child: Center(
                     child: CircularProgressIndicator(
-                      color: AppColors.primary,
-                      strokeWidth: 2.5,
+                      color: AppColors.primary, strokeWidth: 2.5,
                     ),
                   ),
                 )
@@ -407,13 +403,15 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                 const _SlotEmpty()
               else
                 _SlotGrid(
-                  slots: _slots,
+                  slots:       _slots,
                   selectedIds: _selectedSlotIds,
-                  onTap: _onSlotTap,
+                  onTap:       _onSlotTap,
                 ),
 
               // ── Legend ───────────────────────────────────────────────────
-              if (!_isLoadingSlots && _slotError == null && _slots.isNotEmpty)
+              if (!_isLoadingSlots &&
+                  _slotError == null &&
+                  _slots.isNotEmpty)
                 const _SlotLegend(),
 
               // ── Hold error banner ─────────────────────────────────────────
@@ -422,10 +420,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
               if (_holdError != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.pagePadH,
-                    14,
-                    AppSpacing.pagePadH,
-                    0,
+                    AppSpacing.pagePadH, 14, AppSpacing.pagePadH, 0,
                   ),
                   child: _HoldErrorBanner(message: _holdError!),
                 ),
@@ -441,8 +436,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                   padding: EdgeInsets.symmetric(vertical: 24),
                   child: Center(
                     child: CircularProgressIndicator(
-                      color: AppColors.primary,
-                      strokeWidth: 2.5,
+                      color: AppColors.primary, strokeWidth: 2.5,
                     ),
                   ),
                 )
@@ -464,10 +458,7 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
                     .map(
                       (r) => Padding(
                         padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.pagePadH,
-                          0,
-                          AppSpacing.pagePadH,
-                          10,
+                          AppSpacing.pagePadH, 0, AppSpacing.pagePadH, 10,
                         ),
                         child: _ReviewCard(review: r),
                       ),
@@ -478,13 +469,11 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
               if (_detailError != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.pagePadH,
-                    12,
-                    AppSpacing.pagePadH,
-                    0,
+                    AppSpacing.pagePadH, 12, AppSpacing.pagePadH, 0,
                   ),
                   child: _WarningBanner(
-                    message: 'Không thể tải dữ liệu mới nhất. Kéo để thử lại.',
+                    message:
+                        'Không thể tải dữ liệu mới nhất. Kéo để thử lại.',
                   ),
                 ),
 
@@ -499,8 +488,8 @@ class _FieldDetailScreenState extends State<FieldDetailScreen> {
 
 // ── DATE PICKER ────────────────────────────────────────────────────────────────
 class _DatePicker extends StatelessWidget {
-  final List<DateTime> dates;
-  final int selectedIdx;
+  final List<DateTime>    dates;
+  final int               selectedIdx;
   final ValueChanged<int> onSelect;
 
   const _DatePicker({
@@ -515,24 +504,24 @@ class _DatePicker extends StatelessWidget {
       height: 72,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
-        itemCount: dates.length,
+        padding:     const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
+        itemCount:   dates.length,
         itemBuilder: (_, i) {
-          final date = dates[i];
+          final date     = dates[i];
           final selected = i == selectedIdx;
-          final isToday = i == 0;
+          final isToday  = i == 0;
           final dayLabel = isToday ? 'Hôm nay' : _kDayLabels[date.weekday % 7];
 
           return GestureDetector(
             onTap: () => onSelect(i),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              width: 62,
+              width:  62,
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
-                color: selected ? AppColors.primary : Colors.white,
+                color:        selected ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: selected ? AppShadow.card : [],
+                boxShadow:    selected ? AppShadow.card : [],
                 border: Border.all(
                   color: selected ? AppColors.primary : AppColors.fieldBorder,
                 ),
@@ -543,8 +532,8 @@ class _DatePicker extends StatelessWidget {
                   Text(
                     dayLabel,
                     style: TextStyle(
-                      color: selected ? Colors.white70 : AppColors.textLight,
-                      fontSize: 10.5,
+                      color:      selected ? Colors.white70 : AppColors.textLight,
+                      fontSize:   10.5,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -553,14 +542,14 @@ class _DatePicker extends StatelessWidget {
                     '${date.day}',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      fontSize: 18,
+                      fontSize:   18,
                       color: selected ? Colors.white : AppColors.textDark,
                     ),
                   ),
                   Text(
                     'Th${date.month}',
                     style: TextStyle(
-                      color: selected ? Colors.white60 : AppColors.textHint,
+                      color:    selected ? Colors.white60 : AppColors.textHint,
                       fontSize: 10,
                     ),
                   ),
@@ -576,8 +565,8 @@ class _DatePicker extends StatelessWidget {
 
 // ── SLOT GRID ──────────────────────────────────────────────────────────────────
 class _SlotGrid extends StatelessWidget {
-  final List<SlotModel> slots;
-  final Set<int> selectedIds;
+  final List<SlotModel>        slots;
+  final Set<int>               selectedIds;
   final ValueChanged<SlotModel> onTap;
 
   const _SlotGrid({
@@ -590,10 +579,18 @@ class _SlotGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: slots.map((slot) {
+      child: GridView.builder(
+        shrinkWrap:       true,
+        physics:          const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount:   3,
+          crossAxisSpacing: 8,
+          mainAxisSpacing:  8,
+          childAspectRatio: 2.2, // rộng hơn cao — vừa với "HH:mm - HH:mm"
+        ),
+        itemCount: slots.length,
+        itemBuilder: (_, i) {
+          final slot       = slots[i];
           final isSelected = selectedIds.contains(slot.fieldSlotId);
           return GestureDetector(
             onTap: () => onTap(slot),
@@ -604,30 +601,30 @@ class _SlotGrid extends StatelessWidget {
                 color: isSelected
                     ? AppColors.primary
                     : slot.isAvailable
-                    ? Colors.white
-                    : AppColors.fieldBg,
+                        ? Colors.white
+                        : AppColors.fieldBg,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primary
                       : slot.isPeakHour && slot.isAvailable
-                      ? AppColors.warningOrange.withValues(alpha: 0.5)
-                      : AppColors.fieldBorder,
+                          ? AppColors.warningOrange.withValues(alpha: 0.5)
+                          : AppColors.fieldBorder,
                   width: isSelected ? 2 : 1,
                 ),
               ),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     slot.displayTime,
                     style: TextStyle(
-                      fontSize: 12.5,
+                      fontSize:   12.5,
                       fontWeight: FontWeight.w700,
                       color: slot.isAvailable
                           ? isSelected
-                                ? Colors.white
-                                : AppColors.textDark
+                              ? Colors.white
+                              : AppColors.textDark
                           : AppColors.textHint,
                       decoration: slot.isBooked
                           ? TextDecoration.lineThrough
@@ -638,24 +635,28 @@ class _SlotGrid extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (slot.isPeakHour && slot.isAvailable && !isSelected)
+                      if (slot.isPeakHour &&
+                          slot.isAvailable &&
+                          !isSelected)
                         const Icon(
                           Icons.bolt_rounded,
-                          size: 10,
+                          size:  10,
                           color: AppColors.warningOrange,
                         ),
                       Text(
-                        slot.isAvailable ? slot.priceFmt : _statusLabel(slot),
+                        slot.isAvailable
+                            ? slot.priceFmt
+                            : _statusLabel(slot),
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize:   11,
                           fontWeight: FontWeight.w600,
                           color: isSelected
                               ? Colors.white70
                               : slot.isAvailable
-                              ? slot.isPeakHour
-                                    ? AppColors.warningOrange
-                                    : AppColors.primary
-                              : AppColors.textHint,
+                                  ? slot.isPeakHour
+                                      ? AppColors.warningOrange
+                                      : AppColors.primary
+                                  : AppColors.textHint,
                         ),
                       ),
                     ],
@@ -664,14 +665,14 @@ class _SlotGrid extends StatelessWidget {
               ),
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
 
   String _statusLabel(SlotModel slot) {
     if (slot.isHolding) return 'Đang giữ';
-    if (slot.isBooked) return 'Đã đặt';
+    if (slot.isBooked)  return 'Đã đặt';
     return slot.status;
   }
 }
@@ -684,22 +685,15 @@ class _SlotLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.pagePadH,
-        12,
-        AppSpacing.pagePadH,
-        0,
+        AppSpacing.pagePadH, 12, AppSpacing.pagePadH, 0,
       ),
       child: const Wrap(
-        spacing: 16,
+        spacing:    16,
         runSpacing: 6,
         children: [
-          _LegendDot(color: AppColors.primary, label: 'Đã chọn'),
-          _LegendDot(color: Colors.white, label: 'Còn trống', border: true),
-          _LegendDot(
-            color: AppColors.fieldBg,
-            label: 'Không trống',
-            border: true,
-          ),
+          _LegendDot(color: AppColors.primary,  label: 'Đã chọn'),
+          _LegendDot(color: Colors.white,        label: 'Còn trống', border: true),
+          _LegendDot(color: AppColors.fieldBg,  label: 'Không trống', border: true),
         ],
       ),
     );
@@ -707,9 +701,9 @@ class _SlotLegend extends StatelessWidget {
 }
 
 class _LegendDot extends StatelessWidget {
-  final Color color;
+  final Color  color;
   final String label;
-  final bool border;
+  final bool   border;
   const _LegendDot({
     required this.color,
     required this.label,
@@ -722,10 +716,10 @@ class _LegendDot extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
+          width:  12,
           height: 12,
           decoration: BoxDecoration(
-            color: color,
+            color:        color,
             borderRadius: BorderRadius.circular(3),
             border: border ? Border.all(color: AppColors.fieldBorder) : null,
           ),
@@ -766,8 +760,7 @@ class _SlotError extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-        vertical: 20,
-        horizontal: AppSpacing.pagePadH,
+        vertical: 20, horizontal: AppSpacing.pagePadH,
       ),
       child: Column(
         children: [
@@ -781,9 +774,9 @@ class _SlotError extends StatelessWidget {
             child: const Text(
               'Thử lại',
               style: TextStyle(
-                color: AppColors.primary,
+                color:      AppColors.primary,
                 fontWeight: FontWeight.w700,
-                fontSize: 14,
+                fontSize:   14,
               ),
             ),
           ),
@@ -805,9 +798,11 @@ class _HoldErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFEBEE),
+        color:        const Color(0xFFFFEBEE),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.errorRed.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: AppColors.errorRed.withValues(alpha: 0.4),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -815,7 +810,7 @@ class _HoldErrorBanner extends StatelessWidget {
           const Icon(
             Icons.error_outline_rounded,
             color: AppColors.errorRed,
-            size: 18,
+            size:  18,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -825,27 +820,27 @@ class _HoldErrorBanner extends StatelessWidget {
                 const Text(
                   'Không thể giữ slot',
                   style: TextStyle(
-                    color: AppColors.errorRed,
+                    color:      AppColors.errorRed,
                     fontWeight: FontWeight.w700,
-                    fontSize: 13.5,
+                    fontSize:   13.5,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   message,
                   style: const TextStyle(
-                    color: AppColors.errorRed,
+                    color:    AppColors.errorRed,
                     fontSize: 12.5,
-                    height: 1.4,
+                    height:   1.4,
                   ),
                 ),
                 const SizedBox(height: 4),
                 const Text(
                   'Lịch đã được cập nhật. Vui lòng chọn lại slot.',
                   style: TextStyle(
-                    color: AppColors.textMid,
+                    color:    AppColors.textMid,
                     fontSize: 12,
-                    height: 1.4,
+                    height:   1.4,
                   ),
                 ),
               ],
@@ -859,10 +854,10 @@ class _HoldErrorBanner extends StatelessWidget {
 
 // ── BOTTOM BAR ─────────────────────────────────────────────────────────────────
 class _BottomBar extends StatelessWidget {
-  final double totalPrice;
-  final int slotCount;
-  final bool enabled;
-  final bool isLoading; // đang gọi holdSlots
+  final double       totalPrice;
+  final int          slotCount;
+  final bool         enabled;
+  final bool         isLoading;  // đang gọi holdSlots
   final VoidCallback onTap;
 
   const _BottomBar({
@@ -874,7 +869,7 @@ class _BottomBar extends StatelessWidget {
   });
 
   String _fmt(double p) {
-    if (p == 0) return '--';
+    if (p == 0)       return '--';
     if (p >= 1000000) return '${(p / 1000000).toStringAsFixed(1)}M';
     return '${(p / 1000).toStringAsFixed(0)}k';
   }
@@ -886,9 +881,9 @@ class _BottomBar extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color:      Colors.black.withValues(alpha: 0.08),
             blurRadius: 16,
-            offset: const Offset(0, -4),
+            offset:     const Offset(0, -4),
           ),
         ],
       ),
@@ -898,14 +893,14 @@ class _BottomBar extends StatelessWidget {
           child: Row(
             children: [
               Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize:     MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     slotCount > 0 ? 'TỔNG ($slotCount slot)' : 'TỔNG',
                     style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textLight,
+                      fontSize:   10,
+                      color:      AppColors.textLight,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.8,
                     ),
@@ -914,9 +909,9 @@ class _BottomBar extends StatelessWidget {
                   Text(
                     _fmt(totalPrice),
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize:   20,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
+                      color:      AppColors.primary,
                     ),
                   ),
                 ],
@@ -930,19 +925,17 @@ class _BottomBar extends StatelessWidget {
                     child: Container(
                       height: 52,
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color:        AppColors.primary,
                         borderRadius: BorderRadius.circular(14),
-                        boxShadow: enabled ? AppShadow.btn : [],
+                        boxShadow:    enabled ? AppShadow.btn : [],
                       ),
                       child: isLoading
                           // Spinner khi đang gọi holdSlots
                           ? const Center(
                               child: SizedBox(
-                                width: 22,
-                                height: 22,
+                                width: 22, height: 22,
                                 child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2.5,
+                                  color: Colors.white, strokeWidth: 2.5,
                                 ),
                               ),
                             )
@@ -952,18 +945,14 @@ class _BottomBar extends StatelessWidget {
                                 Text(
                                   'ĐẶT SÂN NGAY',
                                   style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w900,
+                                    color:         Colors.white,
+                                    fontSize:      15,
+                                    fontWeight:    FontWeight.w900,
                                     letterSpacing: 1.2,
                                   ),
                                 ),
                                 SizedBox(width: 8),
-                                Icon(
-                                  Icons.arrow_forward,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
+                                Icon(Icons.arrow_forward, color: Colors.white, size: 18),
                               ],
                             ),
                     ),
@@ -981,17 +970,13 @@ class _BottomBar extends StatelessWidget {
 // ── HERO IMAGE ─────────────────────────────────────────────────────────────────
 class _FieldHeroImage extends StatelessWidget {
   final String? imageUrl;
-  final String name;
+  final String  name;
   const _FieldHeroImage({required this.imageUrl, required this.name});
 
   Color get _color {
     const palette = [
-      Color(0xFF1B5E20),
-      Color(0xFF0D47A1),
-      Color(0xFF4A148C),
-      Color(0xFF00695C),
-      Color(0xFF4E342E),
-      Color(0xFF37474F),
+      Color(0xFF1B5E20), Color(0xFF0D47A1), Color(0xFF4A148C),
+      Color(0xFF00695C), Color(0xFF4E342E), Color(0xFF37474F),
     ];
     return palette[name.codeUnits.fold(0, (a, b) => a + b) % palette.length];
   }
@@ -1003,7 +988,7 @@ class _FieldHeroImage extends StatelessWidget {
       child: imageUrl != null
           ? Image.network(
               imageUrl!,
-              fit: BoxFit.cover,
+              fit:          BoxFit.cover,
               errorBuilder: (_, _, _) => _placeholder,
             )
           : _placeholder,
@@ -1011,19 +996,23 @@ class _FieldHeroImage extends StatelessWidget {
   }
 
   Widget get _placeholder => Container(
-    color: _color,
-    child: const Center(
-      child: Icon(Icons.sports_soccer, color: Colors.white12, size: 80),
-    ),
-  );
+        color: _color,
+        child: const Center(
+          child: Icon(
+            Icons.sports_soccer,
+            color: Colors.white12,
+            size:  80,
+          ),
+        ),
+      );
 }
 
 // ── PRICE ITEM ─────────────────────────────────────────────────────────────────
 class _PriceItem extends StatelessWidget {
-  final String label;
-  final String value;
+  final String   label;
+  final String   value;
   final IconData icon;
-  final bool isPeak;
+  final bool     isPeak;
 
   const _PriceItem({
     required this.label,
@@ -1044,15 +1033,18 @@ class _PriceItem extends StatelessWidget {
           Text(
             '$value/giờ',
             style: TextStyle(
-              color: color,
+              color:      color,
               fontWeight: FontWeight.w800,
-              fontSize: 16,
+              fontSize:   16,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(color: AppColors.textLight, fontSize: 11.5),
+            style: const TextStyle(
+              color:    AppColors.textLight,
+              fontSize: 11.5,
+            ),
           ),
         ],
       ),
@@ -1079,10 +1071,10 @@ class _ReviewSummaryCard extends StatelessWidget {
                 Text(
                   summary.avgRating.toStringAsFixed(1),
                   style: const TextStyle(
-                    fontSize: 40,
+                    fontSize:   40,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textDark,
-                    height: 1,
+                    color:      AppColors.textDark,
+                    height:     1,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1091,7 +1083,7 @@ class _ReviewSummaryCard extends StatelessWidget {
                 Text(
                   '${summary.totalReviews} đánh giá',
                   style: const TextStyle(
-                    color: AppColors.textLight,
+                    color:    AppColors.textLight,
                     fontSize: 11.5,
                   ),
                 ),
@@ -1111,15 +1103,15 @@ class _ReviewSummaryCard extends StatelessWidget {
                         Text(
                           '$star',
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize:   12,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textMid,
+                            color:      AppColors.textMid,
                           ),
                         ),
                         const SizedBox(width: 4),
                         const Icon(
                           Icons.star_rounded,
-                          size: 12,
+                          size:  12,
                           color: AppColors.ratingGold,
                         ),
                         const SizedBox(width: 6),
@@ -1127,8 +1119,8 @@ class _ReviewSummaryCard extends StatelessWidget {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
-                              value: summary.starRatio(star),
-                              minHeight: 6,
+                              value:           summary.starRatio(star),
+                              minHeight:       6,
                               backgroundColor: AppColors.fieldBg,
                               valueColor: const AlwaysStoppedAnimation(
                                 AppColors.ratingGold,
@@ -1173,15 +1165,15 @@ class _ReviewCard extends StatelessWidget {
                       review.userName,
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: AppColors.textDark,
+                        fontSize:   14,
+                        color:      AppColors.textDark,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       _formatDate(review.createdAt),
                       style: const TextStyle(
-                        color: AppColors.textLight,
+                        color:    AppColors.textLight,
                         fontSize: 11.5,
                       ),
                     ),
@@ -1198,9 +1190,9 @@ class _ReviewCard extends StatelessWidget {
             Text(
               review.comment!,
               style: const TextStyle(
-                color: AppColors.textMid,
+                color:    AppColors.textMid,
                 fontSize: 13.5,
-                height: 1.5,
+                height:   1.5,
               ),
             ),
           ],
@@ -1212,9 +1204,9 @@ class _ReviewCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
                 review.imageUrl!,
-                height: 160,
-                width: double.infinity,
-                fit: BoxFit.cover,
+                height:       160,
+                width:        double.infinity,
+                fit:          BoxFit.cover,
                 errorBuilder: (_, _, _) => const SizedBox.shrink(),
               ),
             ),
@@ -1237,17 +1229,16 @@ class _ReviewEmpty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.symmetric(
-      vertical: 20,
-      horizontal: AppSpacing.pagePadH,
-    ),
-    child: Center(
-      child: Text(
-        'Chưa có nhận xét nào',
-        style: TextStyle(color: AppColors.textLight, fontSize: 14),
-      ),
-    ),
-  );
+        padding: EdgeInsets.symmetric(
+          vertical: 20, horizontal: AppSpacing.pagePadH,
+        ),
+        child: Center(
+          child: Text(
+            'Chưa có nhận xét nào',
+            style: TextStyle(color: AppColors.textLight, fontSize: 14),
+          ),
+        ),
+      );
 }
 
 class _ReviewLoadError extends StatelessWidget {
@@ -1256,28 +1247,28 @@ class _ReviewLoadError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 16),
-    child: Column(
-      children: [
-        const Text(
-          'Không tải được nhận xét',
-          style: TextStyle(color: AppColors.textMid, fontSize: 14),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: onRetry,
-          child: const Text(
-            'Thử lại',
-            style: TextStyle(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          children: [
+            const Text(
+              'Không tải được nhận xét',
+              style: TextStyle(color: AppColors.textMid, fontSize: 14),
             ),
-          ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: onRetry,
+              child: const Text(
+                'Thử lại',
+                style: TextStyle(
+                  color:      AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize:   14,
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }
 
 // ── SMALL WIDGETS ──────────────────────────────────────────────────────────────
@@ -1287,45 +1278,52 @@ class _TypeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(
-      color: AppColors.primaryUltraLight,
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Text(
-      label,
-      style: const TextStyle(
-        color: AppColors.primary,
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color:        AppColors.primaryUltraLight,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color:      AppColors.primary,
+            fontSize:   12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
 }
 
 class _RatingRow extends StatelessWidget {
   final double rating;
-  final int? totalReviews;
+  final int?   totalReviews;
   const _RatingRow({required this.rating, this.totalReviews});
 
   @override
   Widget build(BuildContext context) => Row(
-    children: [
-      const Icon(Icons.star_rounded, size: 16, color: AppColors.ratingGold),
-      const SizedBox(width: 4),
-      Text(
-        rating.toStringAsFixed(1),
-        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-      ),
-      if (totalReviews != null) ...[
-        const SizedBox(width: 4),
-        Text(
-          '($totalReviews đánh giá)',
-          style: const TextStyle(color: AppColors.textLight, fontSize: 13),
-        ),
-      ],
-    ],
-  );
+        children: [
+          const Icon(
+            Icons.star_rounded,
+            size:  16,
+            color: AppColors.ratingGold,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            rating.toStringAsFixed(1),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+          ),
+          if (totalReviews != null) ...[
+            const SizedBox(width: 4),
+            Text(
+              '($totalReviews đánh giá)',
+              style: const TextStyle(
+                color:    AppColors.textLight,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ],
+      );
 }
 
 class _SectionTitle extends StatelessWidget {
@@ -1334,16 +1332,16 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
-    child: Text(
-      title,
-      style: const TextStyle(
-        fontWeight: FontWeight.w800,
-        fontSize: 16,
-        color: AppColors.textDark,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize:   16,
+            color:      AppColors.textDark,
+          ),
+        ),
+      );
 }
 
 class _WarningBanner extends StatelessWidget {
@@ -1352,37 +1350,39 @@ class _WarningBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: const Color(0xFFFFF3E0),
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: AppColors.warningOrange.withValues(alpha: 0.4)),
-    ),
-    child: Row(
-      children: [
-        const Icon(
-          Icons.warning_amber_rounded,
-          color: AppColors.warningOrange,
-          size: 18,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            message,
-            style: const TextStyle(
-              color: AppColors.warningOrange,
-              fontSize: 13,
-            ),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color:        const Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: AppColors.warningOrange.withValues(alpha: 0.4),
           ),
         ),
-      ],
-    ),
-  );
+        child: Row(
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.warningOrange,
+              size:  18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color:    AppColors.warningOrange,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _Avatar extends StatelessWidget {
   final String? url;
-  final String name;
+  final String  name;
   const _Avatar({required this.url, required this.name});
 
   String get _initials {
@@ -1394,7 +1394,7 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CircleAvatar(
-      radius: 20,
+      radius:          20,
       backgroundColor: AppColors.primaryUltraLight,
       backgroundImage: url != null ? NetworkImage(url!) : null,
       onBackgroundImageError: url != null ? (_, _) {} : null,
@@ -1402,9 +1402,9 @@ class _Avatar extends StatelessWidget {
           ? Text(
               _initials,
               style: const TextStyle(
-                color: AppColors.primary,
+                color:      AppColors.primary,
                 fontWeight: FontWeight.w700,
-                fontSize: 14,
+                fontSize:   14,
               ),
             )
           : null,
@@ -1413,7 +1413,7 @@ class _Avatar extends StatelessWidget {
 }
 
 class _StarRow extends StatelessWidget {
-  final int rating;
+  final int    rating;
   final double size;
   const _StarRow({required this.rating, required this.size});
 
@@ -1425,7 +1425,7 @@ class _StarRow extends StatelessWidget {
         5,
         (i) => Icon(
           i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
-          size: size,
+          size:  size,
           color: AppColors.ratingGold,
         ),
       ),
