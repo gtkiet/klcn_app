@@ -46,6 +46,9 @@ class AppRouter {
       final isAuthRoute = location.startsWith('/auth');
       final isSplash = location == '/splash';
 
+      // Deep link payment result — không redirect, để main.dart xử lý
+      if (location == '/payment/result') return null;
+
       if (status == AuthStatus.unknown) {
         return isSplash ? null : '/splash';
       }
@@ -148,6 +151,18 @@ class AppRouter {
       GoRoute(
         path: '/booking_history/detail',
         builder: (_, _) => const BookingDetailScreen(),
+      ),
+
+      // ── Payment result deep link ──────────────────────────────────────────
+      //
+      // GoRouter bắt URI sportplus://payment/result?... như một path.
+      // Route này chỉ render loading screen trống để tránh error page.
+      // Navigation thực sự được xử lý bởi _handleUri() trong main.dart.
+      GoRoute(
+        path: '/payment/result',
+        builder: (_, _) => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
       ),
 
       // ── Notifications (ngoài shell — push từ home bell icon) ─────────────────

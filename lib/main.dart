@@ -128,48 +128,34 @@ class _AppState extends State<App> {
       // ===================================================
 
       if (status != 'success') {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+        await _safeNavigate(() {
           router.go(
             '/booking/failure',
             extra: {'error': 'Thanh toán không thành công. Vui lòng thử lại.'},
           );
         });
-
         return;
       }
 
       // ===================================================
       // PAYMENT SUCCESS
+      // Gọi API song song với việc chờ router sẵn sàng
       // ===================================================
 
       BookingModel? booking;
 
       try {
-        // ===============================================
-        // CALL API GET BOOKING DETAIL
-        // ===============================================
-
         booking = await BookingService.instance.getBookingDetail(bookingId);
       } catch (_) {
         // Nếu API fail vẫn fallback được
       }
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // ===============================================
-        // SUCCESS SCREEN
-        // ===============================================
-
+      await _safeNavigate(() {
         if (booking != null) {
           router.go('/booking/success', extra: {'booking': booking});
-
-          return;
+        } else {
+          router.go('/booking_history/detail', extra: {'bookingId': bookingId});
         }
-
-        // ===============================================
-        // FALLBACK
-        // ===============================================
-
-        router.go('/booking_history/detail', extra: {'bookingId': bookingId});
       });
     } catch (_) {
       // ===================================================
@@ -178,7 +164,7 @@ class _AppState extends State<App> {
 
       final router = AppRouter.router;
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      await _safeNavigate(() {
         router.go(
           '/booking/failure',
           extra: {'error': 'Có lỗi xảy ra khi xử lý thanh toán.'},
@@ -186,10 +172,50 @@ class _AppState extends State<App> {
       });
     } finally {
       // Delay nhỏ tránh duplicate event
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 300));
 
       _handlingDeepLink = false;
     }
+  }
+
+  // =========================================================
+  // SAFE NAVIGATE
+  //
+  // Đảm bảo router đã mount và không còn ở /payment/result
+  // trước khi navigate. Retry tối đa 20 lần (2 giây).
+  //
+  // Vấn đề: deep link đến khi app cold start → GoRouter chưa
+  // mount xong → addPostFrameCallback bắn vào frame của
+  // error page hoặc /payment/result → navigate không có hiệu lực.
+  // =========================================================
+
+  Future<void> _safeNavigate(VoidCallback navigate) async {
+    // Chờ frame hiện tại render xong
+    await Future.microtask(() {});
+
+    for (int i = 0; i < 20; i++) {
+      final location =
+          AppRouter.router.routerDelegate.currentConfiguration.uri.path;
+
+      // Router đã ở /payment/result hoặc một route hợp lệ khác
+      // (không phải splash/unknown) → navigate được rồi
+      final isReady =
+          location == '/payment/result' ||
+          location == '/home' ||
+          location == '/auth/login' ||
+          location == '/booking/success' ||
+          location == '/booking/failure';
+
+      if (isReady) {
+        navigate();
+        return;
+      }
+
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    // Fallback: gọi luôn dù chưa chắc ready
+    navigate();
   }
 
   @override

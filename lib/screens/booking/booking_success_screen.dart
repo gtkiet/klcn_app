@@ -278,27 +278,61 @@ class _ReceiptCard extends StatelessWidget {
           // TOTAL
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Tổng tiền',
-                  style: TextStyle(color: AppColors.textMid, fontSize: 15),
-                ),
-
-                Text(
-                  _fmtMoney(booking.totalAmount),
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
+            child: _AmountRow(booking: booking),
           ),
         ],
       ),
+    );
+  }
+}
+
+// Hiển thị đúng số tiền đã thanh toán:
+//   Flow 1 (chỉ cọc)  → depositAmount  + label "Tiền cọc đã thanh toán"
+//   Flow 2 (full)     → totalAmount    + label "Tổng tiền đã thanh toán"
+class _AmountRow extends StatelessWidget {
+  final BookingModel booking;
+  const _AmountRow({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    // depositAmount > 0 nghĩa là Flow 1 (chỉ cọc trước, trả phần còn lại tại sân)
+    final isDepositFlow = booking.depositAmount > 0;
+    final paidAmount = isDepositFlow ? booking.depositAmount : booking.totalAmount;
+    final label = isDepositFlow ? 'Tiền cọc đã thanh toán' : 'Tổng tiền đã thanh toán';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(color: AppColors.textMid, fontSize: 15),
+            ),
+            Text(
+              _fmtMoney(paidAmount),
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+        // Nếu là Flow 1: hiển thị thêm dòng nhắc nhở số tiền còn lại
+        if (isDepositFlow) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Còn lại ${_fmtMoney(booking.totalAmount - booking.depositAmount)} thanh toán tại sân',
+            textAlign: TextAlign.end,
+            style: const TextStyle(
+              color: AppColors.textLight,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
