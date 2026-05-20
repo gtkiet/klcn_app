@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../guards/auth_guard.dart';
+import '../models/booking.dart';
 import 'main_screen.dart';
 
 import '../screens/splash/splash_screen.dart';
@@ -28,6 +29,7 @@ import '../screens/booking/booking_detail_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/edit_profile_screen.dart';
 import '../screens/profile/change_password_screen.dart';
+import '../screens/notification/notification_screen.dart';
 
 class AppRouter {
   AppRouter._();
@@ -120,9 +122,11 @@ class AppRouter {
       GoRoute(
         path: '/booking/success',
         builder: (_, state) {
-          final _ = state.extra as Map<String, dynamic>? ?? {};
-
-          return BookingSuccessScreen(key: state.pageKey);
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return BookingSuccessScreen(
+            key: state.pageKey,
+            booking: extra['booking'] as BookingModel?,
+          );
         },
       ),
       // Payment failure
@@ -146,6 +150,12 @@ class AppRouter {
         builder: (_, _) => const BookingDetailScreen(),
       ),
 
+      // ── Notifications (ngoài shell — push từ home bell icon) ─────────────────
+      GoRoute(
+        path: '/notifications',
+        builder: (_, _) => const NotificationScreen(),
+      ),
+
       // ── Main shell — 4 tabs (có bottom nav) ──────────────────────────────
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -159,19 +169,11 @@ class AppRouter {
           ),
 
           // Tab 1 — Sân bóng
-          //   /fields           → FieldListScreen
-          //   Tap vào sân       → context.push('/fields/detail', extra: field)
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/fields',
                 builder: (_, _) => const FieldListScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'detail',
-                    builder: (_, _) => const FieldDetailScreen(),
-                  ),
-                ],
               ),
             ],
           ),

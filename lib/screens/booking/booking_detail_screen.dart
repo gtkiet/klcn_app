@@ -16,6 +16,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
 String _fmtMoney(double amount) {
+  if (amount == 0) return '0đ';
   final s = amount.toStringAsFixed(0);
   final buf = StringBuffer();
   for (int i = 0; i < s.length; i++) {
@@ -94,21 +95,16 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
   // ── Thanh toán VNPay ─────────────────────────────────────────
   // Dùng cho cả 2 trường hợp:
-  //   • statusId == 5: charge depositAmount (lần 1)
-  //   • statusId == 2: charge phần còn lại (lần 2, nếu isFullPayment=false)
-  // Backend tự detect context và tính amountDue — không cần phân nhánh ở đây.
   Future<void> _onPayVnPay() async {
     if (_bookingId == null) return;
     setState(() => _isPayingVnPay = true);
     try {
-      final result = await PaymentService.instance.createVnPayPayment(
+      final paymentUrl = await PaymentService.instance.createVnPayPayment(
         _bookingId!,
       );
-      final uri = Uri.parse(result.paymentUrl);
+      final uri = Uri.parse(paymentUrl);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-        // Deep link handler trong main.dart bắt sportplus://payment/result
-        // và gọi _loadDetail() để refresh UI sau khi thanh toán xong
       } else {
         _showSnack('Không thể mở trang thanh toán VNPay', isError: true);
       }

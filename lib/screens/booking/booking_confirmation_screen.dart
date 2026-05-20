@@ -181,15 +181,14 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
 
       if (!mounted) return;
 
-      // 3. Tạo VNPay URL
-      final payResult = await PaymentService.instance.createVnPayPayment(
+      final paymentUrl = await PaymentService.instance.createVnPayPayment(
         booking.bookingId,
       );
 
       if (!mounted) return;
 
       // 4. Mở VNPay
-      final uri = Uri.parse(payResult.paymentUrl);
+      final uri = Uri.parse(paymentUrl);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }

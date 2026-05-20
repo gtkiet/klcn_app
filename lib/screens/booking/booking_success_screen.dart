@@ -9,18 +9,13 @@ import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 
 String _fmtMoney(double amount) {
+  if (amount == 0) return '0đ';
   final s = amount.toStringAsFixed(0);
-
   final buf = StringBuffer();
-
   for (int i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 == 0) {
-      buf.write('.');
-    }
-
+    if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
     buf.write(s[i]);
   }
-
   return '$bufđ';
 }
 
@@ -46,40 +41,22 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
   @override
   void initState() {
     super.initState();
-
     _booking = widget.booking;
-
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-
     _scaleAnim = CurvedAnimation(
       parent: _ctrl,
       curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
     );
-
     _slideAnim = CurvedAnimation(
       parent: _ctrl,
       curve: const Interval(0.35, 1.0, curve: Curves.easeOutCubic),
     );
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _ctrl.forward();
     });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    if (_booking != null) return;
-
-    final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
-
-    if (extra == null) return;
-
-    _booking = extra['booking'] as BookingModel?;
   }
 
   @override
@@ -95,96 +72,100 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
-      child: Scaffold(
-        backgroundColor: AppColors.bgPage,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.pagePadH,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 56),
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (_, _) => context.go('/home'),
+        child: Scaffold(
+          backgroundColor: AppColors.bgPage,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.pagePadH,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 56),
 
-                // SUCCESS ICON
-                ScaleTransition(
-                  scale: _scaleAnim,
-                  child: const Center(child: _SuccessCircle()),
-                ),
-
-                const SizedBox(height: 28),
-
-                // TITLE
-                _SlideUp(
-                  animation: _slideAnim,
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Thanh toán thành công!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      const Text(
-                        'Sân của bạn đã được xác nhận.\nCảm ơn bạn đã sử dụng Sport Plus.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.textLight,
-                          fontSize: 15,
-                          height: 1.6,
-                        ),
-                      ),
-                    ],
+                  // SUCCESS ICON
+                  ScaleTransition(
+                    scale: _scaleAnim,
+                    child: const Center(child: _SuccessCircle()),
                   ),
-                ),
 
-                const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
-                // RECEIPT
-                if (booking != null)
+                  // TITLE
                   _SlideUp(
                     animation: _slideAnim,
-                    child: _ReceiptCard(booking: booking),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Thanh toán thành công!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        const Text(
+                          'Sân của bạn đã được xác nhận.\nCảm ơn bạn đã sử dụng Sport Plus.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.textLight,
+                            fontSize: 15,
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
-                const SizedBox(height: 28),
+                  const SizedBox(height: 32),
 
-                // BUTTONS
-                _SlideUp(
-                  animation: _slideAnim,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SpPrimaryButton(
-                        label: 'VỀ TRANG CHỦ',
-                        trailingIcon: Icons.home_outlined,
-                        onTap: () {
-                          context.go('/home');
-                        },
-                      ),
+                  // RECEIPT
+                  if (booking != null)
+                    _SlideUp(
+                      animation: _slideAnim,
+                      child: _ReceiptCard(booking: booking),
+                    ),
 
-                      const SizedBox(height: 12),
+                  const SizedBox(height: 28),
 
-                      SpOutlineButton(
-                        label: 'XEM LỊCH SỬ ĐẶT SÂN',
-                        icon: Icons.history_rounded,
-                        onTap: () {
-                          context.go('/booking_history');
-                        },
-                      ),
-                    ],
+                  // BUTTONS
+                  _SlideUp(
+                    animation: _slideAnim,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SpPrimaryButton(
+                          label: 'VỀ TRANG CHỦ',
+                          trailingIcon: Icons.home_outlined,
+                          onTap: () {
+                            context.go('/home');
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        SpOutlineButton(
+                          label: 'XEM LỊCH SỬ ĐẶT SÂN',
+                          icon: Icons.history_rounded,
+                          onTap: () {
+                            context.go('/booking_history');
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 42),
-              ],
+                  const SizedBox(height: 42),
+                ],
+              ),
             ),
           ),
         ),

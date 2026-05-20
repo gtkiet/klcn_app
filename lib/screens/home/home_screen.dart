@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/field.dart';
 import '../../services/field_service.dart';
+import '../../services/notification_service.dart';
 import '../../session/user_session.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
@@ -25,10 +26,29 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading             = true;
   String? _errorMsg;
 
+  // Badge thông báo chưa đọc
+  int _unreadCount = 0;
+
   @override
   void initState() {
     super.initState();
     _loadFields();
+    _loadUnreadCount();
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final count = await NotificationService.instance.getUnreadCount();
+      if (mounted) setState(() => _unreadCount = count);
+    } catch (_) {
+      // Badge lỗi → không hiện, không crash
+    }
+  }
+
+  void _goToNotifications() async {
+    await context.push('/notifications');
+    // Refresh badge khi quay lại từ notification screen
+    _loadUnreadCount();
   }
 
   Future<void> _loadFields() async {
@@ -56,7 +76,10 @@ class _HomeScreenState extends State<HomeScreen> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: AppColors.bgPage,
-        appBar: _HomeAppBar(onNotificationTap: () {}),
+        appBar: _HomeAppBar(
+          onNotificationTap: _goToNotifications,
+          unreadCount: _unreadCount,
+        ),
         body: RefreshIndicator(
           color: AppColors.primary,
           onRefresh: _loadFields,
@@ -162,7 +185,12 @@ class _HomeScreenState extends State<HomeScreen> {
 // ── APP BAR ───────────────────────────────────
 class _HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onNotificationTap;
-  const _HomeAppBar({required this.onNotificationTap});
+  final int unreadCount;
+
+  const _HomeAppBar({
+    required this.onNotificationTap,
+    required this.unreadCount,
+  });
 
   @override
   Size get preferredSize => const Size.fromHeight(56);
@@ -231,9 +259,38 @@ class _HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-          onPressed: onNotificationTap,
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              onPressed: onNotificationTap,
+            ),
+            if (unreadCount > 0)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: AppColors.errorRed,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primary, width: 1.5),
+                  ),
+                  child: Center(
+                    child: Text(
+                      unreadCount > 99 ? '99+' : '$unreadCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );
