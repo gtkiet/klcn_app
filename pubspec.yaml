@@ -19,12 +19,6 @@ dependencies:
   app_links: ^7.0.0
   url_launcher: ^6.3.2
 
-  # Image picker (upload avatar)
-  # image_picker: ^1.1.2
-
-  # Deep link (VNPay / MoMo callback)
-  # app_links: ^6.3.2
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
