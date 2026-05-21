@@ -194,13 +194,15 @@ class _AppState extends State<App> {
     await Future.microtask(() {});
 
     for (int i = 0; i < 20; i++) {
-      final location =
-          AppRouter.router.routerDelegate.currentConfiguration.uri.path;
+      final location = AppRouter.router.routerDelegate.currentConfiguration
+          .uri
+          .path;
 
-      // Router đã ở /payment/result hoặc một route hợp lệ khác
-      // (không phải splash/unknown) → navigate được rồi
-      final isReady =
-          location == '/payment/result' ||
+      // Router đã settle ở một route stable → navigate được rồi.
+      // /splash cũng được chấp nhận vì onException redirect về đó
+      // khi nhận deep link payment mà route chưa ready.
+      final isReady = location == '/payment/result' ||
+          location == '/splash' ||
           location == '/home' ||
           location == '/auth/login' ||
           location == '/booking/success' ||

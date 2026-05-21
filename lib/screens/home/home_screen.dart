@@ -22,8 +22,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<FieldModel> _fields    = [];
-  bool _isLoading             = true;
+  List<FieldModel> _fields = [];
+  bool _isLoading = true;
   String? _errorMsg;
 
   // Badge thông báo chưa đọc
@@ -52,16 +52,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadFields() async {
-    setState(() { _isLoading = true; _errorMsg = null; });
+    setState(() {
+      _isLoading = true;
+      _errorMsg = null;
+    });
     try {
       final result = await FieldService.instance.getFields(
         statusId: 1,
-        page:     1,
+        page: 1,
         pageSize: 10,
       );
-      if (mounted) setState(() { _fields = result.items; _isLoading = false; });
+      if (mounted) {
+        setState(() {
+          _fields = result.items;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      if (mounted) setState(() { _errorMsg = e.toString(); _isLoading = false; });
+      if (mounted) {
+        setState(() {
+          _errorMsg = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -89,9 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
               // ── Search bar ─────────────────────────────────
-              SliverToBoxAdapter(
-                child: _SearchBar(onTap: _goToFields),
-              ),
+              SliverToBoxAdapter(child: _SearchBar(onTap: _goToFields)),
 
               // ── Promo banner ───────────────────────────────
               const SliverToBoxAdapter(child: SizedBox(height: 16)),
@@ -105,20 +116,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     horizontal: AppSpacing.pagePadH,
                   ),
                   child: SpSectionHeader(
-                    title:       'Sân nổi bật',
+                    title: 'Sân nổi bật',
                     actionLabel: 'Xem tất cả',
-                    onAction:    _goToFields,
+                    onAction: _goToFields,
                   ),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
               SliverToBoxAdapter(
                 child: _FeaturedRow(
-                  fields:    _fields.take(5).toList(),
+                  fields: _fields.take(5).toList(),
                   isLoading: _isLoading,
-                  errorMsg:  _errorMsg,
-                  onTap:     _goToFieldDetail,
-                  onRetry:   _loadFields,
+                  errorMsg: _errorMsg,
+                  onTap: _goToFieldDetail,
+                  onRetry: _loadFields,
                 ),
               ),
 
@@ -130,9 +141,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     horizontal: AppSpacing.pagePadH,
                   ),
                   child: SpSectionHeader(
-                    title:       'Tất cả sân',
+                    title: 'Tất cả sân',
                     actionLabel: 'Xem tất cả',
-                    onAction:    _goToFields,
+                    onAction: _goToFields,
                   ),
                 ),
               ),
@@ -143,7 +154,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 32),
                     child: Center(
-                      child: CircularProgressIndicator(color: AppColors.primary),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
                 )
@@ -220,8 +233,7 @@ class _HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
                           width: 36,
                           height: 36,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) =>
-                              const _AvatarFallback(),
+                          errorBuilder: (_, _, _) => const _AvatarFallback(),
                         )
                       : const _AvatarFallback(),
                 ),
@@ -263,7 +275,10 @@ class _HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           alignment: Alignment.center,
           children: [
             IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              icon: const Icon(
+                Icons.notifications_outlined,
+                color: Colors.white,
+              ),
               onPressed: onNotificationTap,
             ),
             if (unreadCount > 0)
@@ -301,11 +316,11 @@ class _AvatarFallback extends StatelessWidget {
   const _AvatarFallback();
   @override
   Widget build(BuildContext context) => Container(
-        width: 36,
-        height: 36,
-        color: Colors.white24,
-        child: const Icon(Icons.person, size: 20, color: Colors.white),
-      );
+    width: 36,
+    height: 36,
+    color: Colors.white24,
+    child: const Icon(Icons.person, size: 20, color: Colors.white),
+  );
 }
 
 // ── SEARCH BAR ────────────────────────────────
@@ -476,8 +491,11 @@ class _FeaturedRow extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi_off_rounded,
-                  color: AppColors.textLight, size: 36),
+              const Icon(
+                Icons.wifi_off_rounded,
+                color: AppColors.textLight,
+                size: 36,
+              ),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: onRetry,
@@ -501,10 +519,8 @@ class _FeaturedRow extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
         itemCount: fields.length,
-        itemBuilder: (_, i) => _FeaturedCard(
-          field: fields[i],
-          onTap: () => onTap(fields[i]),
-        ),
+        itemBuilder: (_, i) =>
+            _FeaturedCard(field: fields[i], onTap: () => onTap(fields[i])),
       ),
     );
   }
@@ -519,11 +535,15 @@ class _FeaturedCard extends StatelessWidget {
   // Màu fallback khi không có ảnh — hash theo tên sân
   Color get _placeholderColor {
     const palette = [
-      Color(0xFF1B5E20), Color(0xFF0D47A1), Color(0xFF4A148C),
-      Color(0xFF00695C), Color(0xFF4E342E), Color(0xFF37474F),
+      Color(0xFF1B5E20),
+      Color(0xFF0D47A1),
+      Color(0xFF4A148C),
+      Color(0xFF00695C),
+      Color(0xFF4E342E),
+      Color(0xFF37474F),
     ];
-    return palette[
-        field.name.codeUnits.fold(0, (a, b) => a + b) % palette.length];
+    return palette[field.name.codeUnits.fold(0, (a, b) => a + b) %
+        palette.length];
   }
 
   @override
@@ -568,7 +588,8 @@ class _FeaturedCard extends StatelessWidget {
                     top: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 4,
+                        horizontal: 7,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -576,8 +597,11 @@ class _FeaturedCard extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.star_rounded,
-                              size: 13, color: AppColors.ratingGold),
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 13,
+                            color: AppColors.ratingGold,
+                          ),
                           const SizedBox(width: 2),
                           Text(
                             field.avgRating!.toStringAsFixed(1),
@@ -621,7 +645,8 @@ class _FeaturedCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 5,
+                      horizontal: 10,
+                      vertical: 5,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primaryUltraLight,
@@ -667,10 +692,7 @@ class _FeaturedSkeleton extends StatelessWidget {
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(AppSpacing.cardRadius),
             ),
-            child: Container(
-              height: 112,
-              color: AppColors.fieldBg,
-            ),
+            child: Container(height: 112, color: AppColors.fieldBg),
           ),
           Padding(
             padding: const EdgeInsets.all(10),
@@ -712,11 +734,15 @@ class _FieldListCard extends StatelessWidget {
 
   Color get _placeholderColor {
     const palette = [
-      Color(0xFF43A047), Color(0xFF2E7D32), Color(0xFF00695C),
-      Color(0xFF1565C0), Color(0xFF4A148C), Color(0xFF37474F),
+      Color(0xFF43A047),
+      Color(0xFF2E7D32),
+      Color(0xFF00695C),
+      Color(0xFF1565C0),
+      Color(0xFF4A148C),
+      Color(0xFF37474F),
     ];
-    return palette[
-        field.name.codeUnits.fold(0, (a, b) => a + b) % palette.length];
+    return palette[field.name.codeUnits.fold(0, (a, b) => a + b) %
+        palette.length];
   }
 
   @override
@@ -772,7 +798,8 @@ class _FieldListCard extends StatelessWidget {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2,
+                          horizontal: 6,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryUltraLight,
@@ -795,8 +822,11 @@ class _FieldListCard extends StatelessWidget {
                   if (field.avgRating != null)
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded,
-                            size: 13, color: AppColors.ratingGold),
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 13,
+                          color: AppColors.ratingGold,
+                        ),
                         const SizedBox(width: 2),
                         Text(
                           field.avgRating!.toStringAsFixed(1),
@@ -835,7 +865,8 @@ class _FieldListCard extends StatelessWidget {
                         onTap: onTap,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 7,
+                            horizontal: 14,
+                            vertical: 7,
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.primary,
@@ -870,11 +901,11 @@ class _FieldColorBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        color: color,
-        child: const Center(
-          child: Icon(Icons.sports_soccer, color: Colors.white24, size: 36),
-        ),
-      );
+    color: color,
+    child: const Center(
+      child: Icon(Icons.sports_soccer, color: Colors.white24, size: 36),
+    ),
+  );
 }
 
 class _EmptyBanner extends StatelessWidget {
@@ -882,14 +913,14 @@ class _EmptyBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(
-          child: Text(
-            'Chưa có sân nào',
-            style: TextStyle(color: AppColors.textLight, fontSize: 15),
-          ),
-        ),
-      );
+    padding: EdgeInsets.symmetric(vertical: 40),
+    child: Center(
+      child: Text(
+        'Chưa có sân nào',
+        style: TextStyle(color: AppColors.textLight, fontSize: 15),
+      ),
+    ),
+  );
 }
 
 class _ErrorBanner extends StatelessWidget {
@@ -907,8 +938,11 @@ class _ErrorBanner extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.wifi_off_rounded,
-              size: 48, color: AppColors.textLight),
+          const Icon(
+            Icons.wifi_off_rounded,
+            size: 48,
+            color: AppColors.textLight,
+          ),
           const SizedBox(height: 12),
           Text(
             message,

@@ -241,7 +241,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      const Divider(color: Color(0xFFF0F2F0), height: 1),
+                      const Divider(color: Colors.black, height: 1),
                       const SizedBox(height: 24),
 
                       // ── Mật khẩu mới ──────────────────────────

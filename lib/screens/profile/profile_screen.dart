@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:klcn_app/navigation/app_navigation.dart';
 
 import '../../services/profile_service.dart';
 import '../../models/user.dart';
@@ -48,23 +49,6 @@ final _accountItems = [
   ),
 ];
 
-// final _supportItems = [
-//   _MenuItem(
-//     icon: Icons.help_outline_rounded,
-//     iconBg: const Color(0xFFE3F2FD),
-//     iconColor: AppColors.infoBlue,
-//     label: 'Hỗ trợ & Liên hệ',
-//     route: '',
-//   ),
-//   _MenuItem(
-//     icon: Icons.description_outlined,
-//     iconBg: const Color(0xFFF3E5F5),
-//     iconColor: const Color(0xFF7B1FA2),
-//     label: 'Điều khoản & Chính sách',
-//     route: '',
-//   ),
-// ];
-
 // ─────────────────────────────────────────────
 //  PROFILE SCREEN
 // ─────────────────────────────────────────────
@@ -89,25 +73,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
-    // Hiển thị ngay từ session
     setState(() {
       _user = _service.getCachedUser();
       _isLoading = false;
     });
 
-    // Fetch fresh data ở background
     try {
       final user = await ProfileService.instance.getProfile();
       if (mounted) setState(() => _user = user);
-    } catch (_) {
-      // Giữ dữ liệu session nếu API lỗi
-    }
+    } catch (_) {}
   }
 
   void _onMenuItem(String route) {
-    if (route.isEmpty) return; // menu chưa có route thật
-    if (route.startsWith('/')) {
-      context.push(route);
+    if (route.isEmpty) return;
+    if (route == '/booking_history') {
+      AppNavigation.goHistory();
     } else {
       context.push('/profile/$route');
     }
@@ -195,12 +175,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 8),
                       _MenuGroup(items: _accountItems, onTap: _onMenuItem),
                       const SizedBox(height: 20),
-
-                      // // ── Support section ──────────────────────────
-                      // _SectionLabel('THÔNG TIN & HỖ TRỢ'),
-                      // const SizedBox(height: 8),
-                      // _MenuGroup(items: _supportItems, onTap: _onMenuItem),
-                      // const SizedBox(height: 24),
 
                       // ── Logout ───────────────────────────────────
                       _LogoutButton(

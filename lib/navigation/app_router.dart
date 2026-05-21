@@ -153,18 +153,6 @@ class AppRouter {
         builder: (_, _) => const BookingDetailScreen(),
       ),
 
-      // ── Payment result deep link ──────────────────────────────────────────
-      //
-      // GoRouter bắt URI sportplus://payment/result?... như một path.
-      // Route này chỉ render loading screen trống để tránh error page.
-      // Navigation thực sự được xử lý bởi _handleUri() trong main.dart.
-      GoRoute(
-        path: '/payment/result',
-        builder: (_, _) => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-      ),
-
       // ── Notifications (ngoài shell — push từ home bell icon) ─────────────────
       GoRoute(
         path: '/notifications',
@@ -229,8 +217,24 @@ class AppRouter {
     ],
 
     // ── ERROR PAGE ──────────────────────────────────────────────────────────
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(child: Text('Không tìm thấy trang: ${state.uri}')),
-    ),
+    //
+    // Khi GoRouter không tìm thấy route (thường do nhận deep link
+    // sportplus://payment/result?... trước app_links), hiển thị loading.
+    // app_links sẽ gọi _handleUri() và navigate sang đúng màn hình ngay sau.
+    errorBuilder: (context, state) {
+      final path = state.uri.path;
+
+      // Deep link payment → show loading, app_links sẽ navigate
+      if (path == '/result') {
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      // Các route lỗi khác → về home
+      return Scaffold(
+        body: Center(child: Text('Không tìm thấy trang: $path')),
+      );
+    },
   );
 }
