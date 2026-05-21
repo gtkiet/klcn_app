@@ -17,30 +17,30 @@ class FieldService {
     String? search,
     int? typeId,
     int? statusId,
-    int page     = 1,
+    int page = 1,
     int pageSize = 10,
   }) async {
     final res = await _api.get(
       '/api/fields',
       queryParameters: {
         if (search != null && search.trim().isNotEmpty) 'Search': search.trim(),
-        'TypeId':   ?typeId,
+        'TypeId': ?typeId,
         'StatusId': ?statusId,
-        'Page':     page,
+        'Page': page,
         'PageSize': pageSize,
       },
     );
 
-    final result      = res.item(PagedFieldResult.fromJson);
+    final result = res.item(PagedFieldResult.fromJson);
     final patchedItems = result.items.map(_patchImageUrl).toList();
 
     return PagedFieldResult(
-      items:           patchedItems,
-      totalCount:      result.totalCount,
-      page:            result.page,
-      pageSize:        result.pageSize,
-      totalPages:      result.totalPages,
-      hasNextPage:     result.hasNextPage,
+      items: patchedItems,
+      totalCount: result.totalCount,
+      page: result.page,
+      pageSize: result.pageSize,
+      totalPages: result.totalPages,
+      hasNextPage: result.hasNextPage,
       hasPreviousPage: result.hasPreviousPage,
     );
   }
@@ -69,9 +69,9 @@ class FieldService {
     final res = await _api.get(
       '/api/fields/schedule',
       queryParameters: {
-        'Date':              dateStr,
+        'Date': dateStr,
         'FieldId': ?fieldId,
-        'TypeId':  ?typeId,
+        'TypeId': ?typeId,
       },
     );
 
@@ -82,12 +82,12 @@ class FieldService {
       final full = s.imageUrl.toFullMediaUrl;
       if (full == s.imageUrl) return s;
       return FieldScheduleModel(
-        fieldId:   s.fieldId,
+        fieldId: s.fieldId,
         fieldName: s.fieldName,
         fieldType: s.fieldType,
-        imageUrl:  full,
-        slotDate:  s.slotDate,
-        slots:     s.slots,
+        imageUrl: full,
+        slotDate: s.slotDate,
+        slots: s.slots,
       );
     }).toList();
   }
@@ -97,19 +97,19 @@ class FieldService {
     final full = field.imageUrl.toFullMediaUrl;
     if (full == field.imageUrl) return field;
     return FieldModel(
-      fieldId:      field.fieldId,
-      name:         field.name,
-      description:  field.description,
-      basePrice:    field.basePrice,
-      peakPrice:    field.peakPrice,
-      imageUrl:     full,
-      fieldType:    field.fieldType,
-      typeId:       field.typeId,
-      status:       field.status,
-      statusId:     field.statusId,
-      avgRating:    field.avgRating,
+      fieldId: field.fieldId,
+      name: field.name,
+      description: field.description,
+      basePrice: field.basePrice,
+      peakPrice: field.peakPrice,
+      imageUrl: full,
+      fieldType: field.fieldType,
+      typeId: field.typeId,
+      status: field.status,
+      statusId: field.statusId,
+      avgRating: field.avgRating,
       totalReviews: field.totalReviews,
-      createdAt:    field.createdAt,
+      createdAt: field.createdAt,
     );
   }
 }

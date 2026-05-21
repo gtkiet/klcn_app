@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/booking.dart';
 import '../../services/booking_service.dart';
+import '../../services/payment_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Tab filter — statusId null = Tất cả (API không truyền statusId)
 // Mỗi tab truyền thẳng statusId lên API, không cần filter client-side
@@ -116,6 +118,26 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
 
   void _onTapDetail(BookingSummary booking) {
     context.push('/booking_history/detail', extra: booking);
+  }
+
+  Future<void> _onPayNow(BookingSummary booking) async {
+    try {
+      final url = await PaymentService.instance.createVnPayPayment(
+        booking.bookingId,
+      );
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    }
   }
 
   @override
@@ -240,6 +262,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
             child: _BookingCard(
               booking: _items[i],
               onDetail: () => _onTapDetail(_items[i]),
+              onPay: () => _onPayNow(_items[i]),
             ),
           );
         },
@@ -311,28 +334,33 @@ class _TabChipRow extends StatelessWidget {
 class _BookingCard extends StatelessWidget {
   final BookingSummary booking;
   final VoidCallback onDetail;
+  final VoidCallback onPay;
 
-  const _BookingCard({required this.booking, required this.onDetail});
+  const _BookingCard({
+    required this.booking,
+    required this.onDetail,
+    required this.onPay,
+  });
 
   ({String text, Color textColor, Color bgColor}) get _badge =>
       switch (booking.statusId) {
         2 => (
-          text: 'ĐÃ XÁC NHẬN',
+          text: booking.status.toUpperCase(),
           textColor: AppColors.badgeBookedText,
           bgColor: AppColors.badgeBookedBg,
         ),
         3 => (
-          text: 'ĐÃ HỦY',
+          text: booking.status.toUpperCase(),
           textColor: AppColors.badgeCancelText,
           bgColor: AppColors.badgeCancelBg,
         ),
         4 => (
-          text: 'HOÀN THÀNH',
+          text: booking.status.toUpperCase(),
           textColor: AppColors.badgeDoneText,
           bgColor: AppColors.badgeDoneBg,
         ),
         5 => (
-          text: 'CHỜ THANH TOÁN',
+          text: booking.status.toUpperCase(),
           textColor: AppColors.warningOrange,
           bgColor: const Color(0xFFFFF3E0),
         ),
@@ -343,172 +371,130 @@ class _BookingCard extends StatelessWidget {
         ),
       };
 
+  // statusId 5 = chờ cọc, statusId 2 = đã xác nhận (có thể còn nợ phần còn lại)
+  // BookingSummary không có deposit detail → dùng statusId 2 để biểu thị
+  // "có thể thanh toán thêm", detail screen sẽ xác nhận chính xác
+  bool get _canPay => booking.statusId == 5 || booking.statusId == 2;
+
+  String get _payLabel =>
+      booking.statusId == 5 ? 'Thanh toán cọc' : 'Thanh toán còn lại';
+
   @override
   Widget build(BuildContext context) {
     final badge = _badge;
 
-    return SpCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: booking ID + badge
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'MÃ ĐẶT SÂN',
-                    style: TextStyle(
-                      color: AppColors.textHint,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '#${booking.bookingId}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: badge.bgColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  badge.text,
-                  style: TextStyle(
-                    color: badge.textColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: AppColors.fieldBorder),
-          const SizedBox(height: 12),
-
-          // Field name + slot count
-          Row(
-            children: [
-              const Icon(
-                Icons.sports_soccer,
-                size: 15,
-                color: AppColors.textLight,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  booking.fieldName,
-                  style: const TextStyle(
-                    color: AppColors.textDark,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.fieldBg,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.fieldBorder),
-                ),
-                child: Text(
-                  '${booking.slotCount} slot',
-                  style: const TextStyle(
-                    color: AppColors.textMid,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
-
-          // Date + time | Amount
-          IntrinsicHeight(
-            child: Row(
+    return InkWell(
+      onTap: onDetail,
+      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+      child: SpCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: booking ID + badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'THỜI GIAN',
-                        style: TextStyle(
-                          color: AppColors.textHint,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                        ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'MÃ ĐẶT SÂN',
+                      style: TextStyle(
+                        color: AppColors.textHint,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
                       ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today_outlined,
-                            size: 13,
-                            color: AppColors.textMid,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            booking.displayDate,
-                            style: const TextStyle(
-                              color: AppColors.textDark,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '#${booking.bookingId}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
                       ),
-                      const SizedBox(height: 3),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 18),
-                        child: Text(
-                          booking.earliestSlotTime,
-                          style: const TextStyle(
-                            color: AppColors.textMid,
-                            fontSize: 12.5,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badge.bgColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    badge.text,
+                    style: TextStyle(
+                      color: badge.textColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
+              ],
+            ),
 
-                const VerticalDivider(
-                  width: 1,
-                  color: AppColors.fieldBorder,
-                  indent: 4,
-                  endIndent: 4,
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: AppColors.fieldBorder),
+            const SizedBox(height: 12),
+
+            // Field name + slot count
+            Row(
+              children: [
+                const Icon(
+                  Icons.sports_soccer,
+                  size: 15,
+                  color: AppColors.textLight,
                 ),
-
+                const SizedBox(width: 6),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 12),
+                  child: Text(
+                    booking.fieldName,
+                    style: const TextStyle(
+                      color: AppColors.textDark,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.fieldBg,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.fieldBorder),
+                  ),
+                  child: Text(
+                    '${booking.slotCount} slot',
+                    style: const TextStyle(
+                      color: AppColors.textMid,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            // Date + time | Amount
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          booking.isCancelled ? 'HOÀN TIỀN' : 'THANH TOÁN',
-                          style: const TextStyle(
+                        const Text(
+                          'THỜI GIAN',
+                          style: TextStyle(
                             color: AppColors.textHint,
                             fontSize: 9.5,
                             fontWeight: FontWeight.w700,
@@ -516,58 +502,96 @@ class _BookingCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          booking.totalAmountFmt,
-                          style: TextStyle(
-                            color: booking.isCancelled
-                                ? AppColors.textHint
-                                : AppColors.textDark,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            decoration: booking.isCancelled
-                                ? TextDecoration.lineThrough
-                                : null,
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 13,
+                              color: AppColors.textMid,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              booking.displayDate,
+                              style: const TextStyle(
+                                color: AppColors.textDark,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 18),
+                          child: Text(
+                            booking.earliestSlotTime,
+                            style: const TextStyle(
+                              color: AppColors.textMid,
+                              fontSize: 12.5,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
 
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: AppColors.fieldBorder),
-          const SizedBox(height: 12),
+                  const VerticalDivider(
+                    width: 1,
+                    color: AppColors.fieldBorder,
+                    indent: 4,
+                    endIndent: 4,
+                  ),
 
-          // Actions
-          Row(
-            children: [
-              Expanded(
-                child: _ActionBtn(
-                  label: 'Chi tiết',
-                  icon: Icons.receipt_long_outlined,
-                  onTap: onDetail,
-                  primary: true,
-                ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            booking.isCancelled ? 'HOÀN TIỀN' : 'THANH TOÁN',
+                            style: const TextStyle(
+                              color: AppColors.textHint,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            booking.totalAmountFmt,
+                            style: TextStyle(
+                              color: booking.isCancelled
+                                  ? AppColors.textHint
+                                  : AppColors.textDark,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              decoration: booking.isCancelled
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              // if (booking.isCompleted) ...[
-              //   const SizedBox(width: 10),
-              //   Expanded(
-              //     child: _ActionBtn(
-              //       label: 'Đánh giá',
-              //       icon: Icons.star_outline_rounded,
-              //       // TODO: thay bằng route review khi có
-              //       // context.push('/reviews/create', extra: booking.bookingId)
-              //       onTap: onDetail,
-              //       primary: false,
-              //     ),
-              //   ),
-              // ],
+            ),
+
+            if (_canPay) ...[
+              const SizedBox(height: 12),
+              const Divider(height: 1, color: AppColors.fieldBorder),
+              const SizedBox(height: 12),
+              _ActionBtn(
+                label: _payLabel,
+                icon: Icons.payment_outlined,
+                onTap: onPay,
+                primary: true,
+              ),
             ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

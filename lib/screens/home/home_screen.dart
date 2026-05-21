@@ -105,8 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(child: _SearchBar(onTap: _goToFields)),
 
               // ── Promo banner ───────────────────────────────
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
-              const SliverToBoxAdapter(child: _PromoBanner()),
+              // const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              // const SliverToBoxAdapter(child: _PromoBanner()),
 
               // ── Sân nổi bật ────────────────────────────────
               const SliverToBoxAdapter(child: SizedBox(height: 22)),
@@ -360,99 +360,99 @@ class _SearchBar extends StatelessWidget {
 }
 
 // ── PROMO BANNER ──────────────────────────────
-class _PromoBanner extends StatelessWidget {
-  const _PromoBanner();
+// class _PromoBanner extends StatelessWidget {
+//   const _PromoBanner();
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        child: Container(
-          height: 148,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1565C0), Color(0xFF0D3B1A)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                right: -20,
-                top: -20,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              const Positioned(
-                right: 20,
-                top: 20,
-                child: Icon(
-                  Icons.sports_soccer,
-                  color: Colors.white12,
-                  size: 80,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'ƯU ĐÃI HÔM NAY',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Giảm 20% sân sáng sớm',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Đặt sân từ 6:00 – 9:00 sáng mỗi ngày',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Padding(
+//       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pagePadH),
+//       child: ClipRRect(
+//         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+//         child: Container(
+//           height: 148,
+//           decoration: const BoxDecoration(
+//             gradient: LinearGradient(
+//               colors: [Color(0xFF1565C0), Color(0xFF0D3B1A)],
+//               begin: Alignment.topLeft,
+//               end: Alignment.bottomRight,
+//             ),
+//           ),
+//           child: Stack(
+//             children: [
+//               Positioned(
+//                 right: -20,
+//                 top: -20,
+//                 child: Container(
+//                   width: 120,
+//                   height: 120,
+//                   decoration: BoxDecoration(
+//                     color: Colors.white.withValues(alpha: 0.05),
+//                     shape: BoxShape.circle,
+//                   ),
+//                 ),
+//               ),
+//               const Positioned(
+//                 right: 20,
+//                 top: 20,
+//                 child: Icon(
+//                   Icons.sports_soccer,
+//                   color: Colors.white12,
+//                   size: 80,
+//                 ),
+//               ),
+//               Padding(
+//                 padding: const EdgeInsets.all(20),
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   mainAxisAlignment: MainAxisAlignment.end,
+//                   children: [
+//                     Container(
+//                       padding: const EdgeInsets.symmetric(
+//                         horizontal: 8,
+//                         vertical: 3,
+//                       ),
+//                       decoration: BoxDecoration(
+//                         color: AppColors.primaryLight,
+//                         borderRadius: BorderRadius.circular(6),
+//                       ),
+//                       child: const Text(
+//                         'ƯU ĐÃI HÔM NAY',
+//                         style: TextStyle(
+//                           color: Colors.white,
+//                           fontSize: 9,
+//                           fontWeight: FontWeight.w900,
+//                           letterSpacing: 0.8,
+//                         ),
+//                       ),
+//                     ),
+//                     const SizedBox(height: 8),
+//                     const Text(
+//                       'Giảm 20% sân sáng sớm',
+//                       style: TextStyle(
+//                         color: Colors.white,
+//                         fontSize: 20,
+//                         fontWeight: FontWeight.w800,
+//                       ),
+//                     ),
+//                     const SizedBox(height: 4),
+//                     Text(
+//                       'Đặt sân từ 6:00 – 9:00 sáng mỗi ngày',
+//                       style: TextStyle(
+//                         color: Colors.white.withValues(alpha: 0.75),
+//                         fontSize: 12,
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 // ── FEATURED ROW ──────────────────────────────
 class _FeaturedRow extends StatelessWidget {
