@@ -86,19 +86,25 @@ class ProfileService {
     );
   }
 
-  // ── UPDATE AVATAR ──────────────────────────────────────────────
-  /// PUT /api/profile/avatar
-  /// Body: multipart/form-data, field name = "file"
-  /// Response data: String — relative path "/Uploads/avatar/..."
   Future<void> updateAvatar(String filePath) async {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(filePath),
     });
 
     final res = await _api.putForm('/api/profile/avatar', formData);
-    final rawUrl = res.raw<String>();
-    final fullUrl = rawUrl.toFullMediaUrl ?? rawUrl;
 
+    // data = { "avatarUrl": "..." } → use raw<Map> then extract the field
+    final dataMap = res.raw<Map<String, dynamic>>();
+    final rawUrl = dataMap['avatarUrl'] as String?;
+
+    if (rawUrl == null || rawUrl.isEmpty) {
+      throw const AppException(
+        'Avatar URL missing in response',
+        type: ErrorType.server,
+      );
+    }
+
+    final fullUrl = rawUrl.toFullMediaUrl ?? rawUrl;
     await _session.updateAvatar(fullUrl);
   }
 }
