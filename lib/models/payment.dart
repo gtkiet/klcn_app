@@ -3,16 +3,13 @@
 // Payment gateway models cho deep link result sau khi user thanh toán.
 //
 // Deep link scheme: sportplus://payment/result?status=success&bookingId=88
-//                               hoặc     ?status=failed&bookingId=88
-//
-// MoMo:  đang hoạt động.
-// VNPay: đã setup nhưng hiện tại chưa dùng — để lại để bật sau.
+//                               hoặc          ?status=failed&bookingId=88
 
 // ── PAYMENT METHOD IDs ────────────────────────────────────────────
 // Dùng khi gọi POST /api/bookings/{id}/payment (manual payment by staff)
 abstract class PaymentMethodId {
-  static const int cash  = 1;
-  static const int momo  = 2;
+  static const int cash = 1;
+  static const int momo = 2;
   static const int vnpay = 3;
 }
 
@@ -31,7 +28,7 @@ class PaymentDeepLinkResult {
   /// sportplus://payment/result?status=success&bookingId=88
   factory PaymentDeepLinkResult.fromUri(Uri uri) {
     final bookingId = int.tryParse(uri.queryParameters['bookingId'] ?? '') ?? 0;
-    final status    = uri.queryParameters['status'] ?? '';
+    final status = uri.queryParameters['status'] ?? '';
     return PaymentDeepLinkResult(
       bookingId: bookingId,
       isSuccess: status == 'success',

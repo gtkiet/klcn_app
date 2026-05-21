@@ -83,11 +83,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             _UpperSection(),
             Expanded(
               child: _LowerCard(
-                emailCtrl:     _emailCtrl,
-                emailError:    _emailError,
-                isLoading:     _isLoading,
+                emailCtrl: _emailCtrl,
+                emailError: _emailError,
+                isLoading: _isLoading,
                 onEmailChanged: (_) => setState(() => _emailError = null),
-                onSendCode:    _onSendCode,
+                onSendCode: _onSendCode,
                 onBackToLogin: () => context.pop(),
               ),
             ),
@@ -105,7 +105,10 @@ class _UpperSection extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.pagePadH, 24, AppSpacing.pagePadH, 36,
+        AppSpacing.pagePadH,
+        24,
+        AppSpacing.pagePadH,
+        36,
       ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -203,7 +206,7 @@ class _LowerCard extends StatelessWidget {
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.only(
-              topLeft:  Radius.circular(28),
+              topLeft: Radius.circular(28),
               topRight: Radius.circular(28),
             ),
             boxShadow: [
@@ -225,19 +228,19 @@ class _LowerCard extends StatelessWidget {
                 const SpFieldLabel('EMAIL'),
                 const SizedBox(height: 10),
                 SpTextField(
-                  controller:   emailCtrl,
-                  hintText:     'example@email.com',
+                  controller: emailCtrl,
+                  hintText: 'example@email.com',
                   keyboardType: TextInputType.emailAddress,
-                  prefixIcon:   Icons.email_outlined,
-                  errorText:    emailError,
-                  onChanged:    onEmailChanged,
+                  prefixIcon: Icons.email_outlined,
+                  errorText: emailError,
+                  onChanged: onEmailChanged,
                 ),
                 const SizedBox(height: 24),
 
                 SpPrimaryButton(
-                  label:     'GỬI MÃ XÁC MINH',
+                  label: 'GỬI MÃ XÁC MINH',
                   isLoading: isLoading,
-                  onTap:     onSendCode,
+                  onTap: onSendCode,
                 ),
                 const SizedBox(height: 32),
                 const Divider(color: Color(0xFFE0E2E0), thickness: 1),
@@ -248,7 +251,11 @@ class _LowerCard extends StatelessWidget {
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.arrow_back, size: 17, color: AppColors.textMid),
+                      Icon(
+                        Icons.arrow_back,
+                        size: 17,
+                        color: AppColors.textMid,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'Quay lại Đăng nhập',

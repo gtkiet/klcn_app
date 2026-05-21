@@ -17,12 +17,12 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _identifierCtrl = TextEditingController();
-  final _passwordCtrl   = TextEditingController();
+  final _passwordCtrl = TextEditingController();
   final _identifierFocus = FocusNode();
-  final _passwordFocus   = FocusNode();
+  final _passwordFocus = FocusNode();
 
   bool _obscurePassword = true;
-  bool _isLoading       = false;
+  bool _isLoading = false;
 
   String? _identifierError;
   String? _passwordError;
@@ -56,10 +56,8 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await AuthService.instance.login(
         identifier: _identifierCtrl.text.trim(),
-        password:   _passwordCtrl.text,
+        password: _passwordCtrl.text,
       );
-      // AuthService.login() đã gọi _guard.setAuthenticated() nội bộ
-      // → GoRouter.redirect() tự chuyển về /home
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -121,14 +119,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SpFieldLabel('EMAIL HOẶC SỐ ĐIỆN THOẠI'),
                         const SizedBox(height: 8),
                         SpTextField(
-                          controller:    _identifierCtrl,
-                          focusNode:     _identifierFocus,
+                          controller: _identifierCtrl,
+                          focusNode: _identifierFocus,
                           nextFocusNode: _passwordFocus,
-                          hintText:      'example@gmail.com hoặc 0xxxxxxxxx',
-                          keyboardType:  TextInputType.emailAddress,
-                          prefixIcon:    Icons.person_outline_rounded,
-                          errorText:     _identifierError,
-                          onChanged:     (_) => setState(() => _identifierError = null),
+                          hintText: 'example@gmail.com hoặc 0xxxxxxxxx',
+                          keyboardType: TextInputType.emailAddress,
+                          prefixIcon: Icons.person_outline_rounded,
+                          errorText: _identifierError,
+                          onChanged: (_) =>
+                              setState(() => _identifierError = null),
                         ),
                         const SizedBox(height: 20),
 
@@ -138,7 +137,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             const SpFieldLabel('MẬT KHẨU'),
                             GestureDetector(
-                              onTap: () => context.push('/auth/forgot-password'),
+                              onTap: () =>
+                                  context.push('/auth/forgot-password'),
                               child: const Text(
                                 'Quên mật khẩu?',
                                 style: TextStyle(
@@ -153,19 +153,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 8),
                         SpPasswordField(
                           controller: _passwordCtrl,
-                          obscure:    _obscurePassword,
-                          onToggle:   () => setState(
+                          obscure: _obscurePassword,
+                          onToggle: () => setState(
                             () => _obscurePassword = !_obscurePassword,
                           ),
                           errorText: _passwordError,
-                          onChanged: (_) => setState(() => _passwordError = null),
+                          onChanged: (_) =>
+                              setState(() => _passwordError = null),
                         ),
                         const SizedBox(height: 28),
 
                         SpPrimaryButton(
-                          label:     'ĐĂNG NHẬP',
+                          label: 'ĐĂNG NHẬP',
                           isLoading: _isLoading,
-                          onTap:     _onLogin,
+                          onTap: _onLogin,
                         ),
                         const SizedBox(height: 36),
 

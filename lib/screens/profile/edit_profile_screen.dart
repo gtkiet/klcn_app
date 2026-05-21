@@ -21,16 +21,16 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _session = UserSession.instance;
 
-  late final _nameCtrl    = TextEditingController(text: _session.fullName ?? '');
-  late final _phoneCtrl   = TextEditingController(text: _session.phone    ?? '');
-  late final _addressCtrl = TextEditingController(text: _session.address  ?? '');
+  late final _nameCtrl = TextEditingController(text: _session.fullName ?? '');
+  late final _phoneCtrl = TextEditingController(text: _session.phone ?? '');
+  late final _addressCtrl = TextEditingController(text: _session.address ?? '');
 
-  final _nameFocus    = FocusNode();
-  final _phoneFocus   = FocusNode();
+  final _nameFocus = FocusNode();
+  final _phoneFocus = FocusNode();
   final _addressFocus = FocusNode();
 
   DateTime? _selectedDob;
-  bool _isLoading         = false;
+  bool _isLoading = false;
   bool _isUploadingAvatar = false;
 
   String? _nameError;
@@ -51,8 +51,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final user = await ProfileService.instance.getProfile();
       if (!mounted) return;
-      _nameCtrl.text    = user.fullName;
-      _phoneCtrl.text   = user.phone;
+      _nameCtrl.text = user.fullName;
+      _phoneCtrl.text = user.phone;
       _addressCtrl.text = user.address ?? '';
       setState(() => _selectedDob = user.dateOfBirth);
     } catch (_) {
@@ -62,9 +62,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   void dispose() {
-    _nameCtrl.dispose();    _nameFocus.dispose();
-    _phoneCtrl.dispose();   _phoneFocus.dispose();
-    _addressCtrl.dispose(); _addressFocus.dispose();
+    _nameCtrl.dispose();
+    _nameFocus.dispose();
+    _phoneCtrl.dispose();
+    _phoneFocus.dispose();
+    _addressCtrl.dispose();
+    _addressFocus.dispose();
     super.dispose();
   }
 
@@ -89,10 +92,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isLoading = true);
     try {
       await ProfileService.instance.updateProfile(
-        fullName:    _nameCtrl.text.trim(),
-        phone:       _phoneCtrl.text.trim(),
+        fullName: _nameCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
         dateOfBirth: _selectedDob,
-        address:     _addressCtrl.text.trim().isNotEmpty
+        address: _addressCtrl.text.trim().isNotEmpty
             ? _addressCtrl.text.trim()
             : null,
       );
@@ -186,11 +189,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (source == null || !mounted) return;
 
     final picker = ImagePicker();
-    final file   = await picker.pickImage(
-      source:       source,
+    final file = await picker.pickImage(
+      source: source,
       imageQuality: 85,
-      maxWidth:     1024,
-      maxHeight:    1024,
+      maxWidth: 1024,
+      maxHeight: 1024,
     );
 
     if (file == null || !mounted) return;
@@ -215,12 +218,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   // ── Date picker ────────────────────────────────────────────────
   Future<void> _pickDob() async {
-    final now    = DateTime.now();
+    final now = DateTime.now();
     final picked = await showDatePicker(
-      context:     context,
+      context: context,
       initialDate: _selectedDob ?? DateTime(now.year - 20),
-      firstDate:   DateTime(1940),
-      lastDate:    DateTime(now.year - 5),
+      firstDate: DateTime(1940),
+      lastDate: DateTime(now.year - 5),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(primary: AppColors.primary),
@@ -284,7 +287,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 Center(
                   child: _AvatarSection(
                     isUploading: _isUploadingAvatar,
-                    onTap:       _onPickAvatar,
+                    onTap: _onPickAvatar,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -315,13 +318,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SpFieldLabel('HỌ VÀ TÊN'),
                 const SizedBox(height: 8),
                 _ProfileField(
-                  controller:    _nameCtrl,
-                  focusNode:     _nameFocus,
+                  controller: _nameCtrl,
+                  focusNode: _nameFocus,
                   nextFocusNode: _phoneFocus,
-                  prefixIcon:    Icons.person_outline_rounded,
-                  keyboardType:  TextInputType.name,
-                  errorText:     _nameError,
-                  onChanged:     (_) => setState(() => _nameError = null),
+                  prefixIcon: Icons.person_outline_rounded,
+                  keyboardType: TextInputType.name,
+                  errorText: _nameError,
+                  onChanged: (_) => setState(() => _nameError = null),
                 ),
                 const SizedBox(height: 18),
 
@@ -329,9 +332,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SpFieldLabel('EMAIL'),
                 const SizedBox(height: 8),
                 _ReadOnlyField(
-                  value:      _session.email ?? '',
+                  value: _session.email ?? '',
                   prefixIcon: Icons.email_outlined,
-                  hint:       'Email không thể thay đổi',
+                  hint: 'Email không thể thay đổi',
                 ),
                 const SizedBox(height: 18),
 
@@ -339,13 +342,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SpFieldLabel('SỐ ĐIỆN THOẠI'),
                 const SizedBox(height: 8),
                 _ProfileField(
-                  controller:    _phoneCtrl,
-                  focusNode:     _phoneFocus,
+                  controller: _phoneCtrl,
+                  focusNode: _phoneFocus,
                   nextFocusNode: _addressFocus,
-                  prefixIcon:    Icons.phone_android_outlined,
-                  keyboardType:  TextInputType.phone,
-                  errorText:     _phoneError,
-                  onChanged:     (_) => setState(() => _phoneError = null),
+                  prefixIcon: Icons.phone_android_outlined,
+                  keyboardType: TextInputType.phone,
+                  errorText: _phoneError,
+                  onChanged: (_) => setState(() => _phoneError = null),
                 ),
                 const SizedBox(height: 18),
 
@@ -358,7 +361,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     height: 52,
                     decoration: BoxDecoration(
                       color: AppColors.fieldBg,
-                      borderRadius: BorderRadius.circular(AppSpacing.fieldRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.fieldRadius,
+                      ),
                       border: Border.all(color: AppColors.fieldBorder),
                     ),
                     child: Row(
@@ -399,19 +404,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SpFieldLabel('ĐỊA CHỈ'),
                 const SizedBox(height: 8),
                 _ProfileField(
-                  controller:   _addressCtrl,
-                  focusNode:    _addressFocus,
-                  prefixIcon:   Icons.location_on_outlined,
+                  controller: _addressCtrl,
+                  focusNode: _addressFocus,
+                  prefixIcon: Icons.location_on_outlined,
                   keyboardType: TextInputType.streetAddress,
-                  maxLines:     2,
+                  maxLines: 2,
                 ),
                 const SizedBox(height: 28),
 
                 // ── Save button ──────────────────────────────────
                 SpPrimaryButton(
-                  label:        'LƯU THAY ĐỔI',
-                  isLoading:    _isLoading,
-                  onTap:        _onSave,
+                  label: 'LƯU THAY ĐỔI',
+                  isLoading: _isLoading,
+                  onTap: _onSave,
                   trailingIcon: Icons.check_circle_outline_rounded,
                 ),
                 const SizedBox(height: 32),
@@ -464,12 +469,12 @@ class _AvatarSection extends StatelessWidget {
                       ),
                     )
                   : (avatarUrl != null && avatarUrl.isNotEmpty)
-                      ? Image.network(
-                          avatarUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => _fallback(),
-                        )
-                      : _fallback(),
+                  ? Image.network(
+                      avatarUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _fallback(),
+                    )
+                  : _fallback(),
             ),
           ),
         ),
@@ -505,9 +510,9 @@ class _AvatarSection extends StatelessWidget {
   }
 
   Widget _fallback() => Container(
-        color: const Color(0xFF7B6052),
-        child: const Icon(Icons.person, color: Colors.white38, size: 56),
-      );
+    color: const Color(0xFF7B6052),
+    child: const Icon(Icons.person, color: Colors.white38, size: 56),
+  );
 }
 
 // ── BOTTOM SHEET ICON BOX ─────────────────────
@@ -560,14 +565,20 @@ class _ReadOnlyField extends StatelessWidget {
             child: Text(
               value.isNotEmpty ? value : hint,
               style: TextStyle(
-                color: value.isNotEmpty ? AppColors.textMid : AppColors.textHint,
+                color: value.isNotEmpty
+                    ? AppColors.textMid
+                    : AppColors.textHint,
                 fontSize: 15,
               ),
             ),
           ),
           const Padding(
             padding: EdgeInsets.only(right: 14),
-            child: Icon(Icons.lock_outline, color: AppColors.textHint, size: 16),
+            child: Icon(
+              Icons.lock_outline,
+              color: AppColors.textHint,
+              size: 16,
+            ),
           ),
         ],
       ),
@@ -628,17 +639,17 @@ class _ProfileFieldState extends State<_ProfileField> {
               color: hasError
                   ? AppColors.errorRed
                   : _isFocused
-                      ? AppColors.primary
-                      : AppColors.fieldBorder,
+                  ? AppColors.primary
+                  : AppColors.fieldBorder,
               width: hasError || _isFocused ? 1.5 : 1.0,
             ),
           ),
           child: TextField(
-            controller:      widget.controller,
-            focusNode:       widget.focusNode,
-            keyboardType:    widget.keyboardType,
-            maxLines:        widget.maxLines,
-            onChanged:       widget.onChanged,
+            controller: widget.controller,
+            focusNode: widget.focusNode,
+            keyboardType: widget.keyboardType,
+            maxLines: widget.maxLines,
+            onChanged: widget.onChanged,
             textInputAction: widget.nextFocusNode != null
                 ? TextInputAction.next
                 : TextInputAction.done,

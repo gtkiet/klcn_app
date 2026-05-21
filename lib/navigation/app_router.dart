@@ -226,15 +226,11 @@ class AppRouter {
 
       // Deep link payment → show loading, app_links sẽ navigate
       if (path == '/result') {
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       }
 
       // Các route lỗi khác → về home
-      return Scaffold(
-        body: Center(child: Text('Không tìm thấy trang: $path')),
-      );
+      return Scaffold(body: Center(child: Text('Không tìm thấy trang: $path')));
     },
   );
 }

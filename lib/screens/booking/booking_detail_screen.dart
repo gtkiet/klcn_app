@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:klcn_app/navigation/app_navigation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/booking.dart';
@@ -28,7 +29,6 @@ String _fmtMoney(double amount) {
   }
   return '$bufđ';
 }
-
 
 class BookingDetailScreen extends StatefulWidget {
   const BookingDetailScreen({super.key});
@@ -295,7 +295,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   Future<void> _onRebook() async {
     final fieldId = _booking?.details.firstOrNull?.fieldId;
     if (fieldId == null) {
-      context.go('/fields');
+      AppNavigation.goFields();
       return;
     }
     try {
@@ -304,7 +304,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       context.push('/fields/detail', extra: field);
     } catch (_) {
       if (!mounted) return;
-      context.go('/fields');
+      AppNavigation.goFields();
     }
   }
 
@@ -963,7 +963,6 @@ class _DepositCard extends StatelessWidget {
               ),
             ],
           ),
-
         ],
       ),
     );
@@ -1454,8 +1453,8 @@ class _RescheduleSheet extends StatelessWidget {
             const Divider(height: 1, color: AppColors.fieldBorder),
             ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.45 -
-                    bottomInset,
+                maxHeight:
+                    MediaQuery.of(context).size.height * 0.45 - bottomInset,
               ),
               child: ListView.separated(
                 shrinkWrap: true,

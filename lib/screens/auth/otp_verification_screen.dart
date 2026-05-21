@@ -20,13 +20,17 @@ class OtpVerificationScreen extends StatefulWidget {
 }
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  static const int _otpLength    = 6;
+  static const int _otpLength = 6;
   static const int _countdownSec = 120; // 2 phút
 
-  final List<TextEditingController> _controllers =
-      List.generate(_otpLength, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-      List.generate(_otpLength, (_) => FocusNode());
+  final List<TextEditingController> _controllers = List.generate(
+    _otpLength,
+    (_) => TextEditingController(),
+  );
+  final List<FocusNode> _focusNodes = List.generate(
+    _otpLength,
+    (_) => FocusNode(),
+  );
 
   final ValueNotifier<int> _secondsLeft = ValueNotifier(_countdownSec);
   Timer? _timer;
@@ -102,11 +106,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       return;
     }
 
-    setState(() { _isLoading = true; _errorMsg = null; });
+    setState(() {
+      _isLoading = true;
+      _errorMsg = null;
+    });
     try {
       final resetToken = await AuthService.instance.verifyOtp(
         email: widget.email,
-        otp:   otp,
+        otp: otp,
       );
 
       if (!mounted) return;
@@ -131,7 +138,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   // ── Resend OTP ─────────────────────────────────────────────────
   Future<void> _onResend() async {
     if (!_canResend) return;
-    setState(() { _isResending = true; _errorMsg = null; });
+    setState(() {
+      _isResending = true;
+      _errorMsg = null;
+    });
 
     try {
       await AuthService.instance.forgotPassword(widget.email);
@@ -252,9 +262,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       _otpLength,
                       (i) => _OtpBox(
                         controller: _controllers[i],
-                        focusNode:  _focusNodes[i],
-                        hasError:   _errorMsg != null,
-                        onChanged:  (v) => _onDigitChanged(i, v),
+                        focusNode: _focusNodes[i],
+                        hasError: _errorMsg != null,
+                        onChanged: (v) => _onDigitChanged(i, v),
                       ),
                     ),
                   ),
@@ -264,7 +274,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10,
+                        horizontal: 14,
+                        vertical: 10,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFEBEE),
@@ -303,7 +314,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
-                            value: (_countdownSec - _secondsLeft.value) /
+                            value:
+                                (_countdownSec - _secondsLeft.value) /
                                 _countdownSec,
                             backgroundColor: AppColors.fieldBorder,
                             valueColor: const AlwaysStoppedAnimation(
@@ -364,9 +376,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
                   // ── Verify button ───────────────────────────────
                   SpPrimaryButton(
-                    label:     'XÁC NHẬN',
+                    label: 'XÁC NHẬN',
                     isLoading: _isLoading,
-                    onTap:     _onVerify,
+                    onTap: _onVerify,
                   ),
                   const SizedBox(height: 48),
                 ],
@@ -415,8 +427,8 @@ class _OtpBoxState extends State<_OtpBox> {
     final borderColor = widget.hasError
         ? AppColors.errorRed
         : _isFocused
-            ? AppColors.primary
-            : Colors.transparent;
+        ? AppColors.primary
+        : Colors.transparent;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
@@ -440,12 +452,12 @@ class _OtpBoxState extends State<_OtpBox> {
             : [],
       ),
       child: TextField(
-        controller:   widget.controller,
-        focusNode:    widget.focusNode,
-        onChanged:    widget.onChanged,
+        controller: widget.controller,
+        focusNode: widget.focusNode,
+        onChanged: widget.onChanged,
         keyboardType: TextInputType.number,
-        textAlign:    TextAlign.center,
-        maxLength:    1,
+        textAlign: TextAlign.center,
+        maxLength: 1,
         style: TextStyle(
           color: widget.hasError ? AppColors.errorRed : AppColors.textDark,
           fontSize: 22,
@@ -453,8 +465,8 @@ class _OtpBoxState extends State<_OtpBox> {
         ),
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         decoration: const InputDecoration(
-          border:         InputBorder.none,
-          counterText:    '',
+          border: InputBorder.none,
+          counterText: '',
           contentPadding: EdgeInsets.zero,
         ),
       ),

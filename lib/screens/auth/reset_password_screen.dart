@@ -19,17 +19,18 @@ class ResetPasswordScreen extends StatefulWidget {
 }
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
-  final _newPassCtrl     = TextEditingController();
+  final _newPassCtrl = TextEditingController();
   final _confirmPassCtrl = TextEditingController();
-  final _newFocus        = FocusNode();
-  final _confirmFocus    = FocusNode();
+  final _newFocus = FocusNode();
+  final _confirmFocus = FocusNode();
 
-  final ValueNotifier<_PasswordStrength> _strengthNotifier =
-      ValueNotifier(_PasswordStrength.empty);
+  final ValueNotifier<_PasswordStrength> _strengthNotifier = ValueNotifier(
+    _PasswordStrength.empty,
+  );
 
-  bool _obscureNew     = true;
+  bool _obscureNew = true;
   bool _obscureConfirm = true;
-  bool _isLoading      = false;
+  bool _isLoading = false;
 
   String? _newPassError;
   String? _confirmPassError;
@@ -97,8 +98,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     setState(() => _isLoading = true);
     try {
       await AuthService.instance.resetPassword(
-        resetToken:      widget.resetToken,
-        newPassword:     _newPassCtrl.text,
+        resetToken: widget.resetToken,
+        newPassword: _newPassCtrl.text,
         confirmPassword: _confirmPassCtrl.text,
       );
 
@@ -200,9 +201,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   const SizedBox(height: 8),
                   SpPasswordField(
                     controller: _newPassCtrl,
-                    obscure:    _obscureNew,
-                    onToggle:   () => setState(() => _obscureNew = !_obscureNew),
-                    errorText:  _newPassError,
+                    obscure: _obscureNew,
+                    onToggle: () => setState(() => _obscureNew = !_obscureNew),
+                    errorText: _newPassError,
                   ),
                   const SizedBox(height: 10),
 
@@ -219,10 +220,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   const SizedBox(height: 8),
                   SpPasswordField(
                     controller: _confirmPassCtrl,
-                    obscure:    _obscureConfirm,
-                    onToggle:   () =>
+                    obscure: _obscureConfirm,
+                    onToggle: () =>
                         setState(() => _obscureConfirm = !_obscureConfirm),
-                    errorText:  _confirmPassError,
+                    errorText: _confirmPassError,
                   ),
                   const SizedBox(height: 20),
 
@@ -231,9 +232,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   const SizedBox(height: 32),
 
                   SpPrimaryButton(
-                    label:        'CẬP NHẬT MẬT KHẨU',
-                    isLoading:    _isLoading,
-                    onTap:        _onReset,
+                    label: 'CẬP NHẬT MẬT KHẨU',
+                    isLoading: _isLoading,
+                    onTap: _onReset,
                     trailingIcon: Icons.check_circle_outline_rounded,
                   ),
                   const SizedBox(height: 32),
@@ -272,10 +273,10 @@ class _PasswordStrengthBar extends StatelessWidget {
     if (strength == _PasswordStrength.empty) return const SizedBox.shrink();
 
     final (label, color, filled) = switch (strength) {
-      _PasswordStrength.weak   => ('Yếu', const Color(0xFFE53935), 1),
+      _PasswordStrength.weak => ('Yếu', const Color(0xFFE53935), 1),
       _PasswordStrength.medium => ('Trung bình', const Color(0xFFFB8C00), 2),
       _PasswordStrength.strong => ('Mạnh', AppColors.primary, 3),
-      _                        => ('', Colors.transparent, 0),
+      _ => ('', Colors.transparent, 0),
     };
 
     return Row(

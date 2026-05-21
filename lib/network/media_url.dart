@@ -35,7 +35,8 @@ extension UserModelMediaX on UserModel {
     final full = raw.toFullMediaUrl;
     if (full == raw) return this;
     return copyWith(
-      profile: profile?.copyWith(avatarUrl: full) ?? ProfileModel(avatarUrl: full),
+      profile:
+          profile?.copyWith(avatarUrl: full) ?? ProfileModel(avatarUrl: full),
     );
   }
 }

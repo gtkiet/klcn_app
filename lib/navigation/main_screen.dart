@@ -17,7 +17,7 @@ class MainScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AppNavigation.setShell(shell);
-    // AppNavigation.setRouter(GoRouter.of(context));
+    AppNavigation.setRouter(GoRouter.of(context));
     return Scaffold(
       body: shell,
       bottomNavigationBar: BottomNavigationBar(

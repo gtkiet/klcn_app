@@ -100,6 +100,5 @@ class ProfileService {
     final fullUrl = rawUrl.toFullMediaUrl ?? rawUrl;
 
     await _session.updateAvatar(fullUrl);
-    // return fullUrl;
   }
 }

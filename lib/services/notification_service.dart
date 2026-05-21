@@ -14,16 +14,12 @@ class NotificationService {
   /// Params: IsRead?, Page, PageSize
   Future<PagedNotificationResult> getNotifications({
     bool? isRead,
-    int page     = 1,
+    int page = 1,
     int pageSize = 20,
   }) async {
     final res = await _api.get(
       '/api/notifications',
-      queryParameters: {
-        'IsRead': ?isRead,
-        'Page':     page,
-        'PageSize': pageSize,
-      },
+      queryParameters: {'IsRead': ?isRead, 'Page': page, 'PageSize': pageSize},
     );
     return res.item(PagedNotificationResult.fromJson);
   }

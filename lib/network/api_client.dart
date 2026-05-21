@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 
 import 'api_interceptor.dart';
 
-import 'package:klcn_app/models/paging.dart'; // FIX: đổi từ paging_model → paging
+import 'package:klcn_app/models/paging.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ERROR LAYER

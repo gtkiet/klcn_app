@@ -127,8 +127,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordCtrl.text,
         fullName: _nameCtrl.text.trim(),
       );
-      // AuthService.register() đã gọi _guard.setAuthenticated() nội bộ
-      // → GoRouter.redirect() tự chuyển về /home
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

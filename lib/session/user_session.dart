@@ -27,9 +27,6 @@ class UserSession {
   UserSession._();
   static final UserSession instance = UserSession._();
 
-  // final _storage = const FlutterSecureStorage(
-  //   aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  // );
   final _storage = const FlutterSecureStorage(aOptions: AndroidOptions());
 
   // ── Reactive fields (rebuild widgets khi thay đổi) ────────────────────

@@ -12,9 +12,9 @@ class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();
 
-  final _client  = ApiClient.instance;
+  final _client = ApiClient.instance;
   final _session = UserSession.instance;
-  final _guard   = AuthGuard.instance;
+  final _guard = AuthGuard.instance;
 
   // ── LOGIN ──────────────────────────────────────────────────────
   /// POST /api/auth/login
@@ -26,10 +26,7 @@ class AuthService {
   }) async {
     final res = await _client.post(
       '/api/auth/login',
-      body: {
-        'identifier': identifier.trim(),
-        'password':   password,
-      },
+      body: {'identifier': identifier.trim(), 'password': password},
     );
 
     final auth = res.item(AuthResponse.fromJson).withFullAvatarUrl;
@@ -50,8 +47,8 @@ class AuthService {
     final res = await _client.post(
       '/api/auth/register',
       body: {
-        'email':    email.trim(),
-        'phone':    phone.trim(),
+        'email': email.trim(),
+        'phone': phone.trim(),
         'password': password,
         'fullName': fullName.trim(),
       },
@@ -78,16 +75,10 @@ class AuthService {
   /// POST /api/auth/verify-otp
   /// Body: { email, otp }
   /// Response data: { resetToken }
-  Future<String> verifyOtp({
-    required String email,
-    required String otp,
-  }) async {
+  Future<String> verifyOtp({required String email, required String otp}) async {
     final res = await _client.post(
       '/api/auth/verify-otp',
-      body: {
-        'email': email.trim(),
-        'otp':   otp.trim(),
-      },
+      body: {'email': email.trim(), 'otp': otp.trim()},
     );
     final data = res.raw<Map<String, dynamic>>();
     return data['resetToken'] as String;
@@ -104,9 +95,9 @@ class AuthService {
     await _client.post(
       '/api/auth/reset-password',
       body: {
-        'resetToken':       resetToken,
-        'newPassword':      newPassword,
-        'confirmPassword':  confirmPassword,
+        'resetToken': resetToken,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
       },
     );
   }
@@ -142,19 +133,18 @@ class AuthService {
 
       final response = await _client.plainDio.post(
         '/api/auth/refresh-token',
-        data: {
-          'accessToken':  aToken ?? '',
-          'refreshToken': rToken,
-        },
+        data: {'accessToken': aToken ?? '', 'refreshToken': rToken},
       );
 
       final map = response.data as Map<String, dynamic>;
-      final ok  = map['success'] as bool? ?? false;
+      final ok = map['success'] as bool? ?? false;
       if (!ok) return null;
 
-      final tokens = TokenResponse.fromJson(map['data'] as Map<String, dynamic>);
+      final tokens = TokenResponse.fromJson(
+        map['data'] as Map<String, dynamic>,
+      );
       await _session.updateTokens(
-        accessToken:  tokens.accessToken,
+        accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
       );
       return tokens.accessToken;

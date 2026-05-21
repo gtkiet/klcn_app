@@ -43,14 +43,13 @@ class BookingService {
     final res = await _api.post(
       '/api/bookings',
       body: {
-        'fieldSlotIds':  fieldSlotIds,
+        'fieldSlotIds': fieldSlotIds,
         'isFullPayment': isFullPayment,
         if (services.isNotEmpty)
           'services': services.map((s) => s.toJson()).toList(),
         if (promotionCode != null && promotionCode.trim().isNotEmpty)
           'promotionCode': promotionCode.trim(),
-        if (note != null && note.trim().isNotEmpty)
-          'note': note.trim(),
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
       },
     );
     return res.item(BookingModel.fromJson);
@@ -61,14 +60,14 @@ class BookingService {
   /// Params: statusId?, page, pageSize
   Future<PagedBookingResult> getMyBookings({
     int? statusId,
-    int page     = 1,
+    int page = 1,
     int pageSize = 10,
   }) async {
     final res = await _api.get(
       '/api/bookings/my',
       queryParameters: {
         'statusId': ?statusId,
-        'page':     page,
+        'page': page,
         'pageSize': pageSize,
       },
     );
@@ -106,7 +105,7 @@ class BookingService {
       '/api/bookings/$bookingId/reschedule',
       body: {
         'bookingDetailId': bookingDetailId,
-        'newFieldSlotId':  newFieldSlotId,
+        'newFieldSlotId': newFieldSlotId,
       },
     );
   }

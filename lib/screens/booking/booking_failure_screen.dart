@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:klcn_app/navigation/app_navigation.dart';
 
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
@@ -89,13 +90,13 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
       value: SystemUiOverlayStyle.dark,
       child: PopScope(
         canPop: false,
-        onPopInvokedWithResult: (_, _) => context.go('/home'),
+        onPopInvokedWithResult: (_, _) => AppNavigation.goHome(),
         child: Scaffold(
           backgroundColor: AppColors.bgPage,
           appBar: AppBar(
             leading: IconButton(
               icon: const Icon(Icons.close),
-              onPressed: () => context.go('/home'),
+              onPressed: () => AppNavigation.goHome(),
             ),
             title: const Text('Thanh toán thất bại'),
           ),
@@ -200,7 +201,7 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
                     label: 'THỬ LẠI',
                     trailingIcon: Icons.refresh_rounded,
                     onTap: () {
-                      context.go('/fields');
+                      AppNavigation.goFields();
                     },
                   ),
 
@@ -213,7 +214,7 @@ class _BookingFailureScreenState extends State<BookingFailureScreen>
                     borderColor: AppColors.fieldBorder,
                     textColor: AppColors.textMid,
                     onTap: () {
-                      context.go('/home');
+                      AppNavigation.goHome();
                     },
                   ),
 

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:klcn_app/navigation/app_navigation.dart';
 
 import '../../models/field.dart';
 import '../../services/field_service.dart';
@@ -78,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _goToFields() => context.go('/fields');
+  void _goToFields() => AppNavigation.goFields();
 
   void _goToFieldDetail(FieldModel field) =>
       context.push('/fields/detail', extra: field);

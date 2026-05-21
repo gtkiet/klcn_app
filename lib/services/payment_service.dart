@@ -10,7 +10,6 @@ class PaymentService {
     final res = await _api.post(
       '/api/payments/vnpay/create/$bookingId?platform=mobile',
     );
-    // Backend trả về object { paymentUrl: "..." } thay vì String trực tiếp
     final data = res.raw<Map<String, dynamic>>();
     return data['paymentUrl'] as String;
   }

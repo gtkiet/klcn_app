@@ -17,20 +17,21 @@ class ChangePasswordScreen extends StatefulWidget {
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _currentCtrl = TextEditingController();
-  final _newCtrl     = TextEditingController();
+  final _newCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
 
   final _currentFocus = FocusNode();
-  final _newFocus     = FocusNode();
+  final _newFocus = FocusNode();
   final _confirmFocus = FocusNode();
 
-  final ValueNotifier<_PasswordStrength> _strengthNotifier =
-      ValueNotifier(_PasswordStrength.empty);
+  final ValueNotifier<_PasswordStrength> _strengthNotifier = ValueNotifier(
+    _PasswordStrength.empty,
+  );
 
   bool _obscureCurrent = true;
-  bool _obscureNew     = true;
+  bool _obscureNew = true;
   bool _obscureConfirm = true;
-  bool _isLoading      = false;
+  bool _isLoading = false;
 
   String? _currentError;
   String? _newError;
@@ -50,9 +51,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   void dispose() {
-    _currentCtrl.dispose(); _currentFocus.dispose();
-    _newCtrl.dispose();     _newFocus.dispose();
-    _confirmCtrl.dispose(); _confirmFocus.dispose();
+    _currentCtrl.dispose();
+    _currentFocus.dispose();
+    _newCtrl.dispose();
+    _newFocus.dispose();
+    _confirmCtrl.dispose();
+    _confirmFocus.dispose();
     _strengthNotifier.dispose();
     super.dispose();
   }
@@ -112,7 +116,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     try {
       await ProfileService.instance.changePassword(
         currentPassword: _currentCtrl.text,
-        newPassword:     _newCtrl.text,
+        newPassword: _newCtrl.text,
         confirmPassword: _confirmCtrl.text,
       );
       if (!mounted) return;
@@ -135,10 +139,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         setState(() => _currentError = 'Mật khẩu hiện tại không đúng');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            backgroundColor: AppColors.errorRed,
-          ),
+          SnackBar(content: Text(msg), backgroundColor: AppColors.errorRed),
         );
       }
     } finally {
@@ -232,12 +233,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       const SizedBox(height: 8),
                       SpPasswordField(
                         controller: _currentCtrl,
-                        obscure:    _obscureCurrent,
-                        onToggle:   () => setState(
-                          () => _obscureCurrent = !_obscureCurrent,
-                        ),
-                        errorText:  _currentError,
-                        onChanged:  (_) => setState(() => _currentError = null),
+                        obscure: _obscureCurrent,
+                        onToggle: () =>
+                            setState(() => _obscureCurrent = !_obscureCurrent),
+                        errorText: _currentError,
+                        onChanged: (_) => setState(() => _currentError = null),
                       ),
                       const SizedBox(height: 24),
 
@@ -249,11 +249,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       const SizedBox(height: 8),
                       SpPasswordField(
                         controller: _newCtrl,
-                        obscure:    _obscureNew,
-                        onToggle:   () =>
+                        obscure: _obscureNew,
+                        onToggle: () =>
                             setState(() => _obscureNew = !_obscureNew),
-                        errorText:  _newError,
-                        onChanged:  (_) => setState(() => _newError = null),
+                        errorText: _newError,
+                        onChanged: (_) => setState(() => _newError = null),
                       ),
                       const SizedBox(height: 10),
 
@@ -270,12 +270,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       const SizedBox(height: 8),
                       SpPasswordField(
                         controller: _confirmCtrl,
-                        obscure:    _obscureConfirm,
-                        onToggle:   () =>
+                        obscure: _obscureConfirm,
+                        onToggle: () =>
                             setState(() => _obscureConfirm = !_obscureConfirm),
-                        errorText:  _confirmError,
-                        onChanged:  (_) =>
-                            setState(() => _confirmError = null),
+                        errorText: _confirmError,
+                        onChanged: (_) => setState(() => _confirmError = null),
                       ),
                     ],
                   ),
@@ -288,9 +287,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
                 // ── Submit ───────────────────────────────────────
                 SpPrimaryButton(
-                  label:        'CẬP NHẬT MẬT KHẨU',
-                  isLoading:    _isLoading,
-                  onTap:        _onSubmit,
+                  label: 'CẬP NHẬT MẬT KHẨU',
+                  isLoading: _isLoading,
+                  onTap: _onSubmit,
                   trailingIcon: Icons.check_circle_outline_rounded,
                 ),
                 const SizedBox(height: 32),
@@ -328,24 +327,27 @@ class _PasswordStrengthBar extends StatelessWidget {
     if (strength == _PasswordStrength.empty) return const SizedBox.shrink();
 
     final (label, color, filled) = switch (strength) {
-      _PasswordStrength.weak   => ('Yếu',       const Color(0xFFE53935), 1),
+      _PasswordStrength.weak => ('Yếu', const Color(0xFFE53935), 1),
       _PasswordStrength.medium => ('Trung bình', const Color(0xFFFB8C00), 2),
-      _PasswordStrength.strong => ('Mạnh',       AppColors.primary,       3),
-      _                        => ('',           Colors.transparent,      0),
+      _PasswordStrength.strong => ('Mạnh', AppColors.primary, 3),
+      _ => ('', Colors.transparent, 0),
     };
 
     return Row(
       children: [
-        ...List.generate(3, (i) => Expanded(
-          child: Container(
-            height: 4,
-            margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
-            decoration: BoxDecoration(
-              color: i < filled ? color : AppColors.fieldBorder,
-              borderRadius: BorderRadius.circular(2),
+        ...List.generate(
+          3,
+          (i) => Expanded(
+            child: Container(
+              height: 4,
+              margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
+              decoration: BoxDecoration(
+                color: i < filled ? color : AppColors.fieldBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-        )),
+        ),
         const SizedBox(width: 8),
         Text(
           label,

@@ -2,7 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
+
+import 'package:klcn_app/navigation/app_navigation.dart';
 
 import '../../models/booking.dart';
 import '../../theme/app_theme.dart';
@@ -74,7 +75,7 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
       value: SystemUiOverlayStyle.dark,
       child: PopScope(
         canPop: false,
-        onPopInvokedWithResult: (_, _) => context.go('/home'),
+        onPopInvokedWithResult: (_, _) => AppNavigation.goHome(),
         child: Scaffold(
           backgroundColor: AppColors.bgPage,
           body: SafeArea(
@@ -146,7 +147,7 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                           label: 'VỀ TRANG CHỦ',
                           trailingIcon: Icons.home_outlined,
                           onTap: () {
-                            context.go('/home');
+                            AppNavigation.goHome();
                           },
                         ),
 
@@ -156,7 +157,7 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                           label: 'XEM LỊCH SỬ ĐẶT SÂN',
                           icon: Icons.history_rounded,
                           onTap: () {
-                            context.go('/booking_history');
+                            AppNavigation.goHistory();
                           },
                         ),
                       ],
@@ -297,8 +298,12 @@ class _AmountRow extends StatelessWidget {
   Widget build(BuildContext context) {
     // depositAmount > 0 nghĩa là Flow 1 (chỉ cọc trước, trả phần còn lại tại sân)
     final isDepositFlow = booking.depositAmount > 0;
-    final paidAmount = isDepositFlow ? booking.depositAmount : booking.totalAmount;
-    final label = isDepositFlow ? 'Tiền cọc đã thanh toán' : 'Tổng tiền đã thanh toán';
+    final paidAmount = isDepositFlow
+        ? booking.depositAmount
+        : booking.totalAmount;
+    final label = isDepositFlow
+        ? 'Tiền cọc đã thanh toán'
+        : 'Tổng tiền đã thanh toán';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -326,10 +331,7 @@ class _AmountRow extends StatelessWidget {
           Text(
             'Còn lại ${_fmtMoney(booking.totalAmount - booking.depositAmount)} thanh toán tại sân',
             textAlign: TextAlign.end,
-            style: const TextStyle(
-              color: AppColors.textLight,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: AppColors.textLight, fontSize: 12),
           ),
         ],
       ],
