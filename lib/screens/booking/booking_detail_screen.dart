@@ -12,8 +12,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/booking.dart';
 import '../../models/field.dart';
+import '../../models/invoice.dart';
 import '../../services/booking_service.dart';
 import '../../services/field_service.dart';
+import '../../services/invoice_service.dart';
 import '../../services/payment_service.dart';
 import '../../services/review_service.dart';
 import '../../theme/app_theme.dart';
@@ -46,6 +48,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   bool _isPayingVnPay = false;
   bool _isRescheduling = false;
   bool _isSubmittingReview = false;
+  bool _isLoadingInvoice = false;
+  bool _isOpeningPdf = false;
+  InvoiceModel? _invoice;
   String? _errorMsg;
 
   @override
@@ -308,6 +313,71 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     }
   }
 
+  // ── Tải hóa đơn ──────────────────────────────────────────────
+  // Lấy danh sách payments → tìm payment đã thanh toán thành công
+  // → dùng paymentId gọi getInvoice. Cache vào _invoice để không gọi lại.
+  Future<InvoiceModel?> _loadInvoice() async {
+    if (_invoice != null) return _invoice;
+    if (_bookingId == null) return null;
+    setState(() => _isLoadingInvoice = true);
+    try {
+      final payments = await BookingService.instance.getPayments(_bookingId!);
+      // Lấy payment thành công gần nhất (statusId == 2 = Paid)
+      final paid = payments.where((p) => p.statusId == 2).toList()
+        ..sort(
+          (a, b) =>
+              (b.paidAt ?? b.createdAt).compareTo(a.paidAt ?? a.createdAt),
+        );
+      if (paid.isEmpty) {
+        _showSnack('Chưa có hóa đơn cho đơn đặt này', isError: true);
+        return null;
+      }
+      final inv = await InvoiceService.instance.getInvoice(
+        paid.first.paymentId,
+      );
+      if (!mounted) return null;
+      setState(() => _invoice = inv);
+      return inv;
+    } catch (e) {
+      if (!mounted) return null;
+      _showSnack('Không tải được hóa đơn: $e', isError: true);
+      return null;
+    } finally {
+      if (mounted) setState(() => _isLoadingInvoice = false);
+    }
+  }
+
+  Future<void> _onViewInvoice() async {
+    final inv = await _loadInvoice();
+    if (inv == null || !mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _InvoiceSheet(
+        invoice: inv,
+        isOpeningPdf: _isOpeningPdf,
+        onOpenPdf: _onOpenPdf,
+      ),
+    );
+  }
+
+  Future<void> _onOpenPdf() async {
+    if (_bookingId == null) return;
+    // Cần paymentId — load invoice trước nếu chưa có
+    final inv = _invoice ?? await _loadInvoice();
+    if (inv == null || !mounted) return;
+    setState(() => _isOpeningPdf = true);
+    try {
+      await InvoiceService.instance.openInvoicePdf(inv.paymentId);
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('Không thể mở PDF: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isOpeningPdf = false);
+    }
+  }
+
   void _showSnack(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -467,6 +537,25 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               child: _PaymentCard(booking: booking),
             ),
           ),
+          // Hóa đơn — chỉ hiện khi đã có payment thành công
+          if (booking.isConfirmed || booking.isCompleted)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.pagePadH,
+                  14,
+                  AppSpacing.pagePadH,
+                  0,
+                ),
+                child: _InvoiceCard(
+                  isLoading: _isLoadingInvoice,
+                  isOpeningPdf: _isOpeningPdf,
+                  invoice: _invoice,
+                  onView: _onViewInvoice,
+                  onOpenPdf: _onOpenPdf,
+                ),
+              ),
+            ),
           if (booking.deposit != null)
             SliverToBoxAdapter(
               child: Padding(
@@ -1512,7 +1601,689 @@ class _RescheduleSheet extends StatelessWidget {
   }
 }
 
-// ── REVIEW CARD ───────────────────────────────
+// ── INVOICE CARD ──────────────────────────────
+class _InvoiceCard extends StatelessWidget {
+  final bool isLoading;
+  final bool isOpeningPdf;
+  final InvoiceModel? invoice;
+  final VoidCallback onView;
+  final VoidCallback onOpenPdf;
+
+  const _InvoiceCard({
+    required this.isLoading,
+    required this.isOpeningPdf,
+    required this.invoice,
+    required this.onView,
+    required this.onOpenPdf,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SpCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F0FF),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: const Icon(
+                  Icons.receipt_long_outlined,
+                  color: Color(0xFF7C4DFF),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'HÓA ĐƠN THANH TOÁN',
+                      style: TextStyle(
+                        color: AppColors.textHint,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      invoice != null
+                          ? invoice!.invoiceCode
+                          : 'Nhấn để xem hóa đơn',
+                      style: TextStyle(
+                        color: invoice != null
+                            ? AppColors.textDark
+                            : AppColors.textMid,
+                        fontSize: 13.5,
+                        fontWeight: invoice != null
+                            ? FontWeight.w700
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Quick info (khi đã load)
+          if (invoice != null) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: AppColors.fieldBorder),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _InvoiceInfoCell(
+                    label: 'Ngày thanh toán',
+                    value: invoice!.paidAtFmt,
+                    icon: Icons.calendar_today_outlined,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _InvoiceInfoCell(
+                    label: 'Tổng tiền',
+                    value: invoice!.amountFmt,
+                    icon: Icons.payments_outlined,
+                    valueColor: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _InvoiceInfoCell(
+                    label: 'Phương thức',
+                    value: invoice!.paymentMethod,
+                    icon: Icons.credit_card_outlined,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _InvoiceInfoCell(
+                    label: 'Trạng thái',
+                    value: invoice!.paymentStatus,
+                    icon: Icons.check_circle_outline,
+                    valueColor: AppColors.badgeBookedText,
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 14),
+
+          // Action buttons
+          Row(
+            children: [
+              Expanded(
+                child: _InvoiceActionBtn(
+                  label: invoice != null ? 'Xem chi tiết' : 'Xem hóa đơn',
+                  icon: Icons.visibility_outlined,
+                  isLoading: isLoading && invoice == null,
+                  onTap: onView,
+                  isPrimary: false,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _InvoiceActionBtn(
+                  label: 'Tải PDF',
+                  icon: Icons.download_outlined,
+                  isLoading: isOpeningPdf,
+                  onTap: onOpenPdf,
+                  isPrimary: true,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InvoiceInfoCell extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color? valueColor;
+
+  const _InvoiceInfoCell({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.fieldBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.fieldBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 14, color: AppColors.textHint),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textHint,
+                    fontSize: 10.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: valueColor ?? AppColors.textDark,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InvoiceActionBtn extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isLoading;
+  final bool isPrimary;
+  final VoidCallback onTap;
+
+  const _InvoiceActionBtn({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    required this.isPrimary,
+    this.isLoading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = isPrimary
+        ? const Color(0xFF7C4DFF)
+        : const Color(0xFFF3F0FF);
+    final fgColor = isPrimary ? Colors.white : const Color(0xFF7C4DFF);
+    return GestureDetector(
+      onTap: isLoading ? null : onTap,
+      child: Container(
+        height: 42,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(10),
+          border: isPrimary
+              ? null
+              : Border.all(
+                  color: const Color(0xFF7C4DFF).withValues(alpha: 0.35),
+                ),
+        ),
+        child: isLoading
+            ? Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    color: fgColor,
+                    strokeWidth: 2,
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: fgColor, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: fgColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+// ── INVOICE SHEET ─────────────────────────────
+class _InvoiceSheet extends StatelessWidget {
+  final InvoiceModel invoice;
+  final bool isOpeningPdf;
+  final VoidCallback onOpenPdf;
+
+  const _InvoiceSheet({
+    required this.invoice,
+    required this.isOpeningPdf,
+    required this.onOpenPdf,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (_, scrollCtrl) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.fieldBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F0FF),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.receipt_long_outlined,
+                        color: Color(0xFF7C4DFF),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'HÓA ĐƠN',
+                            style: TextStyle(
+                              color: AppColors.textHint,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                          Text(
+                            invoice.invoiceCode,
+                            style: const TextStyle(
+                              color: AppColors.textDark,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // PDF button
+                    GestureDetector(
+                      onTap: isOpeningPdf ? null : onOpenPdf,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7C4DFF),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: isOpeningPdf
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.download_outlined,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                  SizedBox(width: 5),
+                                  Text(
+                                    'PDF',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Divider(height: 1, color: AppColors.fieldBorder),
+
+              // Scrollable content
+              Expanded(
+                child: ListView(
+                  controller: scrollCtrl,
+                  padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 24),
+                  children: [
+                    // Customer info
+                    _SheetSection(
+                      title: 'THÔNG TIN KHÁCH HÀNG',
+                      child: Column(
+                        children: [
+                          _SheetRow('Họ tên', invoice.customerName),
+                          const SizedBox(height: 8),
+                          _SheetRow('Số điện thoại', invoice.customerPhone),
+                          const SizedBox(height: 8),
+                          _SheetRow('Email', invoice.customerEmail),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Payment info
+                    _SheetSection(
+                      title: 'THÔNG TIN THANH TOÁN',
+                      child: Column(
+                        children: [
+                          _SheetRow('Ngày thanh toán', invoice.paidAtFmt),
+                          const SizedBox(height: 8),
+                          _SheetRow('Phương thức', invoice.paymentMethod),
+                          const SizedBox(height: 8),
+                          _SheetRow(
+                            'Trạng thái',
+                            invoice.paymentStatus,
+                            valueColor: AppColors.badgeBookedText,
+                          ),
+                          if (invoice.transactionCode != null &&
+                              invoice.transactionCode!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            _SheetRow('Mã giao dịch', invoice.transactionCode!),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Slot details
+                    if (invoice.details.isNotEmpty) ...[
+                      _SheetSection(
+                        title: 'CHI TIẾT SLOT SÂN',
+                        child: Column(
+                          children: invoice.details
+                              .map(
+                                (d) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryUltraLight,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.sports_soccer_outlined,
+                                          color: AppColors.primary,
+                                          size: 18,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              d.fieldName,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.textDark,
+                                                fontSize: 13.5,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${d.displayDate}  •  ${d.displayTime}',
+                                              style: const TextStyle(
+                                                color: AppColors.textMid,
+                                                fontSize: 12.5,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Text(
+                                        d.priceFmt,
+                                        style: const TextStyle(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 13.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Services
+                    if (invoice.services.isNotEmpty) ...[
+                      _SheetSection(
+                        title: 'DỊCH VỤ ĐI KÈM',
+                        child: Column(
+                          children: invoice.services
+                              .map(
+                                (s) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '${s.serviceName} ×${s.quantity}',
+                                          style: const TextStyle(
+                                            color: AppColors.textDark,
+                                            fontSize: 13.5,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        s.totalFmt,
+                                        style: const TextStyle(
+                                          color: AppColors.textDark,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Total
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryUltraLight,
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.cardRadius,
+                        ),
+                        border: Border.all(color: AppColors.primary, width: 1),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'TỔNG THANH TOÁN',
+                            style: TextStyle(
+                              color: AppColors.textDark,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Text(
+                            invoice.amountFmt,
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Note
+                    if (invoice.note != null && invoice.note!.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _SheetSection(
+                        title: 'GHI CHÚ',
+                        child: Text(
+                          invoice.note!,
+                          style: const TextStyle(
+                            color: AppColors.textMid,
+                            fontSize: 13.5,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SheetSection extends StatelessWidget {
+  final String title;
+  final Widget child;
+  const _SheetSection({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.textHint,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.fieldBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.fieldBorder),
+          ),
+          child: child,
+        ),
+      ],
+    );
+  }
+}
+
+class _SheetRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+  const _SheetRow(this.label, this.value, {this.valueColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(
+            label,
+            style: const TextStyle(color: AppColors.textHint, fontSize: 13),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: valueColor ?? AppColors.textDark,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.end,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ReviewCard extends StatelessWidget {
   final VoidCallback onWriteReview;
 
