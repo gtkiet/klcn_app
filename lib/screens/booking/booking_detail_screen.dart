@@ -49,8 +49,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   bool _isRescheduling = false;
   bool _isSubmittingReview = false;
   bool _isLoadingInvoice = false;
-  bool _isOpeningPdf = false;
-  InvoiceModel? _invoice;
+  // Mỗi index tương ứng 1 payment đã thanh toán (sắp xếp cũ → mới):
+  //   invoices[0] = hóa đơn cọc (nếu có)
+  //   invoices[1] = hóa đơn thanh toán còn lại (hoặc hóa đơn full ở [0])
+  List<InvoiceModel> _invoices = [];
+  // Theo dõi trạng thái "đang mở PDF" cho từng hóa đơn theo paymentId
+  final Map<int, bool> _isOpeningPdfMap = {};
   String? _errorMsg;
 
   @override
@@ -314,67 +318,69 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   }
 
   // ── Tải hóa đơn ──────────────────────────────────────────────
-  // Lấy danh sách payments → tìm payment đã thanh toán thành công
-  // → dùng paymentId gọi getInvoice. Cache vào _invoice để không gọi lại.
-  Future<InvoiceModel?> _loadInvoice() async {
-    if (_invoice != null) return _invoice;
-    if (_bookingId == null) return null;
+  // Lấy danh sách payments → lấy TẤT CẢ payments đã thanh toán thành công
+  // → fetch song song toàn bộ invoice, sắp xếp cũ → mới (cọc trước, còn lại sau).
+  // Cache vào _invoices để không gọi lại.
+  Future<List<InvoiceModel>> _loadInvoices() async {
+    if (_invoices.isNotEmpty) return _invoices;
+    if (_bookingId == null) return [];
     setState(() => _isLoadingInvoice = true);
     try {
       final payments = await BookingService.instance.getPayments(_bookingId!);
-      // Lấy payment thành công gần nhất (statusId == 2 = Paid)
+      // Lấy tất cả payments thành công (statusId == 2 = Paid), sắp xếp cũ → mới
       final paid = payments.where((p) => p.statusId == 2).toList()
         ..sort(
           (a, b) =>
-              (b.paidAt ?? b.createdAt).compareTo(a.paidAt ?? a.createdAt),
+              (a.paidAt ?? a.createdAt).compareTo(b.paidAt ?? b.createdAt),
         );
       if (paid.isEmpty) {
         _showSnack('Chưa có hóa đơn cho đơn đặt này', isError: true);
-        return null;
+        return [];
       }
-      final inv = await InvoiceService.instance.getInvoice(
-        paid.first.paymentId,
+      // Fetch tất cả invoice song song
+      final results = await Future.wait(
+        paid.map((p) => InvoiceService.instance.getInvoice(p.paymentId)),
       );
-      if (!mounted) return null;
-      setState(() => _invoice = inv);
-      return inv;
+      if (!mounted) return [];
+      setState(() => _invoices = results);
+      return results;
     } catch (e) {
-      if (!mounted) return null;
+      if (!mounted) return [];
       _showSnack('Không tải được hóa đơn: $e', isError: true);
-      return null;
+      return [];
     } finally {
       if (mounted) setState(() => _isLoadingInvoice = false);
     }
   }
 
-  Future<void> _onViewInvoice() async {
-    final inv = await _loadInvoice();
-    if (inv == null || !mounted) return;
+  Future<void> _onViewInvoice(int index) async {
+    final invList = await _loadInvoices();
+    if (invList.isEmpty || index >= invList.length || !mounted) return;
+    final inv = invList[index];
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _InvoiceSheet(
-        invoice: inv,
-        isOpeningPdf: _isOpeningPdf,
-        onOpenPdf: _onOpenPdf,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheetState) => _InvoiceSheet(
+          invoice: inv,
+          isOpeningPdf: _isOpeningPdfMap[inv.paymentId] ?? false,
+          onOpenPdf: () => _onOpenPdf(inv.paymentId),
+        ),
       ),
     );
   }
 
-  Future<void> _onOpenPdf() async {
-    if (_bookingId == null) return;
-    // Cần paymentId — load invoice trước nếu chưa có
-    final inv = _invoice ?? await _loadInvoice();
-    if (inv == null || !mounted) return;
-    setState(() => _isOpeningPdf = true);
+  Future<void> _onOpenPdf(int paymentId) async {
+    if (_isOpeningPdfMap[paymentId] == true) return;
+    setState(() => _isOpeningPdfMap[paymentId] = true);
     try {
-      await InvoiceService.instance.openInvoicePdf(inv.paymentId);
+      await InvoiceService.instance.openInvoicePdf(paymentId);
     } catch (e) {
       if (!mounted) return;
       _showSnack('Không thể mở PDF: $e', isError: true);
     } finally {
-      if (mounted) setState(() => _isOpeningPdf = false);
+      if (mounted) setState(() => _isOpeningPdfMap[paymentId] = false);
     }
   }
 
@@ -547,10 +553,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   AppSpacing.pagePadH,
                   0,
                 ),
-                child: _InvoiceCard(
+                child: _InvoicesSection(
                   isLoading: _isLoadingInvoice,
-                  isOpeningPdf: _isOpeningPdf,
-                  invoice: _invoice,
+                  invoices: _invoices,
+                  isOpeningPdfMap: _isOpeningPdfMap,
                   onView: _onViewInvoice,
                   onOpenPdf: _onOpenPdf,
                 ),
@@ -1601,11 +1607,82 @@ class _RescheduleSheet extends StatelessWidget {
   }
 }
 
+// ── INVOICES SECTION ──────────────────────────────
+// Hiển thị 1 hoặc 2 hóa đơn tuỳ theo số lượng payments đã thanh toán.
+// Với Flow 1 (cọc + còn lại): 2 card riêng biệt, có label phân biệt.
+// Với Flow 2 (full): 1 card duy nhất.
+class _InvoicesSection extends StatelessWidget {
+  final bool isLoading;
+  final List<InvoiceModel> invoices;
+  final Map<int, bool> isOpeningPdfMap;
+  final Future<void> Function(int index) onView;
+  final Future<void> Function(int paymentId) onOpenPdf;
+
+  const _InvoicesSection({
+    required this.isLoading,
+    required this.invoices,
+    required this.isOpeningPdfMap,
+    required this.onView,
+    required this.onOpenPdf,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Chưa load hoặc chỉ có 1 hóa đơn — hiển thị card đơn giản
+    if (invoices.length <= 1) {
+      return _InvoiceCard(
+        isLoading: isLoading,
+        isOpeningPdf: invoices.isNotEmpty
+            ? (isOpeningPdfMap[invoices.first.paymentId] ?? false)
+            : false,
+        invoice: invoices.isNotEmpty ? invoices.first : null,
+        label: null,
+        onView: () => onView(0),
+        onOpenPdf: invoices.isNotEmpty
+            ? () => onOpenPdf(invoices.first.paymentId)
+            : () => onView(0),
+      );
+    }
+
+    // 2 hóa đơn — Flow 1: cọc (index 0) + còn lại (index 1)
+    return Column(
+      children: [
+        _InvoiceCard(
+          isLoading: false,
+          isOpeningPdf: isOpeningPdfMap[invoices[0].paymentId] ?? false,
+          invoice: invoices[0],
+          label: 'HÓA ĐƠN ĐẶT CỌC',
+          labelColor: AppColors.warningOrange,
+          labelBg: const Color(0xFFFFF3E0),
+          onView: () => onView(0),
+          onOpenPdf: () => onOpenPdf(invoices[0].paymentId),
+        ),
+        const SizedBox(height: 10),
+        _InvoiceCard(
+          isLoading: false,
+          isOpeningPdf: isOpeningPdfMap[invoices[1].paymentId] ?? false,
+          invoice: invoices[1],
+          label: 'HÓA ĐƠN THANH TOÁN CÒN LẠI',
+          labelColor: AppColors.badgeBookedText,
+          labelBg: AppColors.badgeBookedBg,
+          onView: () => onView(1),
+          onOpenPdf: () => onOpenPdf(invoices[1].paymentId),
+        ),
+      ],
+    );
+  }
+}
+
 // ── INVOICE CARD ──────────────────────────────
 class _InvoiceCard extends StatelessWidget {
   final bool isLoading;
   final bool isOpeningPdf;
   final InvoiceModel? invoice;
+
+  /// Nếu null → hiển thị label mặc định "HÓA ĐƠN THANH TOÁN"
+  final String? label;
+  final Color? labelColor;
+  final Color? labelBg;
   final VoidCallback onView;
   final VoidCallback onOpenPdf;
 
@@ -1615,10 +1692,14 @@ class _InvoiceCard extends StatelessWidget {
     required this.invoice,
     required this.onView,
     required this.onOpenPdf,
+    this.label,
+    this.labelColor,
+    this.labelBg,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveLabel = label ?? 'HÓA ĐƠN THANH TOÁN';
     return SpCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1644,14 +1725,39 @@ class _InvoiceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'HÓA ĐƠN THANH TOÁN',
-                      style: TextStyle(
-                        color: AppColors.textHint,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          effectiveLabel,
+                          style: const TextStyle(
+                            color: AppColors.textHint,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        if (label != null && labelBg != null) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: labelBg,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              invoice != null ? invoice!.amountFmt : '',
+                              style: TextStyle(
+                                color: labelColor ?? AppColors.textMid,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -1741,8 +1847,8 @@ class _InvoiceCard extends StatelessWidget {
                 child: _InvoiceActionBtn(
                   label: 'Tải PDF',
                   icon: Icons.download_outlined,
-                  isLoading: isOpeningPdf,
-                  onTap: onOpenPdf,
+                  isLoading: isOpeningPdf || (isLoading && invoice == null),
+                  onTap: invoice != null ? onOpenPdf : onView,
                   isPrimary: true,
                 ),
               ),
