@@ -168,7 +168,7 @@ class ApiResponse {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ApiClient {
-  static const String baseUrl = 'http://klcnhost-001-site1.ntempurl.com';
+  static const String baseUrl = 'http://sportplusklcn10-001-site1.ltempurl.com';
 
   ApiClient._internal();
   static final ApiClient instance = ApiClient._internal();
