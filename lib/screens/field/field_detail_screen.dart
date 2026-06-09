@@ -597,7 +597,8 @@ class _SlotGrid extends StatelessWidget {
           crossAxisCount: 3,
           crossAxisSpacing: 8,
           mainAxisSpacing: 8,
-          childAspectRatio: 2.2, // rộng hơn cao — vừa với "HH:mm - HH:mm"
+          mainAxisExtent:
+              58, // chiều cao cố định — không phụ thuộc DPI màn hình
         ),
         itemCount: slots.length,
         itemBuilder: (_, i) {
@@ -607,7 +608,7 @@ class _SlotGrid extends StatelessWidget {
             onTap: () => onTap(slot),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primary
